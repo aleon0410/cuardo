@@ -2,7 +2,6 @@
 <head> 
 <title>My first Three.js app</title>
 <style>canvas { width: 100%; height: 100% }</style> 
-<script src="jquery-2.1.1.js"></script>
 <!--script src="jquery-ui-1.11.0/jquery-ui.js"></script>
 <link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.theme.css"/>
 <link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
@@ -26,6 +25,8 @@
 <script src="file:///home/vmo/three.js/src/extras/GeometryUtils.js"></script>
 <script src="proj4-src.js"></script>
 <script src="proj4-srs.js"></script>
+<script src="jquery-2.1.1.js"></script>
+<script src="WfsLayer.js"></script>
 <script> 
 
 var container, stats;
@@ -38,6 +39,9 @@ var headerText;
 
 init();
 animate();
+
+
+
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );
@@ -73,38 +77,8 @@ function init() {
     {
         headerText = document.getElementById( 'header_text' );
         headerText.innerHTML = 'loading';
-        jQuery.ajax('http://localhost/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
-            success: function(data, textStatus, jqXHR) {
-                $(data).find('FeatureType').each(function() { 
-                    var srid =$(this).find('DefaultSRS').text().replace(new RegExp('.*EPSG::'), '');
-                    var bbox = $(this).find('ows\\:WGS84BoundingBox').text().split(' ');
-                    ll = $(this).find('ows\\:LowerCorner').text().split(' ');
-                    ur = $(this).find('ows\\:UpperCorner').text().split(' ');
-                    //jQuery.ajax('http://spatialreference.org/ref/epsg/'+srid+'/proj4/', {
-                    //    success: function(data, textStatus, jqXHR) {
-                    //        proj4str = data;
-                    //    },
-                    //    async:   false,
-                    //    dataType: 'text',
-                    //    error: function(jqXHR, textStatus, errorThrown) {
-                    //        console.log(textStatus+' :'+errorThrown);
-                    //    }
-                    //});
-
-                    console.log(proj4.defs("EPSG:3946"));
-                    console.log('bbox WGS84: '+ll.join(' ')+','+ur.join(' '));
-                    console.log('bbox '+srid+': '+ll.join(' ')+','+ur.join(' '));
-                });
-                console.log('loaded');
-
-            },
-            async:   false,
-            dataType: 'xml',
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log(textStatus+' :'+errorThrown);
-            }
-            }
-        );
+        var layer = new WfsLayer('http://localhost/cgi-bin/tinyows');
+        layer.load();
         headerText.innerHTML = 'loaded';
     }
 
