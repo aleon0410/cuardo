@@ -1,0 +1,382 @@
+<html> 
+<head> 
+<title>My first Three.js app</title>
+<style>canvas { width: 100%; height: 100% }</style> 
+<script src="jquery-2.1.1.js"></script>
+<!--script src="jquery-ui-1.11.0/jquery-ui.js"></script>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.theme.css"/>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
+</head> 
+<body> 
+<div id="header"><p id="header_text">hello</p></div>
+<div id="container"></div>
+<script src="file:///home/vmo/three.js/build/three.js"></script> 
+<script src="file:///home/vmo/three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/Detector.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/libs/stats.min.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/shaders/SSAOShader.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="file:///home/vmo/three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="file:///home/vmo/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="file:///home/vmo/three.js/src/extras/GeometryUtils.js"></script>
+<script src="proj4-src.js"></script>
+<script src="proj4-srs.js"></script>
+<script> 
+
+var container, stats;
+var camera, controls, scene, renderer;
+var depthMaterial, depthTarget;
+var objects = [];
+var projector, particleMaterial;
+var text;
+var headerText;
+
+init();
+animate();
+
+function init() {
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    // mouse click detect object
+    {
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        projector = new THREE.Projector();
+    }
+
+    // camera
+    {
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 2000 );
+        camera.position.y = -500;
+        camera.position.z = 200;
+    }
+
+    // trackball
+    {
+        controls = new THREE.TrackballControls( camera );
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 1.5;
+        controls.panSpeed = 1.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        controls.keys = [ 65, 83, 68 ];
+        controls.addEventListener( 'change', render );
+    }
+
+    // WFS
+    {
+        headerText = document.getElementById( 'header_text' );
+        headerText.innerHTML = 'loading';
+        jQuery.ajax('http://localhost/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
+            success: function(data, textStatus, jqXHR) {
+                $(data).find('FeatureType').each(function() { 
+                    var srid =$(this).find('DefaultSRS').text().replace(new RegExp('.*EPSG::'), '');
+                    var bbox = $(this).find('ows\\:WGS84BoundingBox').text().split(' ');
+                    ll = $(this).find('ows\\:LowerCorner').text().split(' ');
+                    ur = $(this).find('ows\\:UpperCorner').text().split(' ');
+                    //jQuery.ajax('http://spatialreference.org/ref/epsg/'+srid+'/proj4/', {
+                    //    success: function(data, textStatus, jqXHR) {
+                    //        proj4str = data;
+                    //    },
+                    //    async:   false,
+                    //    dataType: 'text',
+                    //    error: function(jqXHR, textStatus, errorThrown) {
+                    //        console.log(textStatus+' :'+errorThrown);
+                    //    }
+                    //});
+
+                    console.log(proj4.defs("EPSG:3946"));
+                    console.log('bbox WGS84: '+ll.join(' ')+','+ur.join(' '));
+                    console.log('bbox '+srid+': '+ll.join(' ')+','+ur.join(' '));
+                });
+                console.log('loaded');
+
+            },
+            async:   false,
+            dataType: 'xml',
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus+' :'+errorThrown);
+            }
+            }
+        );
+        headerText.innerHTML = 'loaded';
+    }
+
+    // scene
+    {
+        scene = new THREE.Scene();
+        //scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+
+        // buildings
+        {
+            var material =  new THREE.MeshLambertMaterial( { color:0xeeeeee} );
+            material.ambient = material.color;
+            var sz = .5;
+            var geometry = new THREE.BoxGeometry( sz, sz, sz );
+            var group = geometry;
+            for ( var i = 0; i < 50; i ++ ) {
+            
+                    var mesh = new THREE.Mesh( geometry, material );
+                    mesh.position.x = Math.random() * 400 - 200;
+                    mesh.position.y = Math.random() * 300 - 150;
+                    mesh.scale.z = Math.random() * 10 + 1;
+                    mesh.scale.x = Math.random() * 10 + 1;
+                    mesh.scale.y = Math.random() * 5 + 1;
+                    mesh.rotation.z = Math.random();
+                    mesh.position.z = mesh.scale.z*sz/2.;
+                    mesh.castShadow = true;
+                    //mesh.receiveShadow = true;
+                    //THREE.GeometryUtils.merge(group, mesh);
+            }
+            // var mesh = new THREE.Mesh( group, material );
+            // scene.add( group );
+        }
+
+        // ground
+        {
+            var material =  new THREE.MeshLambertMaterial( { color:0x777777, shading: THREE.FlatShading} );
+            material.ambient = material.color;
+            var plane = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), material);
+            plane.position.z = -0.1;
+            plane.receiveShadow = true;
+            scene.add(plane);
+        }
+
+        // tiled ground
+        {
+            var extend = [-400, -400, 400, 400];
+            var lod = new THREE.LOD();
+            scene.add( lod );
+            var nbLevel = 5;
+            for (var level=1; level<=nbLevel; level++) {
+                var sqrtNbTiles = Math.pow(2, level);
+                var group = new THREE.Object3D();
+                var tileSize = (extend[2]-extend[0])/sqrtNbTiles;
+                for (var i=0; i<sqrtNbTiles; i++) {
+                    for (var j=0; j<sqrtNbTiles; j++) {
+                        var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
+                        var color = Math.random()*0xffffff;
+                        grid.setColors( color, color );
+                        grid.rotation.x = -Math.PI/2;
+                        grid.position.x = extend[0] + 0.5*tileSize + i*tileSize;
+                        grid.position.y = extend[1] + 0.5*tileSize + j*tileSize;
+                        grid.position.z = 5*level;
+                        grid.updateMatrix();
+                        grid.matrixAutoUpdate = false;
+                        grid.visible = false;
+                        group.add( grid );
+                    }
+                }
+                lod.addLevel(group, 1000 -level*1000./nbLevel);
+
+            }
+            lod.position.x = 0;
+            lod.position.y = 0;
+            lod.updateMatrix();
+            lod.matrixAutoUpdate = false;
+        }
+        
+
+        //// grid
+        //{
+        //    var helper = new THREE.GridHelper( 200, 10 );
+        //    helper.setColors( 0x0000ff, 0xf0f0f0 );
+        //    helper.rotation.x = -Math.PI/2;
+        //    scene.add( helper );
+        //}
+
+        // lights
+        {
+            //light = new THREE.PointLight( 0xdddddd );
+            light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
+            light.position.set( 1000, 1000, 1000 );
+
+            light.castShadow = true;
+            light.shadowCameraVisible = true;
+            light.shadowCameraNear = 1000;
+            light.shadowCameraFar = 2000;
+            light.shadowCameraFov = 20;
+            light.shadowDarkness = 0.5;
+            light.shadowMapWidth = 1024;
+            light.shadowMapHeight = 512;
+
+            scene.add( light );
+            scene.add( new THREE.SpotLightHelper( light, 5 ) );
+
+            alight = new THREE.AmbientLight( 0xdddddd );
+            scene.add( alight );
+
+        }
+
+        // LOD
+        if(false)
+        {
+
+            var sz = 10;
+            var geometry = new THREE.BoxGeometry( sz, sz, sz );
+            for ( var j = 0; j < 10; j ++ ) {
+                var material =  new THREE.MeshPhongMaterial( { color:0xee0000} );
+                material.ambient = material.color;
+                var lod = new THREE.LOD();
+                for ( var i = 0; i < 5; i ++ ) {
+                    var mesh = new THREE.Mesh( geometry, material );
+                    mesh.scale.z = i + 1;
+                    mesh.position.z = .5*sz*mesh.scale.z;
+                    mesh.updateMatrix();
+                    mesh.matrixAutoUpdate = false;
+                    lod.addLevel(mesh, i*100);
+                }
+                lod.position.x = -100+20*j;
+                lod.updateMatrix();
+                lod.matrixAutoUpdate = false;
+                objects.push(lod);
+                scene.add( lod );
+            }
+        }
+    }
+
+    // renderer
+    {
+        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setClearColor( 0x222222, 1 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        //renderer.shadowMapEnabled = true;
+        //renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+        // composer and effects
+        {
+            composer = new THREE.EffectComposer( renderer );
+            composer.addPass( new THREE.RenderPass( scene, camera ) );
+            
+            if (false){
+            // ssao
+            var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+            var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+            depthMaterial.blending = THREE.NoBlending;
+            depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+            var effect = new THREE.ShaderPass( THREE.SSAOShader );
+            effect.uniforms[ 'tDepth' ].value = depthTarget;
+            effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
+            effect.uniforms[ 'cameraNear' ].value = camera.near;
+            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'lumInfluence' ].value = .9;
+            effect.uniforms[ 'aoClamp' ].value = .5;
+            composer.addPass( effect );
+            
+            // depth of field
+            var bokehPass = new THREE.BokehPass( scene, camera, {
+                focus: .8,
+                aperture:	0.008,
+                maxblur:	1,
+                width:  window.innerWidth,
+                height: window.innerHeight
+                } );
+            bokehPass.renderToScreen = true;
+            composer.addPass( bokehPass );
+            }
+        }
+    }
+
+    // stats
+    {
+        container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '150px';
+        stats.domElement.style.zIndex = 100;
+        container.appendChild( stats.domElement );
+    }
+
+    // first render to avoid blank screen before interaction
+    render();
+    render(); // for some reason lod needs that second render
+
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    controls.handleResize();
+    render();
+}
+
+function animate() {
+    requestAnimationFrame( animate );
+    controls.update();
+}
+
+function render() {
+    scene.updateMatrixWorld();
+    scene.traverse( function ( object ) {
+        if ( object instanceof THREE.LOD ) {
+            object.update( camera );
+            object.objects.forEach( function(obj) {
+                    var visible = obj.object.visible;
+                    if ( obj.object instanceof THREE.Object3D ) {
+                        obj.object.traverse(function(child) {
+                                child.visible = visible;});
+                    }
+            });
+
+        }
+
+    } );
+
+
+    scene.overrideMaterial = depthMaterial;
+    renderer.render( scene, camera, depthTarget );
+    scene.overrideMaterial = null;
+    composer.render()
+    stats.update();
+}
+
+function onDocumentMouseDown( event ) {
+    event.preventDefault();
+
+    var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, 
+                                  - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+    projector.unprojectVector( vector, camera );
+
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    var intersects = raycaster.intersectObjects( objects );
+
+    if ( intersects.length > 0 ) {
+
+            var text3d = new THREE.TextGeometry( 'face:'+intersects[ 0 ].faceIndex, {
+					size: 2,
+					height: .1,
+					curveSegments: 2,
+					font: "helvetiker"
+				});
+
+            //text3d.computeBoundingBox();
+            var textMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } );
+            scene.remove( text );
+            text = new THREE.Mesh( text3d, textMaterial );
+            text.position = intersects[ 0 ].point;
+            scene.add( text );
+
+            // var material =  new THREE.MeshPhongMaterial( { color:0xbb0000 } );
+            // var particle = new THREE.Sprite( particleMaterial );
+            // particle.position = intersects[ 0 ].point;
+            // particle.scale.x = particle.scale.y = 16;
+            // scene.add( particle );
+            render();
+    }
+}
+
+</script> 
+</body> 
+</html>
