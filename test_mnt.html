@@ -1,0 +1,361 @@
+<html> 
+<head> 
+<title>My first Three.js app</title>
+<style>canvas { width: 100%; height: 100% }</style> 
+<!--script src="jquery-ui-1.11.0/jquery-ui.js"></script>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.theme.css"/>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
+</head> 
+<body> 
+<div id="header"><p id="header_text">hello</p></div>
+<div id="container"></div>
+<script src="three.js/build/three.js"></script> 
+<script src="three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="three.js/examples/js/Detector.js"></script>
+<script src="three.js/examples/js/libs/stats.min.js"></script>
+<script src="three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="three.js/examples/js/shaders/SSAOShader.js"></script>
+<script src="three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="three.js/examples/js/ShaderTerrain.js"></script>
+<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="three.js/src/extras/GeometryUtils.js"></script>
+<script src="proj4-src.js"></script>
+<script src="proj4-srs.js"></script>
+<script src="jquery-2.1.1.js"></script>
+<script> 
+
+var container, stats;
+var camera, controls, scene, renderer;
+var depthMaterial, depthTarget;
+var objects = [];
+var projector, particleMaterial;
+var text;
+var headerText;
+var EPSILON = 1e-12;
+var n = 0;
+
+init();
+animate();
+
+function loaded() {
+    n++;
+    if (n == 2) {
+        render();
+        //animate();
+    }
+}
+
+function init() {
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    // mouse click detect object
+    {
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        document.addEventListener( 'keydown', onDocumentKeyDown, false );
+        projector = new THREE.Projector();
+    }
+
+    // camera
+    {
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
+        //camera.position.y = -10000;
+        camera.position.z = 10000;
+    }
+
+    // trackball
+    {
+        controls = new THREE.TrackballControls( camera );
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 1.5;
+        controls.panSpeed = 1.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        controls.keys = [ 65, 83, 68 ];
+        controls.addEventListener( 'change', render );
+    }
+
+
+    // scene
+    {
+        scene = new THREE.Scene();
+
+        // grid
+        {
+            var helper = new THREE.GridHelper( 200, 10 );
+            helper.setColors( 0x0000ff, 0xf0f0f0 );
+            helper.rotation.x = -Math.PI/2;
+            scene.add( helper );
+        }
+
+        // texture
+        if (0)
+        {
+            //url = "https://download.data.grandlyon.com/wms/grandlyon?language=fre&&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX=1780810,5111630,1905820,5242220&CRS=EPSG:3946&WIDTH=512&HEIGHT=512&LAYERS=MNT2009_Altitude_10m_CC46&STYLES=&FORMAT=image/png&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
+             var url = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=test&STYLES=&FORMAT=image/png&SRS=EPSG:4326&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE&BBOX=4.85595703125,45.6591796875,4.8779296875,45.68115234375"
+             //var url = 'mnt/lyon_400x400.png';
+             var texture = THREE.ImageUtils.loadTexture(url);
+             //texture.wrapS = THREE.ClampToEdgeWrapping;
+             //texture.wrapT = THREE.ClampToEdgeWrapping;
+             //texture.minFilter = THREE.LinearMipMapNearestFilter;
+             //texture.image.crossOrigin = "anonymous";
+             //texture.image.src = url;
+             //texture.needsUpdate = true;
+             // material
+             var material = new THREE.MeshLambertMaterial({ map: texture });
+                       
+             // cube
+             var cube = new THREE.Mesh(new THREE.BoxGeometry(200, 200, 200), material);
+             cube.overdraw = true;
+             cube.rotation.x = Math.PI * 0.1;
+             scene.add(cube);
+            
+        }
+
+        // light
+        {
+            // add subtle ambient lighting
+            var ambientLight = new THREE.AmbientLight(0xffffff);
+            scene.add(ambientLight);
+            
+            // directional lighting
+            var directionalLight = new THREE.DirectionalLight(0xffffff);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+        }
+
+        // terrain
+        if(1)
+        {
+            // load the heightmap we created as a texture
+
+            //var url = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=test&STYLES=&FORMAT=image/png&SRS=EPSG:4326&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE&BBOX=4.85595703125,45.6591796875,4.8779296875,45.68115234375"
+            var url = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE&BBOX=1780810,5111630,1905820,5242220"
+            var urlD = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE&BBOX=1780810,5111630,1905820,5242220"
+            var extend = [-200,-200,200,200];
+            //var url = 'mnt/lyon_400x400.png'
+            var texture = THREE.ImageUtils.loadTexture(url, null, loaded);
+            var textureD = THREE.ImageUtils.loadTexture(urlD, null, loaded);
+            //texture.format = THREE.AlphaFormat;
+            //texture.type = THREE.UnsignedShortType;
+            console.log(texture);
+            // the following configuration defines how the terrain is rendered
+            var terrainShader = THREE.ShaderTerrain[ "terrain" ];
+            var uniformsTerrain = THREE.UniformsUtils.clone(terrainShader.uniforms);
+            
+            uniformsTerrain[ "tNormal" ].value = texture;
+            uniformsTerrain[ "uNormalScale" ].value = 1;
+
+     
+            // the displacement determines the height of a vector, mapped to
+            // the heightmap
+            uniformsTerrain[ "tDisplacement" ].value = texture;
+            uniformsTerrain[ "uDisplacementScale" ].value = 10;
+     
+            // the following textures can be use to finetune how
+            // the map is shown. These are good defaults for simple
+            // rendering
+            uniformsTerrain[ "tDiffuse1" ].value = textureD;
+            //uniformsTerrain[ "tDetail" ].value = texture;
+            uniformsTerrain[ "enableDiffuse1" ].value = true;
+            //uniformsTerrain[ "enableDiffuse2" ].value = true;
+            //uniformsTerrain[ "enableSpecular" ].value = true;
+     
+            // diffuse is based on the light reflection
+            //uniformsTerrain[ "diffuse" ].value.setHex(0xcccccc);
+            //uniformsTerrain[ "specular" ].value.setHex(0xff0000);
+            // is the base color of the terrain
+            uniformsTerrain[ "ambient" ].value.setHex(0xffffff);
+     
+            // how shiny is the terrain
+            uniformsTerrain[ "shininess" ].value = 3;
+     
+            // handles light reflection
+            uniformsTerrain[ "uPixelScale" ].value.set(
+                    (extend[2]-extend[0])/texture.image.width, 
+                    (extend[3]-extend[1])/texture.image.height);
+
+
+            // configure the material that reflects our terrain
+            var material = new THREE.ShaderMaterial({
+                uniforms:uniformsTerrain,
+                vertexShader:terrainShader.vertexShader,
+                fragmentShader:terrainShader.fragmentShader,
+                lights:true,
+                fog:false
+            });
+     
+            // we use a plain to render as terrain
+            var geometryTerrain = new THREE.PlaneGeometry(400, 400, 256, 256);
+            geometryTerrain.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+            geometryTerrain.computeFaceNormals();
+            geometryTerrain.computeVertexNormals();
+            geometryTerrain.computeTangents();
+     
+            // create a 3D object to add
+            terrain = new THREE.Mesh(geometryTerrain, material);
+            terrain.rotation.x = -Math.PI / 2;
+     
+            // add the terrain
+            scene.add(terrain);
+            var ll = new THREE.Mesh(new THREE.BoxGeometry(10,10,10), 
+                    new THREE.MeshBasicMaterial( { color: 0xff0000 } ));
+            ll.position.x = extend[0];
+            ll.position.y = extend[1];
+            scene.add(ll);
+        }
+    }
+
+    // renderer
+    {
+        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setClearColor( 0x222222, 1 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        //renderer.shadowMapEnabled = true;
+        //renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+        // composer and effects
+        {
+            composer = new THREE.EffectComposer( renderer );
+            composer.addPass( new THREE.RenderPass( scene, camera ) );
+            
+            if (false){
+            // ssao
+            var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+            var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+            depthMaterial.blending = THREE.NoBlending;
+            depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+            var effect = new THREE.ShaderPass( THREE.SSAOShader );
+            effect.uniforms[ 'tDepth' ].value = depthTarget;
+            effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
+            effect.uniforms[ 'cameraNear' ].value = camera.near;
+            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'lumInfluence' ].value = .9;
+            effect.uniforms[ 'aoClamp' ].value = .5;
+            composer.addPass( effect );
+            
+            // depth of field
+            var bokehPass = new THREE.BokehPass( scene, camera, {
+                focus: .8,
+                aperture:	0.008,
+                maxblur:	1,
+                width:  window.innerWidth,
+                height: window.innerHeight
+                } );
+            bokehPass.renderToScreen = true;
+            composer.addPass( bokehPass );
+            }
+        }
+    }
+
+    // stats
+    {
+        container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '150px';
+        stats.domElement.style.zIndex = 100;
+        container.appendChild( stats.domElement );
+    }
+
+    // first render to avoid blank screen before interaction
+    loaded();
+
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    controls.handleResize();
+    render();
+}
+
+function animate() {
+    requestAnimationFrame( animate );
+    controls.update();
+}
+
+function render() {
+    scene.updateMatrixWorld();
+    scene.traverse( function ( object ) {
+        if ( object instanceof THREE.LOD ) {
+            object.update( camera );
+            object.objects.forEach( function(obj) {
+                    var visible = obj.object.visible;
+                    if ( obj.object instanceof THREE.Object3D ) {
+                        obj.object.traverse(function(child) {
+                                child.visible = visible;});
+                    }
+            });
+
+        }
+
+    } );
+
+
+    scene.overrideMaterial = depthMaterial;
+    renderer.render( scene, camera, depthTarget );
+    scene.overrideMaterial = null;
+    composer.render()
+    stats.update();
+}
+
+function onDocumentKeyDown( event ) {
+    if ( event.keyCode == 65 ){ // a pressed
+        camera.lookAt(new THREE.Vector3(0,0,0));
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.w = 10000;
+        render();
+    }
+}
+function onDocumentMouseDown( event ) {
+    event.preventDefault();
+
+    var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, 
+                                  - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+    projector.unprojectVector( vector, camera );
+
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    var intersects = raycaster.intersectObjects( objects );
+
+    if ( intersects.length > 0 ) {
+
+            var text3d = new THREE.TextGeometry( 'face:'+intersects[ 0 ].faceIndex, {
+					size: 2,
+					height: .1,
+					curveSegments: 2,
+					font: "helvetiker"
+				});
+
+            //text3d.computeBoundingBox();
+            var textMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } );
+            scene.remove( text );
+            text = new THREE.Mesh( text3d, textMaterial );
+            text.position = intersects[ 0 ].point;
+            scene.add( text );
+
+            // var material =  new THREE.MeshPhongMaterial( { color:0xbb0000 } );
+            // var particle = new THREE.Sprite( particleMaterial );
+            // particle.position = intersects[ 0 ].point;
+            // particle.scale.x = particle.scale.y = 16;
+            // scene.add( particle );
+            render();
+    }
+}
+
+</script> 
+</body> 
+</html>
