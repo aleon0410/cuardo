@@ -9,25 +9,26 @@
 <body> 
 <div id="header"><p id="header_text">hello</p></div>
 <div id="container"></div>
-<script src="file:///home/vmo/three.js/build/three.js"></script> 
-<script src="file:///home/vmo/three.js/examples/js/controls/TrackballControls.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/Detector.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/libs/stats.min.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/shaders/CopyShader.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/shaders/SSAOShader.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/shaders/BokehShader.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/postprocessing/MaskPass.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/postprocessing/RenderPass.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="file:///home/vmo/three.js/examples/js/postprocessing/BokehPass.js"></script>
-<script src="file:///home/vmo/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
-<script src="file:///home/vmo/three.js/src/extras/GeometryUtils.js"></script>
+<script src="three.js/build/three.js"></script> 
+<script src="three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="three.js/examples/js/Detector.js"></script>
+<script src="three.js/examples/js/libs/stats.min.js"></script>
+<script src="three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="three.js/examples/js/shaders/SSAOShader.js"></script>
+<script src="three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="three.js/src/extras/GeometryUtils.js"></script>
 <script src="proj4-src.js"></script>
 <script src="proj4-srs.js"></script>
 <script src="jquery-2.1.1.js"></script>
 <script src="WfsLayer.js"></script>
 <script src="poly2tri.js"></script>
+<script src="Tiler.js"></script>
 <script> 
 
 var container, stats;
@@ -38,9 +39,11 @@ var projector, particleMaterial;
 var text;
 var headerText;
 var EPSILON = 1e-12;
+var tiler;
 
 init();
 animate();
+
 
 function repeated(p1, p2) {
     return Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON;
@@ -91,8 +94,12 @@ function init() {
     {
         scene = new THREE.Scene();
 
+        {
+        }
+
         //scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
         // WFS extract geom given extend
+        if (0)
         {
             //var extend = [1831540, 5159897, 1859318, 5192652];
             var extend = [1831402.5, 5160390.5, 1856581, 5192156];
@@ -339,6 +346,7 @@ function init() {
 
         // tiled ground
         {
+            tiler = new Tiler(8); 
             var extend = [-400, -400, 400, 400];
             var lod = new THREE.LOD();
             scene.add( lod );
@@ -349,17 +357,23 @@ function init() {
                 var tileSize = (extend[2]-extend[0])/sqrtNbTiles;
                 for (var i=0; i<sqrtNbTiles; i++) {
                     for (var j=0; j<sqrtNbTiles; j++) {
-                        var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
-                        var color = Math.random()*0xffffff;
-                        grid.setColors( color, color );
-                        grid.rotation.x = -Math.PI/2;
-                        grid.position.x = extend[0] + 0.5*tileSize + i*tileSize;
-                        grid.position.y = extend[1] + 0.5*tileSize + j*tileSize;
-                        grid.position.z = 5*level;
-                        grid.updateMatrix();
-                        grid.matrixAutoUpdate = false;
-                        grid.visible = false;
-                        group.add( grid );
+                        //var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
+                        //var color = Math.random()*0xffffff;
+                        //grid.setColors( color, color );
+                        //grid.rotation.x = -Math.PI/2;
+                        //grid.position.x = extend[0] + 0.5*tileSize + i*tileSize;
+                        //grid.position.y = extend[1] + 0.5*tileSize + j*tileSize;
+                        //grid.position.z = 5*level;
+                        //grid.updateMatrix();
+                        //grid.matrixAutoUpdate = false;
+                        //grid.visible = false;
+                        //group.add( grid );
+                        var center = new THREE.Vector3(
+                                extend[0] + 0.5*tileSize + i*tileSize,
+                                extend[1] + 0.5*tileSize + j*tileSize,
+                                0);
+
+                        tiler.tile(center, tileSize, function(mesh){group.add(mesh);});
                     }
                 }
                 lod.addLevel(group, 1000 -level*1000./nbLevel);
@@ -370,7 +384,7 @@ function init() {
             lod.updateMatrix();
             lod.matrixAutoUpdate = false;
         }
-        
+
 
         //// grid
         //{
