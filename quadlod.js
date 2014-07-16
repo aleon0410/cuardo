@@ -35,39 +35,25 @@ Tile.prototype.clone = function ( object ) {
     return object;
 }
 
-Tile.prototype.getObjects = function( x /* = 0*/, y /* = 0*/, level /* = 0 */ ) {
-    if ( level === undefined ) level = 0;
-
-    if ( level == 0 ) {
-        return this.objects_;
-    }
-    else {
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
-        return this.tiles_[dx][dy].getObjects( rx, ry, level-1 );
-    }
-}
-
-Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
+Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */, nl ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
         this.add( object );
     }
     else {
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
+        if ( nl === undefined ) {
+            nl = Math.pow(2, level-1);
+        }
+        var dx = ~~(x / nl);
+        var dy = ~~(y / nl);
+        var rx = x % nl;
+        var ry = y % nl;
         if ( this.tiles_[dx][dy] === undefined ) {
             var t = new Tile( this.size / 2 );
             this.tiles_[dx][dy] = t;
             this.add( t );
         }
-        this.tiles_[dx][dy].addObject( object, rx, ry, level-1 );
+        this.tiles_[dx][dy].addObject( object, rx, ry, level-1, nl/2 );
     }
 }
 
@@ -101,18 +87,21 @@ Tile.prototype.setVisibleBranch = function()
     }
 }
 
-Tile.prototype.setLOD = function ( x, y, level ) {
+Tile.prototype.setLOD = function ( x, y, level, nl ) {
     if (level == 0) {
         this.setVisible();
     }
     else {
         this.children[0].visible = false;
 
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
+        if ( nl === undefined ) {
+            nl = Math.pow(2,level-1);
+        }
+
+        var dx = ~~(x / nl);
+        var dy = ~~(y / nl);
+        var rx = x % nl;
+        var ry = y % nl;
         for ( var i = 0; i < 2; i++ ) {
             for ( var j = 0; j < 2; j++ ) {
                 if ( i==dx && j==dy && this.tiles_[dx][dy] !== undefined ) {
@@ -171,8 +160,8 @@ QuadTree.prototype.update = function( camera )
     var j = Math.pow(2,maxLod);
     for ( var x = 0; x < j; x++ ) {
         for ( var y = 0; y < j; y++ ) {
-            var xx = x/j * this.size - this.size/2;// + this.size/j/2;
-            var yy = y/j * this.size - this.size/2;// + this.size/j/2;
+            var xx = x/j * this.size - this.size/2 + this.size/j/2;
+            var yy = y/j * this.size - this.size/2 + this.size/j/2;
 
 	    v2.setX( xx );
             v2.setY( yy );
