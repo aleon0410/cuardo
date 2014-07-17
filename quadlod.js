@@ -8,20 +8,25 @@ var text;
 var headerText;
 var EPSILON = 1e-12;
 
-Tile = function( size ) {
+Tile = function( size, x, y, level ) {
     THREE.Object3D.call( this );
 
     // sub tiles
     this.tiles_ = [ [undefined, undefined], [undefined, undefined] ];
     // tile size FIXME useless ?
     this.size_ = size;
+
+    // coordinate of the tile
+    this.x = x;
+    this.y = y;
+    this.level = level;
 }
 
 // inherits from Object3D
 Tile.prototype = Object.create( THREE.Object3D.prototype );
 
 Tile.prototype.clone = function ( object ) {
-    if ( object === undefined ) object = new Tile( this.size );
+    if ( object === undefined ) object = new Tile( this.size, this.x, this.y, this.level );
     // call the base class constructor
     THREE.Object3D.prototype.clone.call( this, object );
 
@@ -35,32 +40,39 @@ Tile.prototype.clone = function ( object ) {
     return object;
 }
 
-Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */, nl ) {
+Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
         this.add( object );
     }
     else {
-        if ( nl === undefined ) {
-            nl = Math.pow(2, level-1);
-        }
+        nl = 1 << (level-1);
         var dx = ~~(x / nl);
         var dy = ~~(y / nl);
         var rx = x % nl;
         var ry = y % nl;
         if ( this.tiles_[dx][dy] === undefined ) {
-            var t = new Tile( this.size / 2 );
+            var t = new Tile( this.size / 2, this.x*2, this.y*2, this.level+1 );
             this.tiles_[dx][dy] = t;
             this.add( t );
         }
-        this.tiles_[dx][dy].addObject( object, rx, ry, level-1, nl/2 );
+        this.tiles_[dx][dy].addObject( object, rx, ry, level-1 );
     }
+}
+
+Tile.prototype.changeVisibility = function( vis )
+{
+    if ( this.children[0].visible != vis ) {
+        
+//        console.log(this.x, this.y, this.level, "Changed from ", this.children[0].visible, " to ", vis );
+    }
+    this.children[0].visible = vis;
 }
 
 // set visible and all children invisible
 Tile.prototype.setVisible = function( visible ) {
     if ( visible === undefined ) visible = true;
-    this.children[0].visible = visible;
+    this.changeVisibility( visible );
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
@@ -83,21 +95,24 @@ Tile.prototype.setVisibleBranch = function()
 {
     var h = this.hasVisibleChildren();
     if ( ! h ) {
-        this.children[0].visible = true;
+        this.changeVisibility( true );
     }
 }
 
-Tile.prototype.setLOD = function ( x, y, level, nl ) {
+///
+/// Change the visibility of a tile, and deal with surrounding tiles to get a consistent overall visibility
+/// The LOD of a tile can be refined but not simplified (lod increment is ok, but not lod decrement)
+/// SetVisible(true) on the tile of level=0 must be called to reset LODs
+Tile.prototype.setLOD = function ( x, y, level ) {
     if (level == 0) {
-        this.setVisible();
+        if ( ! this.hasVisibleChildren() ) {
+            this.setVisible();
+        }
     }
     else {
-        this.children[0].visible = false;
+        this.changeVisibility( false );
 
-        if ( nl === undefined ) {
-            nl = Math.pow(2,level-1);
-        }
-
+        nl = 1 << (level-1);
         var dx = ~~(x / nl);
         var dy = ~~(y / nl);
         var rx = x % nl;
@@ -105,10 +120,18 @@ Tile.prototype.setLOD = function ( x, y, level, nl ) {
         for ( var i = 0; i < 2; i++ ) {
             for ( var j = 0; j < 2; j++ ) {
                 if ( i==dx && j==dy && this.tiles_[dx][dy] !== undefined ) {
+                    // recurse call
                     this.tiles_[dx][dy].setLOD( rx,ry, level-1 );
                 }
+                else  if ( this.tiles_[i][j] !== undefined ) {
+                    // one of the neighbours
+                    this.tiles_[i][j].setVisibleBranch();
+                }
                 else {
-                    if ( this.tiles_[i][j] !== undefined ) this.tiles_[i][j].setVisibleBranch();
+                    // in case no deeper tile is available, stop at this one
+                    if ( ! this.hasVisibleChildren() ) {
+                        this.setVisible();
+                    }
                 }
             }
         }
@@ -116,19 +139,32 @@ Tile.prototype.setLOD = function ( x, y, level, nl ) {
 }
 
 // quad of size x size, centered on x,y
-QuadTree = function( size ) {
+QuadTree = function( size, lod ) {
     THREE.Object3D.call( this );
 
-    this.size = size;
-    this.tile = new Tile( this.size );
+    // the root tile
+    this.tile = new Tile( this.size, 0, 0, 0 );
     this.add( this.tile );
+
+    // max LOD
+    this.maxLOD = lod;
+    // size of an edge
+    this.size = size;
+
+    // map of lod available
+    var n = 1 << this.maxLOD;
+    this.lodMap = new Array(n);
+    for ( var i = 0; i < n; i++ ) {
+        this.lodMap[i] = new Array(n);
+    }
 }
 
 // inherits from Object3D
 QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
 QuadTree.prototype.clone = function (object) {
-    if ( object === undefined ) object = new QuadTree( this.size );
+    console.log('clone');
+    if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD );
     THREE.Object3D.prototype.clone.call( this, object );
 
     object.tile = this.children[0];
@@ -138,9 +174,18 @@ QuadTree.prototype.clone = function (object) {
 
 QuadTree.prototype.addObject = function( object, level )
 {
-    var s = this.size / Math.pow(2, level);
-    var dx = ~~((object.position.x - this.position.x + this.size/2) / s);
-    var dy = ~~((object.position.y - this.position.y + this.size/2) / s);
+    var x = (object.position.x - this.position.x + this.size/2) / this.size;
+    var y = (object.position.y - this.position.y + this.size/2) / this.size;
+    var nl = 1<<this.maxLOD;
+    var sx = ~~(x*nl);
+    var sy = ~~(y*nl);
+    // update the max lod map
+    if ( this.lodMap[sx][sy] === undefined || this.lodMap[sx][sy] < level ) {
+        this.lodMap[sx][sy] = level;
+    }
+    nl = 1 <<level;
+    var dx = ~~(x*nl);
+    var dy = ~~(y*nl);
     this.tile.addObject( object, dx, dy, level );
 }
 
@@ -156,8 +201,9 @@ QuadTree.prototype.update = function( camera )
     var v2 = new THREE.Vector3();
     v1.setFromMatrixPosition( camera.matrixWorld );
 
-    var maxLod = 4;
-    var j = Math.pow(2,maxLod);
+    var j = 1 << this.maxLOD;
+    // reset to LOD0
+    this.tile.setVisible( true );
     for ( var x = 0; x < j; x++ ) {
         for ( var y = 0; y < j; y++ ) {
             var xx = x/j * this.size - this.size/2 + this.size/j/2;
@@ -166,9 +212,16 @@ QuadTree.prototype.update = function( camera )
 	    v2.setX( xx );
             v2.setY( yy );
             var d = v1.distanceTo( v2 );
-            var lod = ~~(1/d*1500);
-            if (lod>=maxLod) lod = maxLod;
-            this.setLOD(x,y,lod);
+            var lod = ~~(1/d*2000);
+            if (lod>=this.maxLOD) lod = this.maxLOD;
+            var xd = ~~(x / (1 << (2,this.maxLOD-lod)));
+            var yd = ~~(y / (1 << (2,this.maxLOD-lod)));
+            if ( this.lodMap[x][y] < lod ) {
+                // FIXME load the desired lod if available
+                console.log('missing LOD', x, y, lod);
+                continue;
+            }
+            this.setLOD(xd,yd,lod);
         }
     }
 }
@@ -262,13 +315,13 @@ function init() {
             var size = 800;
             var xCenter = 0;
             var yCenter = 0;
-            var quadtree = new QuadTree( size );
+            var quadtree = new QuadTree( size, 3 );
             var x0 = xCenter - size/2;
             var y0 = yCenter - size/2;
             scene.add( quadtree );
-            var nbLevel = 4;
-            for (var level=0; level<=nbLevel; level++) {
-                var sqrNbTiles = Math.pow(2, level);
+            var nbLevel = 2;
+            for (var level=0; level<nbLevel; level++) {
+                var sqrNbTiles = 1 << level;
                 var group = new THREE.Object3D();
                 var tileSize = size/sqrNbTiles;
                 for (var i=0; i<sqrNbTiles; i++) {
@@ -293,9 +346,6 @@ function init() {
             quadtree.updateMatrix();
             quadtree.matrixAutoUpdate = false;
 
-            quadtree.setLOD(0,0,3);
-            quadtree.setLOD(0,0,1);
-//            quadtree.setLOD(7,7,3);
         }
         
 
@@ -433,6 +483,7 @@ function animate() {
 }
 
 function render() {
+    console.log("render");
     scene.updateMatrixWorld();
     scene.traverse( function ( object ) {
         if ( object instanceof THREE.LOD ) {
