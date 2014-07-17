@@ -55,7 +55,7 @@ function init() {
 
     // camera
     {
-        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 10, 100000 );
         //camera.position.y = -10000;
         camera.position.z = 20000;
     }
@@ -107,11 +107,12 @@ function init() {
             translation = new THREE.Vector3(-1849500, -5173000, 0);
             terrain = new Terrain(urlDem, urlTex, translation, 32)
             tiler = new Tiler([terrain], translation);
-            for (var i = 0; i<10; i++){
+            for (var i = 0; i<10; i++){http://mapproxy.org/
                 for (var j = 0; j<10; j++){
-                    tiler.tile(new THREE.Vector3(i*200,j*200,0), 200, 
+                    tiler.tile(new THREE.Vector3(i*2000,j*2000,0), 2000, 
                             function(object){
                                 scene.add(object);
+                                render();
                             });
                 }
             }
@@ -193,6 +194,7 @@ function animate() {
 }
 
 function render() {
+    if (!renderer) return;
     scene.updateMatrixWorld();
     scene.traverse( function ( object ) {
         if ( object instanceof THREE.LOD ) {

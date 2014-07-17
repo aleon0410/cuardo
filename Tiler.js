@@ -29,14 +29,18 @@ Tiler.prototype.tile = function( center, size, callback ) {
         mesh.scale.y = size;
         group.add(mesh);
     }
+    var remaining = this.layers.length;
     this.layers.forEach(function(l){
         l.tile( center, size, 
             function(mesh){
                 group.add(mesh);
+                remaining--;
+                if (!remaining) callback(group);
             });
     });
-    callback( group );
 };
+
+//----------------
 
 Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
     this.urlDem = urlDem;
@@ -52,34 +56,44 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
 
 }
 
+Terrain.prototype.loaded = function() {
+}
+
 Terrain.prototype.tile = function( center, size, callback ) {
+    var mesh;
+    var remaining = 3;
+    var loaded = function(){
+        remaining--;
+        if (!remaining) callback(mesh);
+    };
     var extendCenter = new THREE.Vector3().subVectors(center, this.translation );
-    console.log('center=',center,' translation=', this.translation, ' extendCenter=', extendCenter);
+    //console.log('center=',center,' translation=', this.translation, ' extendCenter=', extendCenter);
     var ext = [extendCenter.x - size*.5,
                extendCenter.y - size*.5,
                extendCenter.x + size*.5,
                extendCenter.y + size*.5];
-    console.log('ext=',ext);
-    this.textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, function(){console.log('loaded dem');});
+    //console.log('ext=',ext);
+    callback = callback;
+    textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded );
     console.log(this.urlDem + '&BBOX='+ext.join(','));
-    this.textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, function(){console.log('loaded tex');});
-    console.log(this.urlTex + '&BBOX='+ext.join(','));
+    textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
+    //console.log(this.urlTex + '&BBOX='+ext.join(','));
 
     var terrainShader = THREE.ShaderTerrain[ "terrain" ];
     var uniformsTerrain = THREE.UniformsUtils.clone(terrainShader.uniforms);
     
-    uniformsTerrain[ "tNormal" ].value = this.textureTex;
+    uniformsTerrain[ "tNormal" ].value = textureDem;
     uniformsTerrain[ "uNormalScale" ].value = 1;
 
     // the displacement determines the height of a vector, mapped to
     // the heightmap
-    uniformsTerrain[ "tDisplacement" ].value = this.textureDem;
-    uniformsTerrain[ "uDisplacementScale" ].value = 1000;
+    uniformsTerrain[ "tDisplacement" ].value = textureDem;
+    uniformsTerrain[ "uDisplacementScale" ].value = 100;
 
     // the following textures can be use to finetune how
     // the map is shown. These are good defaults for simple
     // rendering
-    uniformsTerrain[ "tDiffuse1" ].value = this.textureTex;
+    uniformsTerrain[ "tDiffuse1" ].value = textureTex;
     //uniformsTerrain[ "tDetail" ].value = texture;
     uniformsTerrain[ "enableDiffuse1" ].value = true;
     //uniformsTerrain[ "enableDiffuse2" ].value = true;
@@ -116,5 +130,5 @@ Terrain.prototype.tile = function( center, size, callback ) {
     mesh.position = center;
     mesh.scale.x = size;
     mesh.scale.y = size;
-    callback( mesh );
+    loaded();
 }
