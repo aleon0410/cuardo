@@ -10,9 +10,11 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
     this.geometryTerrain.computeVertexNormals();
     this.geometryTerrain.computeTangents();
 
+    this.demTextures = {};
+
 }
 
-Terrain.prototype.tile = function( center, size, callback ) {
+Terrain.prototype.tile = function( center, size, tileId, callback ) {
     var mesh;
     var remaining = 3;
     var loaded = function(){
@@ -32,6 +34,10 @@ Terrain.prototype.tile = function( center, size, callback ) {
     var terrainShader = THREE.ShaderTerrain[ "terrain" ];
     var uniformsTerrain = THREE.UniformsUtils.clone(terrainShader.uniforms);
     
+
+    this.demTextures[tileId] = textureDem;
+    console.log('dem for id=', tileId, textureDem);
+
     uniformsTerrain[ "tNormal" ].value = textureDem;
     uniformsTerrain[ "uNormalScale" ].value = 1;
 

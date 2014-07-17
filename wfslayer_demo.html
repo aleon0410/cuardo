@@ -28,6 +28,7 @@
 <script src="Tiler.js"></script>
 <script src="poly2tri.js"></script>
 <script src="clipper.js"></script>
+<script src="ShaderDraping.js"></script>
 <script> 
 
 var container, stats;
@@ -89,10 +90,10 @@ function init() {
             var urlDem = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
             var urlTex = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
             translation = new THREE.Vector3(-1849500, -5173000, 0);
-            //terrain = new Terrain(urlDem, urlTex, translation, 32);
-            wfsLayer = new WfsLayer(urlWfs, translation, 32);
-            tiler = new Tiler([wfsLayer], translation, 1);
-            var nbTiles = 10;
+            terrain = new Terrain(urlDem, urlTex, translation, 32);
+            wfsLayer = new WfsLayer(urlWfs, translation, 32, terrain);
+            tiler = new Tiler([terrain, wfsLayer], translation, 1);
+            var nbTiles = 5;
             for (var i = 0; i<nbTiles; i++){http://mapproxy.org/
                 for (var j = 0; j<nbTiles; j++){
                     tiler.tile(new THREE.Vector3(i*2000-10000,j*2000-10000,0), 2000, 

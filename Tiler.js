@@ -4,6 +4,8 @@ Tiler = function( layers = [], translation = new THREE.Vector3(0,0,0), nbInterva
     this.geom = new THREE.PlaneGeometry(1, 1, nbIntervals, nbIntervals);
     this.layers = layers;
     this.srid = 0;
+    this.tileIds = {};
+    this.currentTileId = 0;
 
     this.layers.forEach(function(l){
         var ext = l.extent;
@@ -30,13 +32,18 @@ Tiler.prototype.tile = function( center, size, callback ) {
         group.add(mesh);
     }
     var remaining = this.layers.length;
+    var object = this;
     this.layers.forEach(function(l){
-        l.tile( center, size, 
+        l.tile( center, size, object.currentTileId,
             function(mesh){
                 group.add(mesh);
                 remaining--;
-                if (!remaining) callback(group);
+                if (!remaining) {
+
+                    callback(group);
+                }
             });
     });
+    this.currentTileId++;
 };
 

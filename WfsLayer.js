@@ -1,9 +1,10 @@
-WfsLayer = function (url, translation, nbIntervals = 8 ) {
+WfsLayer = function (url, translation, nbIntervals = 8, terrain = null ) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals;
     this.extent = [];
     this.srid = 0;
+    this.terrain = terrain;
 
     // TODO select only the opropriate layer
     var object = this;
@@ -69,18 +70,21 @@ function addTrianglesFromClipperPaths(geom, paths){
         t.getPoints().forEach(function(p) {
             geom.vertices.push(new THREE.Vector3(p.x, p.y, 0));
         });
+
         geom.faces.push( new THREE.Face3(i, i+1, i+2) );
         i += 3;
     });
 }
 
 
-WfsLayer.prototype.tile = function( center, size, callback ) {
+WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
+
+    var object = this;
 
     var reqstart = new Date().getTime();
     //console.log(this.url + '&BBOX='+ext.join(','));
@@ -205,7 +209,46 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
             //console.log('nb of vtx ', geom.vertices.length );
             //console.log('nb of faces ', geom.faces.length );
             geom.computeFaceNormals();
-            var material =  new THREE.MeshLambertMaterial( { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
+            var material;
+            if (object.terrain) {
+                var drapingShader = ShaderDraping[ "draping" ];
+                var uniformsDraping = THREE.UniformsUtils.clone(drapingShader.uniforms);
+                uniformsDraping['color'].value.setHex(0xff0000); 
+                uniformsDraping['opacity'].value = 0.5; 
+                uniformsDraping['uZoffset'].value = 1; 
+                uniformsDraping[ "tDisplacement" ].value = object.terrain.demTextures[tileId];
+                uniformsDraping[ "uDisplacementScale" ].value = 100;
+                material = new THREE.ShaderMaterial({
+                    uniforms:uniformsDraping,
+                    vertexShader:drapingShader.vertexShader,
+                    fragmentShader:drapingShader.fragmentShader,
+                    lights:true,
+                    transparent: true
+                });
+            }
+            else {
+                material =  new THREE.MeshLambertMaterial( 
+                        { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
+            }
+
+
+            // uv coord are relative to the tile
+            {
+                var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
+                for (var v=0; v<geom.vertices.length; v+=3){
+                    var uv = [new THREE.Vector2((geom.vertices[v].x-tileOrigin.x)/size, 
+                                                (geom.vertices[v].y-tileOrigin.y)/size),
+                              new THREE.Vector2((geom.vertices[v+1].x-tileOrigin.x)/size, 
+                                                (geom.vertices[v+1].y-tileOrigin.y)/size),
+                              new THREE.Vector2((geom.vertices[v+2].x-tileOrigin.x)/size, 
+                                                (geom.vertices[v+2].y-tileOrigin.y)/size)];
+                    geom.faceVertexUvs[ 0 ].push(uv);
+                }
+            }
+            geom.computeFaceNormals();
+            geom.computeVertexNormals();
+            geom.computeTangents();
+
             group.add(new THREE.Mesh( geom, material ));
             callback(group);
         },
