@@ -7,8 +7,7 @@ WfsLayer = function (url, translation, nbIntervals = 8 ) {
 
     // TODO select only the opropriate layer
     var object = this;
-    var baseUrl = this.url;
-    baseUrl.replace( new RegExp('\\?.*'), '');
+    var baseUrl = this.url.split('?')[0];
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
             $(data).find('FeatureType').each(function() { 
@@ -36,6 +35,46 @@ function collinear(pa, pb, pc) {
     return Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON;
 }
 
+function addTrianglesFromClipperPaths(geom, paths){
+    var rings = [];
+    paths.forEach( function(ring) {
+        var r = rings.length;
+        rings.push([]);
+        ring.forEach( function(point) {
+            var pt = new poly2tri.Point(point.X, point.Y);
+            if ( !rings[r].length ||
+                !repeated(rings[r][rings[r].length-1], pt) ) {
+                if ( rings[r].length < 2 ||
+                    !collinear(rings[r][rings[r].length-2], rings[r][rings[r].length-1], pt)) {
+                    rings[r].push(pt);
+                }
+                else {
+                    rings[r][r.length-1] = pt;
+                }
+            }
+        });
+        if (rings[r].length > 2 && collinear( rings[r][rings[r].length-2], rings[r][rings[r].length-1],  rings[r][0])) rings[r].pop();
+    });
+
+    //console.log('ring 0 has '+rings[0].length+' points');
+    if (!rings.length || !rings[0].length) return;
+    var swctx = new poly2tri.SweepContext(rings[0]);
+    for (var r=1; r<rings.length; r++) {
+        if (rings[r].length) swctx.addHole(rings[r]);
+    }
+    swctx.triangulate();
+    var triangles = swctx.getTriangles();
+    var i = geom.vertices.length;
+    triangles.forEach(function(t) {
+        t.getPoints().forEach(function(p) {
+            geom.vertices.push(new THREE.Vector3(p.x, p.y, 0));
+        });
+        geom.faces.push( new THREE.Face3(i, i+1, i+2) );
+        i += 3;
+    });
+}
+
+
 WfsLayer.prototype.tile = function( center, size, callback ) {
     var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
     var ext = [extentCenter.x - size*.5,
@@ -43,13 +82,16 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
 
+    var reqstart = new Date().getTime();
     //console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
+            var reqend = new Date().getTime();
+            //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
+            var start = new Date().getTime();
             var group = new THREE.Object3D();
             var geom = new THREE.Geometry();
             var nbInvalid = 0;
-            var start = new Date().getTime();
             var nbPoly = 0;
             var nbPt = 0;
             // MULTIPOLYGON ONLY
@@ -81,100 +123,82 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                                 clippedPoly, 
                                 ClipperLib.PolyFillType.pftNonZero,
                                 ClipperLib.PolyFillType.pftNonZero);
+                        //clippedPoly = ClipperLib.Clipper.CleanPolygon( clippedPoly, 1 );
 
-                        // add contour for debug
-                        {
-                            var clippedgeom = new THREE.Geometry();
-                            clippedPoly.forEach( function(ring) {
-                                ring.forEach( function(point) {
-                                    clippedgeom.vertices.push(new THREE.Vector3(point.X,  point.Y, 0));
-                                });
-                                if (ring.length) clippedgeom.vertices.push(new THREE.Vector3(ring[0].X,  ring[0].Y, 0)); // to close line
-
-                            });
-                            var clippedmaterial = new THREE.LineBasicMaterial({ color:0x0000ff, linewidth: 5 });
-                            var clippedmesh = new THREE.Line( clippedgeom, clippedmaterial/*, THREE.LinePieces*/ );
-                            group.add(clippedmesh);
-                        }
                     }
                     if (!clippedPoly.length) return;
 
                     try {
-
-                        var rings = [];
-                        clippedPoly.forEach( function(ring) {
-                            var r = rings.length;
-                            rings.push([]);
-                            ring.forEach( function(point) {
-                                var pt = new poly2tri.Point(point.X, point.Y);
-                                if ( !rings[r].length ||
-                                    !repeated(rings[r][rings[r].length-1], pt) ) {
-                                    if ( rings[r].length < 2 ||
-                                        !collinear(rings[r][rings[r].length-2], rings[r][rings[r].length-1], pt)) {
-                                        rings[r].push(pt);
-                                        nbPt++;
-                                    }
-                                    else {
-                                        rings[r][r.length-1] = pt;
-                                    }
-                                }
-                            });
-                            if (rings[r].length) rings[r].pop(); // last point is repeated
-                            if (rings[r].length > 2 && collinear( rings[r][rings[r].length-2], rings[r][rings[r].length-1],  rings[r][0])) rings[r].pop();
-                        });
-
-
-
-                        //console.log('ring 0 has '+rings[0].length+' points');
-                        if (!rings.length || !rings[0].length) return;
-                        var swctx = new poly2tri.SweepContext(rings[0]);
-                        for (var r=1; r<rings.length; r++) {
-                            if (rings[r].length) swctx.addHole(rings[r]);
-                        }
-                        swctx.triangulate();
-                        var triangles = swctx.getTriangles();
-                        var i = geom.vertices.length;
-                        triangles.forEach(function(t) {
-                            t.getPoints().forEach(function(p) {
-                                geom.vertices.push(new THREE.Vector3(p.x, p.y, 0));
-                            });
-                            geom.faces.push( new THREE.Face3(i, i+1, i+2) );
-                            i += 3;
-                        });
+                        addTrianglesFromClipperPaths(geom, clippedPoly);
                     }
                     catch (err) {
                         nbInvalid++;
-                        console.log('poly:', poly);
-                        console.log('poly2tri error:', err);
-                        points = err.message.replace(new RegExp(".*supported! \\("),'').replace(new RegExp(".*Constraints \\("),'').split(') (');
-                        var errgeom = new THREE.Geometry();
-                        points.forEach( function(pt) {
-                            pt = pt.replace(')','');
-                            pt = pt.split(';');
-                            //console.log('point:', pt);
-                            errgeom.vertices.push(new THREE.Vector3(+pt[0], +pt[1], 1));
-                        });
-                        var errmesh = new THREE.Line( errgeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) );
-                        group.add(errmesh);
-
-                        //throw err;
-                        var failedgeom = new THREE.Geometry();
-                        poly.forEach( function(ring) {
-                            ring.forEach( function(point) {
-                                var pt = [point[0]+translation.x, point[1]+translation.y];
-                                failedgeom.vertices.push(new THREE.Vector3(pt[0], pt[1], 0.5));
+                        //console.log(err);
+                        //console.log('poly2tri error:', err);
+                        // show error spots for debug
+                        if (1)
+                        {
+                            var errgeom = new THREE.Geometry();
+                            err.points.forEach( function(pt) {
+                                //console.log('point:', pt);
+                                errgeom.vertices.push(new THREE.Vector3(pt.x, +pt.y, 1));
                             });
-                        });
-                        console.log('failed feature triangulation gid='+feat.properties.gid);
-                        var failedmaterial = new THREE.LineBasicMaterial({ color:0xffaaaa, linewidth: 1 });
-                        var failedmesh = new THREE.Line( failedgeom, failedmaterial/*, THREE.LinePieces*/ );
-                        group.add(failedmesh);
+                            var errmesh = new THREE.Line( errgeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) );
+                            group.add(errmesh);
+                        }
+
+                        // try to simplify polygon and retriangulate
+                        var simpPoly = ClipperLib.Clipper.SimplifyPolygons( clippedPoly, ClipperLib.PolyFillType.pftNonZero );
+                        try {
+                            addTrianglesFromClipperPaths(geom, simpPoly);
+                            console.log('fixed polygon gid=',feat.properties.gid);
+                        }
+                        catch (err) {
+                            console.log('failed feature triangulation after simplification for gid=',feat.properties.gid);
+                            // complete failde geom (before clipping)
+                            if (0)
+                            {
+                                var failedgeom = new THREE.Geometry();
+                                poly.forEach( function(ring) {
+                                    ring.forEach( function(point) {
+                                        var pt = [point[0]+translation.x, point[1]+translation.y];
+                                        failedgeom.vertices.push(new THREE.Vector3(pt[0], pt[1], 100));
+                                    });
+                                });
+                                var failedmaterial = new THREE.LineBasicMaterial({ color:0xffaaaa, linewidth: 3 });
+                                var failedmesh = new THREE.Line( failedgeom, failedmaterial/*, THREE.LinePieces*/ );
+                                group.add(failedmesh);
+                            }
+                            
+                            // add polygon rings one at a time, for self intersection of 
+                            // ext ring it's ok, but with holes I don't thinks it's ok
+                            // TODO fix case with holes
+                            simpPoly.forEach( function(ring) {
+                                addTrianglesFromClipperPaths(geom, [ring]);
+                            });
+
+                            // add contour for debug
+                            if(0)
+                            {
+                                simpPoly.forEach( function(ring) {
+                                    var clippedgeom = new THREE.Geometry();
+                                    ring.forEach( function(point) {
+                                        clippedgeom.vertices.push(new THREE.Vector3(point.X,  point.Y, 0));
+                                    });
+                                    if (ring.length) clippedgeom.vertices.push(new THREE.Vector3(ring[0].X,  ring[0].Y, 0)); // to close line
+
+                                    var clippedmaterial = new THREE.LineBasicMaterial({ color:0x0000ff, linewidth: 5 });
+                                    var clippedmesh = new THREE.Line( clippedgeom, clippedmaterial );
+                                    group.add(clippedmesh);
+                                });
+                            }
+                        }
                     }
                 });
 
             });
             var end = new Date().getTime();
-            console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons ('+nbPt+' points) with '+nbInvalid+' failed triangulations');
+            //console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons ('+nbPt+' points) with '+nbInvalid+' failed triangulations');
 
             geom.computeBoundingBox();
             //console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
@@ -185,7 +209,7 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
             group.add(new THREE.Mesh( geom, material ));
             callback(group);
         },
-        async:   false,
+        async:   true,
         dataType: 'json',
         error: function(jqXHR, textStatus, errorThrown) {
             console.log(textStatus+' :'+errorThrown);
