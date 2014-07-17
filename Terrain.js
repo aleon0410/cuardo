@@ -12,9 +12,6 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
 
 }
 
-Terrain.prototype.loaded = function() {
-}
-
 Terrain.prototype.tile = function( center, size, callback ) {
     var mesh;
     var remaining = 3;
