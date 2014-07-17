@@ -8,78 +8,135 @@ var text;
 var headerText;
 var EPSILON = 1e-12;
 
-Tile = function( size ) {
+TileLoader = function()
+{
+    this.queue = [];
+}
+
+TileLoader.instance = function()
+{
+    if (TileLoader.instance__ === undefined ) {
+        TileLoader.instance__ = new TileLoader();
+    }
+    return TileLoader.instance__;
+}
+
+TileLoader.prototype.enqueue = function( quadtree, x, y, level )
+{
+    this.queue.push( { x:x, y:y, level:level, quadtree:quadtree } );
+}
+
+TileLoader.prototype.load = function()
+{
+    while ( this.queue.length > 0 ) {
+        var p = this.queue.shift();
+        if ( p.quadtree.tile.hasTile( p.x, p.y, p.level ) ) {
+            console.log("Tile already loaded");
+        }
+        var that = this;
+        var f = function( obj ) {
+            if ( obj !== undefined ) {
+                obj.visible = true;
+                p.quadtree.tile.addObject( obj, p.x, p.y, p.level );
+            }
+        };
+        var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
+        c.z = 0;
+        var ss = p.quadtree.size >> p.level;
+        (p.quadtree.tiler)( c, ss, f );
+    }
+}
+
+Tile = function( size, x, y, level, quadtree ) {
     THREE.Object3D.call( this );
 
     // sub tiles
-    this.tiles_ = [ [undefined, undefined], [undefined, undefined] ];
+    this.tiles= [ [undefined, undefined], [undefined, undefined] ];
     // tile size FIXME useless ?
-    this.size_ = size;
+    this.size = size;
+
+    // coordinate of the tile
+    this.x = x;
+    this.y = y;
+    this.level = level;
+    this.tiler = quadtree.tiler;
+    this.quadtree = quadtree;
 }
 
 // inherits from Object3D
 Tile.prototype = Object.create( THREE.Object3D.prototype );
 
+// not used ??
 Tile.prototype.clone = function ( object ) {
-    if ( object === undefined ) object = new Tile( this.size );
+    if ( object === undefined ) object = new Tile( this.size, this.x, this.y, this.level, this.quadtree );
     // call the base class constructor
     THREE.Object3D.prototype.clone.call( this, object );
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles_[i][j] !== undefined ) {
-                object.tiles_[i][j] = this.tiles_[i][j].clone();
+            if ( this.tiles[i][j] !== undefined ) {
+                object.tiles[i][j] = this.tiles[i][j].clone();
             }
         }
     }
     return object;
 }
 
-Tile.prototype.getObjects = function( x /* = 0*/, y /* = 0*/, level /* = 0 */ ) {
-    if ( level === undefined ) level = 0;
-
+Tile.prototype.hasTile = function( x, y, level ) {
     if ( level == 0 ) {
-        return this.objects_;
+        return true;
     }
-    else {
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
-        return this.tiles_[dx][dy].getObjects( rx, ry, level-1 );
+    nl = 1 << (level-1);
+    var dx = ~~(x / nl);
+    var dy = ~~(y / nl);
+    var rx = x % nl;
+    var ry = y % nl;
+    if ( this.tiles[dx][dy] !== undefined && this.tiles[dx][dy].hasTile( rx, ry, level-1 ) ) {
+        return true;
     }
+    return false;
 }
-
 Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
         this.add( object );
     }
     else {
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
-        if ( this.tiles_[dx][dy] === undefined ) {
-            var t = new Tile( this.size / 2 );
-            this.tiles_[dx][dy] = t;
+        nl = 1 << (level-1);
+        var dx = ~~(x / nl);
+        var dy = ~~(y / nl);
+        var rx = x % nl;
+        var ry = y % nl;
+        if ( this.tiles[dx][dy] === undefined ) {
+            var t = new Tile( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1, this.quadtree );
+            this.tiles[dx][dy] = t;
             this.add( t );
         }
-        this.tiles_[dx][dy].addObject( object, rx, ry, level-1 );
+        this.tiles[dx][dy].addObject( object, rx, ry, level-1 );
     }
+}
+
+Tile.prototype.changeVisibility = function( vis )
+{
+    if ( this.children.length == 0 ) {
+        return;
+    }
+    if ( this.children[0].visible != vis ) {
+        
+//        console.log(this.x, this.y, this.level, "Changed from ", this.children[0].visible, " to ", vis );
+    }
+    this.children[0].visible = vis;
 }
 
 // set visible and all children invisible
 Tile.prototype.setVisible = function( visible ) {
     if ( visible === undefined ) visible = true;
-    this.children[0].visible = visible;
+    this.changeVisibility( visible );
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles_[i][j] !== undefined ) {
-                this.tiles_[i][j].setVisible( false );
+            if ( this.tiles[i][j] !== undefined ) {
+                this.tiles[i][j].setVisible( false );
             }
         }
     }
@@ -87,59 +144,91 @@ Tile.prototype.setVisible = function( visible ) {
 
 Tile.prototype.hasVisibleChildren = function()
 {
-    return this.children[0].visible || ( this.tiles_[0][0] !== undefined && this.tiles_[0][0].hasVisibleChildren() )
-        || ( this.tiles_[0][1] !== undefined && this.tiles_[0][1].hasVisibleChildren() )
-        || ( this.tiles_[1][0] !== undefined && this.tiles_[1][0].hasVisibleChildren() )
-        || ( this.tiles_[1][1] !== undefined && this.tiles_[1][1].hasVisibleChildren() );
+    return this.children[0].visible || ( this.tiles[0][0] !== undefined && this.tiles[0][0].hasVisibleChildren() )
+        || ( this.tiles[0][1] !== undefined && this.tiles[0][1].hasVisibleChildren() )
+        || ( this.tiles[1][0] !== undefined && this.tiles[1][0].hasVisibleChildren() )
+        || ( this.tiles[1][1] !== undefined && this.tiles[1][1].hasVisibleChildren() );
 }
 
-Tile.prototype.setVisibleBranch = function()
-{
-    var h = this.hasVisibleChildren();
-    if ( ! h ) {
-        this.children[0].visible = true;
-    }
+Tile.prototype.hasAllChildren = function() {
+    return (this.tiles[0][0] !== undefined) && (this.tiles[0][1] !== undefined) &&
+        (this.tiles[1][0] !== undefined) && (this.tiles[1][1] !== undefined);
 }
 
-Tile.prototype.setLOD = function ( x, y, level ) {
-    if (level == 0) {
-        this.setVisible();
-    }
-    else {
-        this.children[0].visible = false;
+// update visibility based on camera distance
+Tile.prototype.update = function( camera ) {
+    var v1 = new THREE.Vector3();
+    var v2 = new THREE.Vector3();
+    v1.setFromMatrixPosition( camera.matrixWorld );
 
-        var j = Math.pow(2, level-1);
-        var dx = ~~(x / j);
-        var dy = ~~(y / j);
-        var rx = x % j;
-        var ry = y % j;
-        for ( var i = 0; i < 2; i++ ) {
-            for ( var j = 0; j < 2; j++ ) {
-                if ( i==dx && j==dy && this.tiles_[dx][dy] !== undefined ) {
-                    this.tiles_[dx][dy].setLOD( rx,ry, level-1 );
-                }
-                else {
-                    if ( this.tiles_[i][j] !== undefined ) this.tiles_[i][j].setVisibleBranch();
+    // center coordinate
+    c = this.quadtree.centerCoordinates( this.x, this.y, this.level );
+
+    v2.setX( c.x );
+    v2.setY( c.y );
+    var d = v1.distanceTo( v2 );
+    // requested lod
+    var lod = ~~(1/d*1700);
+    if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
+
+    if ( lod <= this.level ) {
+        if (this.children.length == 0) {
+            TileLoader.instance().enqueue( this.quadtree, 0, 0, 0 );
+        }
+        else {
+            // set visible and children to invisible
+            this.setVisible();
+        }
+    }
+    else if ( lod > this.level ) {
+        if ( this.hasAllChildren() ) {
+            // children tiles are available
+            this.changeVisibility( false );
+            this.tiles[0][0].update( camera );
+            this.tiles[0][1].update( camera );
+            this.tiles[1][0].update( camera );
+            this.tiles[1][1].update( camera );
+        }
+        else {
+            // we need new tiles
+            var nNewTiles = 1 << (lod-this.level);
+            var xx = this.x << (lod-this.level);
+            var yy = this.y << (lod-this.level);
+            for ( var i = 0; i < nNewTiles; i++ ) {
+                for ( var j = 0; j < nNewTiles; j++ ) {
+                    TileLoader.instance().enqueue( this.quadtree, xx+i, yy+j, lod );
                 }
             }
+
+            // stop at this level for now
+            this.setVisible();
         }
     }
 }
 
 // quad of size x size, centered on x,y
-QuadTree = function( size ) {
+QuadTree = function( size, lod, tiler ) {
     THREE.Object3D.call( this );
 
+    // max LOD
+    this.maxLOD = lod;
+    // size of an edge
     this.size = size;
-    this.tile = new Tile( this.size );
+
+    // tiling function
+    this.tiler = tiler;
+
+    // the root tile
+    this.tile = new Tile( size, 0, 0, 0, this );
     this.add( this.tile );
 }
 
 // inherits from Object3D
 QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
+// not used ??
 QuadTree.prototype.clone = function (object) {
-    if ( object === undefined ) object = new QuadTree( this.size );
+    if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD, this.tiler );
     THREE.Object3D.prototype.clone.call( this, object );
 
     object.tile = this.children[0];
@@ -149,39 +238,28 @@ QuadTree.prototype.clone = function (object) {
 
 QuadTree.prototype.addObject = function( object, level )
 {
-    var s = this.size / Math.pow(2, level);
-    var dx = ~~((object.position.x - this.position.x + this.size/2) / s);
-    var dy = ~~((object.position.y - this.position.y + this.size/2) / s);
+    var x = (object.position.x - this.position.x + this.size/2) / this.size;
+    var y = (object.position.y - this.position.y + this.size/2) / this.size;
+    var nl = 1<<level;
+    var dx = ~~(x*nl);
+    var dy = ~~(y*nl);
     this.tile.addObject( object, dx, dy, level );
 }
 
-QuadTree.prototype.setLOD = function( x, y, level )
+//
+// get center coordinates (in quadtree coordinates)
+QuadTree.prototype.centerCoordinates = function( x, y, level )
 {
-    this.tile.setLOD( x,y, level );
+    var tileSize = this.size >> level;
+    var xc = (x+0.5) * tileSize - this.size / 2;
+    var yc = (y+0.5) * tileSize - this.size / 2;
+    return {x:xc, y:yc};
 }
 
 // update object visibility based on current camera
 QuadTree.prototype.update = function( camera )
 {
-    var v1 = new THREE.Vector3();
-    var v2 = new THREE.Vector3();
-    v1.setFromMatrixPosition( camera.matrixWorld );
-
-    var maxLod = 4;
-    var j = Math.pow(2,maxLod);
-    for ( var x = 0; x < j; x++ ) {
-        for ( var y = 0; y < j; y++ ) {
-            var xx = x/j * this.size - this.size/2;// + this.size/j/2;
-            var yy = y/j * this.size - this.size/2;// + this.size/j/2;
-
-	    v2.setX( xx );
-            v2.setY( yy );
-            var d = v1.distanceTo( v2 );
-            var lod = ~~(1/d*1500);
-            if (lod>=maxLod) lod = maxLod;
-            this.setLOD(x,y,lod);
-        }
-    }
+    this.tile.update( camera );
 }
 
 init();
@@ -273,40 +351,32 @@ function init() {
             var size = 800;
             var xCenter = 0;
             var yCenter = 0;
-            var quadtree = new QuadTree( size );
-            var x0 = xCenter - size/2;
-            var y0 = yCenter - size/2;
-            scene.add( quadtree );
-            var nbLevel = 4;
-            for (var level=0; level<=nbLevel; level++) {
-                var sqrNbTiles = Math.pow(2, level);
-                var group = new THREE.Object3D();
-                var tileSize = size/sqrNbTiles;
-                for (var i=0; i<sqrNbTiles; i++) {
-                    for (var j=0; j<sqrNbTiles; j++) {
-                        var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
-                        var color = Math.random()*0xffffff;
-                        grid.setColors( color, color );
-                        grid.rotation.x = -Math.PI/2;
-                        grid.position.x = x0 + (i+0.5)*tileSize;
-                        grid.position.y = y0 + (j+0.5)*tileSize;
-                        //  grid.position.z = 50*level;
-                        grid.updateMatrix();
-                        grid.matrixAutoUpdate = false;
-                        grid.visible = false;
+            var t = new Tiler();
 
-                        quadtree.addObject( grid, level );
-                    }
+            if (false) {
+                var f = function( center, size, cont ) {
+                    if (lod>3) return;
+                    var grid = new THREE.GridHelper( size/2, size/8 );
+                    var color = Math.random()*0xffffff;
+                    grid.setColors( color, color );
+                    grid.rotation.x = -Math.PI/2;
+                    grid.position.x = center.x;
+                    grid.position.y = center.y;
+                    grid.position.z = center.z;
+                    grid.updateMatrix();
+                    grid.matrixAutoUpdate = false;
+                    grid.visible = false;
+                    (cont)(grid);
                 }
             }
+            var quadtree = new QuadTree( size, 3, t.tile );
+            scene.add( quadtree );
+
             quadtree.position.x = 0;
             quadtree.position.y = 0;
             quadtree.updateMatrix();
             quadtree.matrixAutoUpdate = false;
 
-            quadtree.setLOD(0,0,3);
-            quadtree.setLOD(0,0,1);
-//            quadtree.setLOD(7,7,3);
         }
         
 
@@ -444,6 +514,7 @@ function animate() {
 }
 
 function render() {
+    console.log("render");
     scene.updateMatrixWorld();
     scene.traverse( function ( object ) {
         if ( object instanceof THREE.LOD ) {
@@ -460,9 +531,6 @@ function render() {
         else if ( object instanceof QuadTree ) {
             object.update( camera );
         }
-
-
-
     } );
 
 
@@ -471,6 +539,9 @@ function render() {
     scene.overrideMaterial = null;
     composer.render()
     stats.update();
+
+    // load missing tiles
+    TileLoader.instance().load();
 }
 
 function onDocumentKeyDown( event ) {
