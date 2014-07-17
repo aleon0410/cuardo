@@ -38,20 +38,11 @@ var objects = [];
 var projector, particleMaterial;
 var text;
 var headerText;
-var EPSILON = 1e-12;
 var tiler;
 
 init();
 animate();
 
-
-function repeated(p1, p2) {
-    return Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON;
-}
-
-function collinear(pa, pb, pc) {
-    return Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON;
-}
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );

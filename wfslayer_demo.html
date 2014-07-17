@@ -27,6 +27,7 @@
 <script src="WfsLayer.js"></script>
 <script src="Tiler.js"></script>
 <script src="poly2tri.js"></script>
+<script src="clipper.js"></script>
 <script> 
 
 var container, stats;
@@ -91,8 +92,8 @@ function init() {
             //terrain = new Terrain(urlDem, urlTex, translation, 32);
             wfsLayer = new WfsLayer(urlWfs, translation, 32);
             tiler = new Tiler([wfsLayer], translation);
-            for (var i = 0; i<1; i++){http://mapproxy.org/
-                for (var j = 0; j<1; j++){
+            for (var i = 0; i<3; i++){http://mapproxy.org/
+                for (var j = 0; j<3; j++){
                     tiler.tile(new THREE.Vector3(i*2000,j*2000,0), 2000, 
                             function(object){
                                 scene.add(object);

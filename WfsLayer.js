@@ -16,7 +16,6 @@ WfsLayer = function (url, translation, nbIntervals = 8 ) {
                 object.extent = proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:LowerCorner').text().split(' ')).concat(
                        proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:UpperCorner').text().split(' ')));
             });
-            console.log('loaded');
         },
         async:   false,
         dataType: 'xml',
@@ -25,7 +24,6 @@ WfsLayer = function (url, translation, nbIntervals = 8 ) {
             throw errorThrown;
         }
     });
-    console.log('extent ' + this.extent.join(', '));
 };
 
 var EPSILON = 1e-12;
@@ -45,7 +43,7 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
 
-    console.log(this.url + '&BBOX='+ext.join(','));
+    //console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
             var group = new THREE.Object3D();
@@ -58,13 +56,57 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
             data.features.forEach( function(feat) {
                 feat.geometry.coordinates.forEach( function(poly){
                     nbPoly++;
-                    try {
-                        var rings = [];
+
+                    // clip to extend using clipper.js
+                    clippedPoly = new ClipperLib.Paths();
+                    {
+                        var cpr = new ClipperLib.Clipper();
+                        var clipperRect = [[{X:center.x-.5*size, Y:center.y-.5*size},
+                                            {X:center.x+.5*size, Y:center.y-.5*size},
+                                            {X:center.x+.5*size, Y:center.y+.5*size},
+                                            {X:center.x-.5*size, Y:center.y+.5*size},
+                                            ]];
+                        var clipperPoly = [];
                         poly.forEach( function(ring) {
+                            r = []
+                            ring.forEach( function(point) {
+                                r.push({X:point[0]+translation.x,Y:point[1]+translation.y});
+                            });
+                            if (r.length) r.pop();
+                            clipperPoly.push(r);
+                        });
+                        cpr.AddPaths(clipperPoly, ClipperLib.PolyType.ptSubject, true);
+                        cpr.AddPaths(clipperRect, ClipperLib.PolyType.ptClip, true);
+                        cpr.Execute(ClipperLib.ClipType.ctIntersection, 
+                                clippedPoly, 
+                                ClipperLib.PolyFillType.pftNonZero,
+                                ClipperLib.PolyFillType.pftNonZero);
+
+                        // add contour for debug
+                        {
+                            var clippedgeom = new THREE.Geometry();
+                            clippedPoly.forEach( function(ring) {
+                                ring.forEach( function(point) {
+                                    clippedgeom.vertices.push(new THREE.Vector3(point.X,  point.Y, 0));
+                                });
+                                if (ring.length) clippedgeom.vertices.push(new THREE.Vector3(ring[0].X,  ring[0].Y, 0)); // to close line
+
+                            });
+                            var clippedmaterial = new THREE.LineBasicMaterial({ color:0x0000ff, linewidth: 5 });
+                            var clippedmesh = new THREE.Line( clippedgeom, clippedmaterial/*, THREE.LinePieces*/ );
+                            group.add(clippedmesh);
+                        }
+                    }
+                    if (!clippedPoly.length) return;
+
+                    try {
+
+                        var rings = [];
+                        clippedPoly.forEach( function(ring) {
                             var r = rings.length;
                             rings.push([]);
                             ring.forEach( function(point) {
-                                var pt = new poly2tri.Point(point[0]+translation.x, point[1]+translation.y);
+                                var pt = new poly2tri.Point(point.X, point.Y);
                                 if ( !rings[r].length ||
                                     !repeated(rings[r][rings[r].length-1], pt) ) {
                                     if ( rings[r].length < 2 ||
@@ -80,6 +122,9 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                             if (rings[r].length) rings[r].pop(); // last point is repeated
                             if (rings[r].length > 2 && collinear( rings[r][rings[r].length-2], rings[r][rings[r].length-1],  rings[r][0])) rings[r].pop();
                         });
+
+
+
                         //console.log('ring 0 has '+rings[0].length+' points');
                         if (!rings.length || !rings[0].length) return;
                         var swctx = new poly2tri.SweepContext(rings[0]);
@@ -106,8 +151,8 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                         points.forEach( function(pt) {
                             pt = pt.replace(')','');
                             pt = pt.split(';');
-                            console.log('point:', pt);
-                            errgeom.vertices.push(new THREE.Vector3(+pt[0], +pt[1], 0));
+                            //console.log('point:', pt);
+                            errgeom.vertices.push(new THREE.Vector3(+pt[0], +pt[1], 1));
                         });
                         var errmesh = new THREE.Line( errgeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) );
                         group.add(errmesh);
@@ -117,7 +162,7 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                         poly.forEach( function(ring) {
                             ring.forEach( function(point) {
                                 var pt = [point[0]+translation.x, point[1]+translation.y];
-                                failedgeom.vertices.push(new THREE.Vector3(pt[0], pt[1], 0));
+                                failedgeom.vertices.push(new THREE.Vector3(pt[0], pt[1], 0.5));
                             });
                         });
                         console.log('failed feature triangulation gid='+feat.properties.gid);
@@ -132,9 +177,9 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
             console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons ('+nbPt+' points) with '+nbInvalid+' failed triangulations');
 
             geom.computeBoundingBox();
-            console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
-            console.log('nb of vtx ', geom.vertices.length );
-            console.log('nb of faces ', geom.faces.length );
+            //console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
+            //console.log('nb of vtx ', geom.vertices.length );
+            //console.log('nb of faces ', geom.faces.length );
             geom.computeFaceNormals();
             var material =  new THREE.MeshLambertMaterial( { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
             group.add(new THREE.Mesh( geom, material ));
