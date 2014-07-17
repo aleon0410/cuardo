@@ -1,0 +1,144 @@
+<html> 
+<head> 
+<title>My first Three.js app</title>
+<style>canvas { width: 100%; height: 100% }</style> 
+<!--script src="jquery-ui-1.11.0/jquery-ui.js"></script>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.theme.css"/>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
+</head> 
+<body> 
+<div id="header"><p id="header_text">hello</p></div>
+<div id="container"></div>
+<script src="three.js/build/three.js"></script> 
+<script src="three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="three.js/examples/js/Detector.js"></script>
+<script src="three.js/examples/js/libs/stats.min.js"></script>
+<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="three.js/examples/js/ShaderTerrain.js"></script>
+<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="three.js/src/extras/GeometryUtils.js"></script>
+<script src="proj4-src.js"></script>
+<script src="proj4-srs.js"></script>
+<script src="jquery-2.1.1.js"></script>
+<script src="Terrain.js"></script>
+<script src="WfsLayer.js"></script>
+<script src="Tiler.js"></script>
+<script src="poly2tri.js"></script>
+<script> 
+
+var container, stats;
+var camera, controls, scene, renderer;
+
+init();
+animate();
+
+function init() {
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    // camera
+    {
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 10, 100000 );
+        camera.position.z = 20000;
+    }
+
+    // trackball
+    {
+        controls = new THREE.TrackballControls( camera );
+        controls.addEventListener( 'change', render );
+    }
+
+    // renderer
+    {
+        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setClearColor( 0x222222, 1 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+
+    // stats
+    {
+        container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '150px';
+        stats.domElement.style.zIndex = 100;
+        container.appendChild( stats.domElement );
+    }
+
+
+    // scene
+    {
+        scene = new THREE.Scene();
+
+        // grid
+        {
+            var helper = new THREE.GridHelper( 20000, 1000 );
+            helper.setColors( 0x0000ff, 0xf0f0f0 );
+            helper.rotation.x = -Math.PI/2;
+            scene.add( helper );
+        }
+
+        // terrain + wfs
+        {
+            var urlWfs = "http://localhost/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:pos_opposable_posperime_shp&outputFormat=JSON";
+            var urlDem = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
+            var urlTex = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
+            translation = new THREE.Vector3(-1849500, -5173000, 0);
+            //terrain = new Terrain(urlDem, urlTex, translation, 32);
+            wfsLayer = new WfsLayer(urlWfs, translation, 32);
+            tiler = new Tiler([wfsLayer], translation);
+            for (var i = 0; i<1; i++){http://mapproxy.org/
+                for (var j = 0; j<1; j++){
+                    tiler.tile(new THREE.Vector3(i*2000,j*2000,0), 2000, 
+                            function(object){
+                                scene.add(object);
+                                render();
+                            });
+                }
+            }
+        }
+
+        // light
+        {
+            // add subtle ambient lighting
+            var ambientLight = new THREE.AmbientLight(0xffffff);
+            scene.add(ambientLight);
+            
+            // directional lighting
+            var directionalLight = new THREE.DirectionalLight(0xffffff);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+        }
+    }
+
+
+    // first render to avoid blank screen before interaction
+    render();
+
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    controls.handleResize();
+    render();
+}
+
+function animate() {
+    requestAnimationFrame( animate );
+    controls.update();
+}
+
+function render() {
+    renderer.render(scene, camera);
+    stats.update();
+}
+
+</script> 
+</body> 
+</html>

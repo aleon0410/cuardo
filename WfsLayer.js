@@ -1,22 +1,22 @@
-// TODO select only the opropriate layer
 WfsLayer = function (url, translation, nbIntervals = 8 ) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals;
-    this.extend = [];
+    this.extent = [];
     this.srid = 0;
 
+    // TODO select only the opropriate layer
     var object = this;
-    cpabilityUrl = url;
-    jQuery.ajax(this.url+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
+    var baseUrl = this.url;
+    baseUrl.replace( new RegExp('\\?.*'), '');
+    jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
             $(data).find('FeatureType').each(function() { 
                 object.srid =$(this).find('DefaultSRS').text().replace(new RegExp('.*EPSG::'), '');
-                object.extend = proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:LowerCorner').text().split(' ')).concat(
+                object.extent = proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:LowerCorner').text().split(' ')).concat(
                        proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:UpperCorner').text().split(' ')));
             });
             console.log('loaded');
-
         },
         async:   false,
         dataType: 'xml',
@@ -25,36 +25,36 @@ WfsLayer = function (url, translation, nbIntervals = 8 ) {
             throw errorThrown;
         }
     });
-    console.log('extend ' + this.extend.join(', '));
+    console.log('extent ' + this.extent.join(', '));
 };
 
+var EPSILON = 1e-12;
+
+function repeated(p1, p2) {
+    return Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON;
+}
+
+function collinear(pa, pb, pc) {
+    return Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON;
+}
 
 WfsLayer.prototype.tile = function( center, size, callback ) {
-    var mesh;
-    var remaining = 3;
-    var loaded = function(){
-        remaining--;
-        if (!remaining) callback(mesh);
-    };
-    var extendCenter = new THREE.Vector3().subVectors(center, this.translation );
-    //var extend = [1831540, 5159897, 1859318, 5192652];
-    var extend = [1831402.5, 5160390.5, 1856581, 5192156];
-    var translation = [-.5*(extend[2]+extend[0]), -.5*(extend[3]+extend[1])];
-    //var translation = [0,0];
-    console.log('extend ', extend);
-    console.log('translation ', translation);
+    var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
+    var ext = [extentCenter.x - size*.5,
+               extentCenter.y - size*.5,
+               extentCenter.x + size*.5,
+               extentCenter.y + size*.5];
 
-    var url = 'http://localhost/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&typeName=tows:pos_opposable_posperime_shp&outputFormat=JSON';
-    var material =  new THREE.MeshLambertMaterial( { color:0x00ff00, wireframe:true } );
-    material.ambient = material.color;
-    var geom = new THREE.Geometry();
-    var nbInvalid = 0;
-    jQuery.ajax(url, {
+    console.log(this.url + '&BBOX='+ext.join(','));
+    jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
+            var group = new THREE.Object3D();
+            var geom = new THREE.Geometry();
+            var nbInvalid = 0;
             var start = new Date().getTime();
             var nbPoly = 0;
             var nbPt = 0;
-            //feat = data.features[0];
+            // MULTIPOLYGON ONLY
             data.features.forEach( function(feat) {
                 feat.geometry.coordinates.forEach( function(poly){
                     nbPoly++;
@@ -64,7 +64,7 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                             var r = rings.length;
                             rings.push([]);
                             ring.forEach( function(point) {
-                                var pt = new poly2tri.Point(point[0]+translation[0], point[1]+translation[1]);
+                                var pt = new poly2tri.Point(point[0]+translation.x, point[1]+translation.y);
                                 if ( !rings[r].length ||
                                     !repeated(rings[r][rings[r].length-1], pt) ) {
                                     if ( rings[r].length < 2 ||
@@ -110,22 +110,47 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                             errgeom.vertices.push(new THREE.Vector3(+pt[0], +pt[1], 0));
                         });
                         var errmesh = new THREE.Line( errgeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) );
-                        scene.add(errmesh);
-
-
+                        group.add(errmesh);
 
                         //throw err;
                         var failedgeom = new THREE.Geometry();
                         poly.forEach( function(ring) {
                             ring.forEach( function(point) {
-                                var pt = [point[0]+translation[0], point[1]+translation[1]];
+                                var pt = [point[0]+translation.x, point[1]+translation.y];
                                 failedgeom.vertices.push(new THREE.Vector3(pt[0], pt[1], 0));
                             });
                         });
                         console.log('failed feature triangulation gid='+feat.properties.gid);
                         var failedmaterial = new THREE.LineBasicMaterial({ color:0xffaaaa, linewidth: 1 });
                         var failedmesh = new THREE.Line( failedgeom, failedmaterial/*, THREE.LinePieces*/ );
-                        scene.add(failedmesh);
+                        group.add(failedmesh);
+                    }
+                });
+
+            });
+            var end = new Date().getTime();
+            console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons ('+nbPt+' points) with '+nbInvalid+' failed triangulations');
+
+            geom.computeBoundingBox();
+            console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
+            console.log('nb of vtx ', geom.vertices.length );
+            console.log('nb of faces ', geom.faces.length );
+            geom.computeFaceNormals();
+            var material =  new THREE.MeshLambertMaterial( { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
+            group.add(new THREE.Mesh( geom, material ));
+            callback(group);
+        },
+        async:   false,
+        dataType: 'json',
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log(textStatus+' :'+errorThrown);
+            throw errorThrown;
+        }
+    });
+}
+
+
+// IF WE WANT TO USE THREE.Shape.Utils.triangulateShape instead of poly2tri
                     //    //var rings = [];
                     //    //var r = 0;
                     //    //poly.forEach( function(ring) {
@@ -162,26 +187,3 @@ WfsLayer.prototype.tile = function( center, size, callback ) {
                     //    //    face.c += offset;
                     //    //    failedgeom.faces.push( face );
                     //    //});
-                    }
-                });
-
-            });
-            var end = new Date().getTime();
-            console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons ('+nbPt+' points) with '+nbInvalid+' failed triangulations');
-
-        },
-        async:   false,
-        dataType: 'json',
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus+' :'+errorThrown);
-            throw errorThrown;
-        }
-    });
-    console.log('nb of vtx ', geom.vertices.length );
-    console.log('nb of faces ', geom.faces.length );
-    geom.computeBoundingBox();
-    console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
-    geom.computeFaceNormals();
-    mesh = new THREE.Mesh( geom, material );
-    scene.add(mesh);
-}

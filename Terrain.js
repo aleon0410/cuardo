@@ -20,13 +20,10 @@ Terrain.prototype.tile = function( center, size, callback ) {
         if (!remaining) callback(mesh);
     };
     var extendCenter = new THREE.Vector3().subVectors(center, this.translation );
-    //console.log('center=',center,' translation=', this.translation, ' extendCenter=', extendCenter);
     var ext = [extendCenter.x - size*.5,
                extendCenter.y - size*.5,
                extendCenter.x + size*.5,
                extendCenter.y + size*.5];
-    //console.log('ext=',ext);
-    callback = callback;
     textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded );
     console.log(this.urlDem + '&BBOX='+ext.join(','));
     textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
