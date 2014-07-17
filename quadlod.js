@@ -36,10 +36,14 @@ TileLoader.prototype.load = function()
         var that = this;
         var f = function( obj ) {
             if ( obj !== undefined ) {
+                obj.visible = true;
                 p.quadtree.tile.addObject( obj, p.x, p.y, p.level );
             }
         };
-        (p.quadtree.tiler)( p.x, p.y, p.level, f );
+        var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
+        c.z = 0;
+        var ss = p.quadtree.size >> p.level;
+        (p.quadtree.tiler)( c, ss, f );
     }
 }
 
@@ -87,12 +91,8 @@ Tile.prototype.hasTile = function( x, y, level ) {
     var dy = ~~(y / nl);
     var rx = x % nl;
     var ry = y % nl;
-    for ( var i = 0; i < 2; i++ ) {
-        for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles[dx][dy] !== undefined && this.tiles[dx][dy].hasTile( rx, ry, level-1 ) ) {
-                return true;
-            }
-        }
+    if ( this.tiles[dx][dy] !== undefined && this.tiles[dx][dy].hasTile( rx, ry, level-1 ) ) {
+        return true;
     }
     return false;
 }
@@ -162,15 +162,14 @@ Tile.prototype.update = function( camera ) {
     v1.setFromMatrixPosition( camera.matrixWorld );
 
     // center coordinate
-    var n = 1 << this.level;
-    var xc = this.x/n * this.size - this.size/2 + this.size/n/2;
-    var yc = this.y/n * this.size - this.size/2 + this.size/n/2;
+    c = this.quadtree.centerCoordinates( this.x, this.y, this.level );
 
-    v2.setX( xc );
-    v2.setY( yc );
+    v2.setX( c.x );
+    v2.setY( c.y );
     var d = v1.distanceTo( v2 );
     // requested lod
     var lod = ~~(1/d*1700);
+    if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
 
     if ( lod <= this.level ) {
         if (this.children.length == 0) {
@@ -245,6 +244,16 @@ QuadTree.prototype.addObject = function( object, level )
     var dx = ~~(x*nl);
     var dy = ~~(y*nl);
     this.tile.addObject( object, dx, dy, level );
+}
+
+//
+// get center coordinates (in quadtree coordinates)
+QuadTree.prototype.centerCoordinates = function( x, y, level )
+{
+    var tileSize = this.size >> level;
+    var xc = (x+0.5) * tileSize - this.size / 2;
+    var yc = (y+0.5) * tileSize - this.size / 2;
+    return {x:xc, y:yc};
 }
 
 // update object visibility based on current camera
@@ -342,24 +351,25 @@ function init() {
             var size = 800;
             var xCenter = 0;
             var yCenter = 0;
-            var tiler = function( x, y, lod, cont ) {
-                if (lod>3) return;
-                var x0 = xCenter - size/2;
-                var y0 = yCenter - size/2;
-                var tileSize = size / (1 << lod );
-                var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
-                var color = Math.random()*0xffffff;
-                grid.setColors( color, color );
-                grid.rotation.x = -Math.PI/2;
-                grid.position.x = x0 + (x+0.5)*tileSize;
-                grid.position.y = y0 + (y+0.5)*tileSize;
-                //  grid.position.z = 50*level;
-                grid.updateMatrix();
-                grid.matrixAutoUpdate = false;
-                grid.visible = false;
-                (cont)(grid);
+            var t = new Tiler();
+
+            if (false) {
+                var f = function( center, size, cont ) {
+                    if (lod>3) return;
+                    var grid = new THREE.GridHelper( size/2, size/8 );
+                    var color = Math.random()*0xffffff;
+                    grid.setColors( color, color );
+                    grid.rotation.x = -Math.PI/2;
+                    grid.position.x = center.x;
+                    grid.position.y = center.y;
+                    grid.position.z = center.z;
+                    grid.updateMatrix();
+                    grid.matrixAutoUpdate = false;
+                    grid.visible = false;
+                    (cont)(grid);
+                }
             }
-            var quadtree = new QuadTree( size, 3, tiler );
+            var quadtree = new QuadTree( size, 3, t.tile );
             scene.add( quadtree );
 
             quadtree.position.x = 0;
