@@ -12,9 +12,9 @@ Tile = function( size, x, y, level ) {
     THREE.Object3D.call( this );
 
     // sub tiles
-    this.tiles_ = [ [undefined, undefined], [undefined, undefined] ];
+    this.tiles= [ [undefined, undefined], [undefined, undefined] ];
     // tile size FIXME useless ?
-    this.size_ = size;
+    this.size = size;
 
     // coordinate of the tile
     this.x = x;
@@ -25,6 +25,7 @@ Tile = function( size, x, y, level ) {
 // inherits from Object3D
 Tile.prototype = Object.create( THREE.Object3D.prototype );
 
+// not used ??
 Tile.prototype.clone = function ( object ) {
     if ( object === undefined ) object = new Tile( this.size, this.x, this.y, this.level );
     // call the base class constructor
@@ -32,8 +33,8 @@ Tile.prototype.clone = function ( object ) {
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles_[i][j] !== undefined ) {
-                object.tiles_[i][j] = this.tiles_[i][j].clone();
+            if ( this.tiles[i][j] !== undefined ) {
+                object.tiles[i][j] = this.tiles[i][j].clone();
             }
         }
     }
@@ -51,12 +52,12 @@ Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
         var dy = ~~(y / nl);
         var rx = x % nl;
         var ry = y % nl;
-        if ( this.tiles_[dx][dy] === undefined ) {
-            var t = new Tile( this.size / 2, this.x*2, this.y*2, this.level+1 );
-            this.tiles_[dx][dy] = t;
+        if ( this.tiles[dx][dy] === undefined ) {
+            var t = new Tile( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1 );
+            this.tiles[dx][dy] = t;
             this.add( t );
         }
-        this.tiles_[dx][dy].addObject( object, rx, ry, level-1 );
+        this.tiles[dx][dy].addObject( object, rx, ry, level-1 );
     }
 }
 
@@ -76,8 +77,8 @@ Tile.prototype.setVisible = function( visible ) {
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles_[i][j] !== undefined ) {
-                this.tiles_[i][j].setVisible( false );
+            if ( this.tiles[i][j] !== undefined ) {
+                this.tiles[i][j].setVisible( false );
             }
         }
     }
@@ -85,55 +86,54 @@ Tile.prototype.setVisible = function( visible ) {
 
 Tile.prototype.hasVisibleChildren = function()
 {
-    return this.children[0].visible || ( this.tiles_[0][0] !== undefined && this.tiles_[0][0].hasVisibleChildren() )
-        || ( this.tiles_[0][1] !== undefined && this.tiles_[0][1].hasVisibleChildren() )
-        || ( this.tiles_[1][0] !== undefined && this.tiles_[1][0].hasVisibleChildren() )
-        || ( this.tiles_[1][1] !== undefined && this.tiles_[1][1].hasVisibleChildren() );
+    return this.children[0].visible || ( this.tiles[0][0] !== undefined && this.tiles[0][0].hasVisibleChildren() )
+        || ( this.tiles[0][1] !== undefined && this.tiles[0][1].hasVisibleChildren() )
+        || ( this.tiles[1][0] !== undefined && this.tiles[1][0].hasVisibleChildren() )
+        || ( this.tiles[1][1] !== undefined && this.tiles[1][1].hasVisibleChildren() );
 }
 
-Tile.prototype.setVisibleBranch = function()
-{
-    var h = this.hasVisibleChildren();
-    if ( ! h ) {
-        this.changeVisibility( true );
+Tile.prototype.hasAllChildren = function() {
+    return (this.tiles[0][0] !== undefined) && (this.tiles[0][1] !== undefined) &&
+        (this.tiles[1][0] !== undefined) && (this.tiles[1][1] !== undefined);
+}
+
+// update visibility based on camera distance
+Tile.prototype.update = function( camera ) {
+    var v1 = new THREE.Vector3();
+    var v2 = new THREE.Vector3();
+    v1.setFromMatrixPosition( camera.matrixWorld );
+
+    // center coordinate
+    var n = 1 << this.level;
+    var xc = this.x/n * this.size - this.size/2 + this.size/n/2;
+    var yc = this.y/n * this.size - this.size/2 + this.size/n/2;
+
+    v2.setX( xc );
+    v2.setY( yc );
+    var d = v1.distanceTo( v2 );
+    // requested lod
+    var lod = ~~(1/d*1700);
+    //console.log( this.level, n, this.size, xc, yc, d, lod );
+
+    if ( lod <= this.level ) {
+        // set visible and children to invisible
+        this.setVisible();
     }
-}
-
-///
-/// Change the visibility of a tile, and deal with surrounding tiles to get a consistent overall visibility
-/// The LOD of a tile can be refined but not simplified (lod increment is ok, but not lod decrement)
-/// SetVisible(true) on the tile of level=0 must be called to reset LODs
-Tile.prototype.setLOD = function ( x, y, level ) {
-    if (level == 0) {
-        if ( ! this.hasVisibleChildren() ) {
-            this.setVisible();
+    else if ( lod > this.level ) {
+        // if we have children, recurse
+        if ( this.hasAllChildren() ) {
+            this.changeVisibility( false );
+            this.tiles[0][0].update( camera );
+            this.tiles[0][1].update( camera );
+            this.tiles[1][0].update( camera );
+            this.tiles[1][1].update( camera );
         }
-    }
-    else {
-        this.changeVisibility( false );
-
-        nl = 1 << (level-1);
-        var dx = ~~(x / nl);
-        var dy = ~~(y / nl);
-        var rx = x % nl;
-        var ry = y % nl;
-        for ( var i = 0; i < 2; i++ ) {
-            for ( var j = 0; j < 2; j++ ) {
-                if ( i==dx && j==dy && this.tiles_[dx][dy] !== undefined ) {
-                    // recurse call
-                    this.tiles_[dx][dy].setLOD( rx,ry, level-1 );
-                }
-                else  if ( this.tiles_[i][j] !== undefined ) {
-                    // one of the neighbours
-                    this.tiles_[i][j].setVisibleBranch();
-                }
-                else {
-                    // in case no deeper tile is available, stop at this one
-                    if ( ! this.hasVisibleChildren() ) {
-                        this.setVisible();
-                    }
-                }
-            }
+        else {
+            // missing LOD
+            var xx = this.x << (lod-this.level);
+            var yy = this.y << (lod-this.level);
+            console.log('Missing LOD', xx, yy, lod );
+            this.setVisible();
         }
     }
 }
@@ -143,27 +143,20 @@ QuadTree = function( size, lod ) {
     THREE.Object3D.call( this );
 
     // the root tile
-    this.tile = new Tile( this.size, 0, 0, 0 );
+    this.tile = new Tile( size, 0, 0, 0 );
     this.add( this.tile );
 
     // max LOD
     this.maxLOD = lod;
     // size of an edge
     this.size = size;
-
-    // map of lod available
-    var n = 1 << this.maxLOD;
-    this.lodMap = new Array(n);
-    for ( var i = 0; i < n; i++ ) {
-        this.lodMap[i] = new Array(n);
-    }
 }
 
 // inherits from Object3D
 QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
+// not used ??
 QuadTree.prototype.clone = function (object) {
-    console.log('clone');
     if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD );
     THREE.Object3D.prototype.clone.call( this, object );
 
@@ -176,54 +169,16 @@ QuadTree.prototype.addObject = function( object, level )
 {
     var x = (object.position.x - this.position.x + this.size/2) / this.size;
     var y = (object.position.y - this.position.y + this.size/2) / this.size;
-    var nl = 1<<this.maxLOD;
-    var sx = ~~(x*nl);
-    var sy = ~~(y*nl);
-    // update the max lod map
-    if ( this.lodMap[sx][sy] === undefined || this.lodMap[sx][sy] < level ) {
-        this.lodMap[sx][sy] = level;
-    }
-    nl = 1 <<level;
+    var nl = 1<<level;
     var dx = ~~(x*nl);
     var dy = ~~(y*nl);
     this.tile.addObject( object, dx, dy, level );
 }
 
-QuadTree.prototype.setLOD = function( x, y, level )
-{
-    this.tile.setLOD( x,y, level );
-}
-
 // update object visibility based on current camera
 QuadTree.prototype.update = function( camera )
 {
-    var v1 = new THREE.Vector3();
-    var v2 = new THREE.Vector3();
-    v1.setFromMatrixPosition( camera.matrixWorld );
-
-    var j = 1 << this.maxLOD;
-    // reset to LOD0
-    this.tile.setVisible( true );
-    for ( var x = 0; x < j; x++ ) {
-        for ( var y = 0; y < j; y++ ) {
-            var xx = x/j * this.size - this.size/2 + this.size/j/2;
-            var yy = y/j * this.size - this.size/2 + this.size/j/2;
-
-	    v2.setX( xx );
-            v2.setY( yy );
-            var d = v1.distanceTo( v2 );
-            var lod = ~~(1/d*2000);
-            if (lod>=this.maxLOD) lod = this.maxLOD;
-            var xd = ~~(x / (1 << (2,this.maxLOD-lod)));
-            var yd = ~~(y / (1 << (2,this.maxLOD-lod)));
-            if ( this.lodMap[x][y] < lod ) {
-                // FIXME load the desired lod if available
-                console.log('missing LOD', x, y, lod);
-                continue;
-            }
-            this.setLOD(xd,yd,lod);
-        }
-    }
+    this.tile.update( camera );
 }
 
 init();
@@ -319,7 +274,7 @@ function init() {
             var x0 = xCenter - size/2;
             var y0 = yCenter - size/2;
             scene.add( quadtree );
-            var nbLevel = 2;
+            var nbLevel = 4;
             for (var level=0; level<nbLevel; level++) {
                 var sqrNbTiles = 1 << level;
                 var group = new THREE.Object3D();
