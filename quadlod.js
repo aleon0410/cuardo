@@ -8,7 +8,7 @@ var text;
 var headerText;
 var EPSILON = 1e-12;
 
-Tile = function( size, x, y, level ) {
+Tile = function( size, x, y, level, tiler ) {
     THREE.Object3D.call( this );
 
     // sub tiles
@@ -20,6 +20,7 @@ Tile = function( size, x, y, level ) {
     this.x = x;
     this.y = y;
     this.level = level;
+    this.tiler = tiler;
 }
 
 // inherits from Object3D
@@ -53,7 +54,7 @@ Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
         var rx = x % nl;
         var ry = y % nl;
         if ( this.tiles[dx][dy] === undefined ) {
-            var t = new Tile( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1 );
+            var t = new Tile( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1, this.tiler );
             this.tiles[dx][dy] = t;
             this.add( t );
         }
@@ -63,6 +64,9 @@ Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
 
 Tile.prototype.changeVisibility = function( vis )
 {
+    if ( this.children.length == 0 ) {
+        return;
+    }
     if ( this.children[0].visible != vis ) {
         
 //        console.log(this.x, this.y, this.level, "Changed from ", this.children[0].visible, " to ", vis );
@@ -113,43 +117,60 @@ Tile.prototype.update = function( camera ) {
     var d = v1.distanceTo( v2 );
     // requested lod
     var lod = ~~(1/d*1700);
-    //console.log( this.level, n, this.size, xc, yc, d, lod );
 
     if ( lod <= this.level ) {
         // set visible and children to invisible
         this.setVisible();
     }
     else if ( lod > this.level ) {
-        // if we have children, recurse
-        if ( this.hasAllChildren() ) {
+        var recurse = true;
+        if ( ! this.hasAllChildren() ) {
+            // we need new tiles
+            var nNewTiles = 1 << (lod-this.level);
+            var xx = this.x << (lod-this.level);
+            var yy = this.y << (lod-this.level);
+            for ( var i = 0; i < nNewTiles; i++ ) {
+                for ( var j = 0; j < nNewTiles; j++ ) {
+                    var obj = (this.tiler)(xx+i,yy+j,lod);
+                    if (obj !== undefined) {
+                        this.addObject( obj, i, j, lod-this.level );
+                    }
+                    else {
+                        // stop here, no sub tiles avaiable
+                        this.setVisible();
+                        recurse = false;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (recurse) {
+            // children tiles are available
             this.changeVisibility( false );
             this.tiles[0][0].update( camera );
             this.tiles[0][1].update( camera );
             this.tiles[1][0].update( camera );
             this.tiles[1][1].update( camera );
         }
-        else {
-            // missing LOD
-            var xx = this.x << (lod-this.level);
-            var yy = this.y << (lod-this.level);
-            console.log('Missing LOD', xx, yy, lod );
-            this.setVisible();
-        }
     }
 }
 
 // quad of size x size, centered on x,y
-QuadTree = function( size, lod ) {
+QuadTree = function( size, lod, tiler ) {
     THREE.Object3D.call( this );
-
-    // the root tile
-    this.tile = new Tile( size, 0, 0, 0 );
-    this.add( this.tile );
 
     // max LOD
     this.maxLOD = lod;
     // size of an edge
     this.size = size;
+
+    // tiling function
+    this.tiler = tiler;
+
+    // the root tile
+    this.tile = new Tile( size, 0, 0, 0, tiler );
+    this.add( this.tile );
 }
 
 // inherits from Object3D
@@ -157,7 +178,7 @@ QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
 // not used ??
 QuadTree.prototype.clone = function (object) {
-    if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD );
+    if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD, this.tiler );
     THREE.Object3D.prototype.clone.call( this, object );
 
     object.tile = this.children[0];
@@ -270,11 +291,27 @@ function init() {
             var size = 800;
             var xCenter = 0;
             var yCenter = 0;
-            var quadtree = new QuadTree( size, 3 );
-            var x0 = xCenter - size/2;
-            var y0 = yCenter - size/2;
+            var tiler = function( x, y, lod) {
+                var x0 = xCenter - size/2;
+                var y0 = yCenter - size/2;
+                var tileSize = size / (1 << lod );
+                var grid = new THREE.GridHelper( tileSize/2, tileSize/8 );
+                var color = Math.random()*0xffffff;
+                grid.setColors( color, color );
+                grid.rotation.x = -Math.PI/2;
+                grid.position.x = x0 + (x+0.5)*tileSize;
+                grid.position.y = y0 + (y+0.5)*tileSize;
+                //  grid.position.z = 50*level;
+                grid.updateMatrix();
+                grid.matrixAutoUpdate = false;
+                grid.visible = false;
+                return grid;
+            }
+            var quadtree = new QuadTree( size, 3, tiler );
             scene.add( quadtree );
-            var nbLevel = 4;
+/*            var x0 = xCenter - size/2;
+            var y0 = yCenter - size/2;
+            var nbLevel = 1;
             for (var level=0; level<nbLevel; level++) {
                 var sqrNbTiles = 1 << level;
                 var group = new THREE.Object3D();
@@ -296,6 +333,7 @@ function init() {
                     }
                 }
             }
+*/
             quadtree.position.x = 0;
             quadtree.position.y = 0;
             quadtree.updateMatrix();
