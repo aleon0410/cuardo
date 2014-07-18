@@ -11,6 +11,13 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
     this.geometryTerrain.computeTangents();
 
     this.demTextures = {};
+    var terrainShader = THREE.ShaderTerrain[ "terrain" ];
+    this.material = new THREE.ShaderMaterial({
+        vertexShader:terrainShader.vertexShader,
+        fragmentShader:terrainShader.fragmentShader,
+        lights:true,
+        fog:false
+    });
 
 }
 
@@ -27,7 +34,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
                extendCenter.x + size*.5,
                extendCenter.y + size*.5];
     textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded );
-    console.log(this.urlDem + '&BBOX='+ext.join(','));
+    //console.log(this.urlDem + '&BBOX='+ext.join(','));
     textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
     //console.log(this.urlTex + '&BBOX='+ext.join(','));
 
@@ -36,7 +43,6 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
     
 
     this.demTextures[tileId] = textureDem;
-    console.log('dem for id=', tileId, textureDem);
 
     uniformsTerrain[ "tNormal" ].value = textureDem;
     uniformsTerrain[ "uNormalScale" ].value = 1;
@@ -71,15 +77,17 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
 
 
     // configure the material that reflects our terrain
-    var material = new THREE.ShaderMaterial({
-        uniforms:uniformsTerrain,
-        vertexShader:terrainShader.vertexShader,
-        fragmentShader:terrainShader.fragmentShader,
-        lights:true,
-        fog:false
-    });
+    //var material = new THREE.ShaderMaterial({
+    //    uniforms:uniformsTerrain,
+    //    vertexShader:terrainShader.vertexShader,
+    //    fragmentShader:terrainShader.fragmentShader,
+    //    lights:true,
+    //    fog:false
+    //});
     //var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true } );
 
+    var material = this.material.clone();
+    material.uniforms = uniformsTerrain; 
     // we use a plain to render as terrain
     // create a 3D object to add
     mesh = new THREE.Mesh(this.geometryTerrain, material);
