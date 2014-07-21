@@ -26,24 +26,30 @@ TileLoader.prototype.enqueue = function( quadtree, x, y, level )
     this.queue.push( { x:x, y:y, level:level, quadtree:quadtree } );
 }
 
-TileLoader.prototype.load = function()
+TileLoader.prototype.load = function( renderFunction )
 {
     while ( this.queue.length > 0 ) {
         var p = this.queue.shift();
         if ( p.quadtree.tile.hasTile( p.x, p.y, p.level ) ) {
             console.log("Tile already loaded");
+            continue;
         }
         var that = this;
-        var f = function( obj ) {
-            if ( obj !== undefined ) {
-                obj.visible = true;
-                p.quadtree.tile.addObject( obj, p.x, p.y, p.level );
-            }
-        };
+        var f = ( function( pp ) {
+            return function( obj ) {
+                if ( obj !== undefined ) {
+                    obj.visible = false;
+                    p.quadtree.tile.addObject( obj, pp.x, pp.y, pp.level );
+                    if ( renderFunction !== undefined ) {
+                        setTimeout(renderFunction,0);
+                    }
+                }
+            };
+        }) ( p );
         var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
         c.z = 0;
         var ss = p.quadtree.size >> p.level;
-        (p.quadtree.tiler)( c, ss, f );
+        (p.quadtree.tiler.tile)( c, ss, f );
     }
 }
 
@@ -52,6 +58,7 @@ Tile = function( size, x, y, level, quadtree ) {
 
     // sub tiles
     this.tiles= [ [undefined, undefined], [undefined, undefined] ];
+    this.object = undefined;
     // tile size FIXME useless ?
     this.size = size;
 
@@ -65,22 +72,6 @@ Tile = function( size, x, y, level, quadtree ) {
 
 // inherits from Object3D
 Tile.prototype = Object.create( THREE.Object3D.prototype );
-
-// not used ??
-Tile.prototype.clone = function ( object ) {
-    if ( object === undefined ) object = new Tile( this.size, this.x, this.y, this.level, this.quadtree );
-    // call the base class constructor
-    THREE.Object3D.prototype.clone.call( this, object );
-
-    for ( var i = 0; i < 2; i++ ) {
-        for ( var j = 0; j < 2; j++ ) {
-            if ( this.tiles[i][j] !== undefined ) {
-                object.tiles[i][j] = this.tiles[i][j].clone();
-            }
-        }
-    }
-    return object;
-}
 
 Tile.prototype.hasTile = function( x, y, level ) {
     if ( level == 0 ) {
@@ -99,6 +90,11 @@ Tile.prototype.hasTile = function( x, y, level ) {
 Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
+        if ( this.object !== undefined ) {
+            // replacement
+            this.remove( this.object );
+        }
+        this.object = object;
         this.add( object );
     }
     else {
@@ -118,14 +114,19 @@ Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
 
 Tile.prototype.changeVisibility = function( vis )
 {
-    if ( this.children.length == 0 ) {
+    if ( this.object === undefined ) {
         return;
     }
-    if ( this.children[0].visible != vis ) {
-        
-//        console.log(this.x, this.y, this.level, "Changed from ", this.children[0].visible, " to ", vis );
+    if ( this.object.visible != vis ) {
+//        consoleTer.log(this.x, this.y, this.level, "Changed from ", this.object.visible, " to ", vis );
     }
-    this.children[0].visible = vis;
+    this.object.visible = vis;
+    if ( this.object.constructor === THREE.Object3D ) {
+        // probably a group
+        this.object.children.forEach(function(c){
+            c.visible = vis;
+        });
+    }
 }
 
 // set visible and all children invisible
@@ -173,12 +174,10 @@ Tile.prototype.update = function( camera ) {
 
     if ( lod <= this.level ) {
         if (this.children.length == 0) {
-            TileLoader.instance().enqueue( this.quadtree, 0, 0, 0 );
+            TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
         }
-        else {
-            // set visible and children to invisible
-            this.setVisible();
-        }
+        // set visible and children to invisible
+        this.setVisible();
     }
     else if ( lod > this.level ) {
         if ( this.hasAllChildren() ) {
@@ -260,331 +259,4 @@ QuadTree.prototype.centerCoordinates = function( x, y, level )
 QuadTree.prototype.update = function( camera )
 {
     this.tile.update( camera );
-}
-
-init();
-animate();
-
-function repeated(p1, p2) {
-    return Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON;
-}
-
-function collinear(pa, pb, pc) {
-    return Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON;
-}
-
-function init() {
-    window.addEventListener( 'resize', onWindowResize, false );
-
-    // mouse click detect object
-    {
-        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-        document.addEventListener( 'keydown', onDocumentKeyDown, false );
-        projector = new THREE.Projector();
-    }
-
-    // camera
-    {
-        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
-        //camera.position.y = -10000;
-        camera.position.z = 300;
-        camera.position.y = -800;
-    }
-
-    // trackball
-    {
-        controls = new THREE.TrackballControls( camera );
-        controls.rotateSpeed = 2.0;
-        controls.zoomSpeed = 1.5;
-        controls.panSpeed = 1.8;
-        controls.noZoom = false;
-        controls.noPan = false;
-        controls.staticMoving = true;
-        controls.dynamicDampingFactor = 0.3;
-        controls.keys = [ 65, 83, 68 ];
-        controls.addEventListener( 'change', render );
-    }
-
-    // scene
-    {
-        scene = new THREE.Scene();
-
-        // buildings
-        {
-            var material =  new THREE.MeshLambertMaterial( { color:0xeeeeee} );
-            material.ambient = material.color;
-            var sz = .5;
-            var geometry = new THREE.BoxGeometry( sz, sz, sz );
-            var group = geometry;
-            for ( var i = 0; i < 50; i ++ ) {
-            
-                    var mesh = new THREE.Mesh( geometry, material );
-                    mesh.position.x = Math.random() * 400 - 200;
-                    mesh.position.y = Math.random() * 300 - 150;
-                    mesh.scale.z = Math.random() * 10 + 1;
-                    mesh.scale.x = Math.random() * 10 + 1;
-                    mesh.scale.y = Math.random() * 5 + 1;
-                    mesh.rotation.z = Math.random();
-                    mesh.position.z = mesh.scale.z*sz/2.;
-                    mesh.castShadow = true;
-                    //mesh.receiveShadow = true;
-                    //THREE.GeometryUtils.merge(group, mesh);
-                scene.add( mesh );
-            }
-            //var mesh = new THREE.Mesh( group, material );
-            //scene.add( group );
-        }
-
-        // ground
-        if(false)
-        {
-            var material =  new THREE.MeshLambertMaterial( { color:0x777777, shading: THREE.FlatShading} );
-            material.ambient = material.color;
-            var plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), material);
-            plane.position.z = -0.1;
-            plane.receiveShadow = true;
-            scene.add(plane);
-        }
-
-        // my tiled ground
-        if (true){
-            var size = 800;
-            var xCenter = 0;
-            var yCenter = 0;
-            var t = new Tiler();
-
-            if (false) {
-                var f = function( center, size, cont ) {
-                    if (lod>3) return;
-                    var grid = new THREE.GridHelper( size/2, size/8 );
-                    var color = Math.random()*0xffffff;
-                    grid.setColors( color, color );
-                    grid.rotation.x = -Math.PI/2;
-                    grid.position.x = center.x;
-                    grid.position.y = center.y;
-                    grid.position.z = center.z;
-                    grid.updateMatrix();
-                    grid.matrixAutoUpdate = false;
-                    grid.visible = false;
-                    (cont)(grid);
-                }
-            }
-            var quadtree = new QuadTree( size, 3, t.tile );
-            scene.add( quadtree );
-
-            quadtree.position.x = 0;
-            quadtree.position.y = 0;
-            quadtree.updateMatrix();
-            quadtree.matrixAutoUpdate = false;
-
-        }
-        
-
-        //// grid
-        //{
-        //    var helper = new THREE.GridHelper( 200, 10 );
-        //    helper.setColors( 0x0000ff, 0xf0f0f0 );
-        //    helper.rotation.x = -Math.PI/2;
-        //    scene.add( helper );
-        //}
-
-        // lights
-        {
-            //light = new THREE.PointLight( 0xdddddd );
-            light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
-            light.position.set( 1000, 1000, 1000 );
-
-            light.castShadow = true;
-            light.shadowCameraVisible = true;
-            light.shadowCameraNear = 1000;
-            light.shadowCameraFar = 2000;
-            light.shadowCameraFov = 20;
-            light.shadowDarkness = 0.5;
-            light.shadowMapWidth = 1024;
-            light.shadowMapHeight = 512;
-
-            scene.add( light );
-            scene.add( new THREE.SpotLightHelper( light, 5 ) );
-
-            alight = new THREE.AmbientLight( 0xdddddd );
-            scene.add( alight );
-
-        }
-
-        // LOD
-        if(false)
-        {
-
-            var sz = 10;
-            var geometry = new THREE.BoxGeometry( sz, sz, sz );
-            for ( var j = 0; j < 10; j ++ ) {
-                var material =  new THREE.MeshPhongMaterial( { color:0xee0000} );
-                material.ambient = material.color;
-                var lod = new THREE.LOD();
-                for ( var i = 0; i < 5; i ++ ) {
-                    var mesh = new THREE.Mesh( geometry, material );
-                    mesh.scale.z = i + 1;
-                    mesh.position.z = .5*sz*mesh.scale.z;
-                    mesh.updateMatrix();
-                    mesh.matrixAutoUpdate = false;
-                    lod.addLevel(mesh, i*100);
-                }
-                lod.position.x = -100+20*j;
-                lod.updateMatrix();
-                lod.matrixAutoUpdate = false;
-                objects.push(lod);
-                scene.add( lod );
-            }
-        }
-    }
-
-    // renderer
-    {
-        renderer = new THREE.WebGLRenderer( { antialias: false } );
-        renderer.setClearColor( 0x222222, 1 );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-
-        //renderer.shadowMapEnabled = true;
-        //renderer.shadowMapType = THREE.PCFSoftShadowMap;
-
-        // composer and effects
-        {
-            composer = new THREE.EffectComposer( renderer );
-            composer.addPass( new THREE.RenderPass( scene, camera ) );
-            
-            if (false){
-            // ssao
-            var depthShader = THREE.ShaderLib[ "depthRGBA" ];
-            var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
-            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
-            depthMaterial.blending = THREE.NoBlending;
-            depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-            var effect = new THREE.ShaderPass( THREE.SSAOShader );
-            effect.uniforms[ 'tDepth' ].value = depthTarget;
-            effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
-            effect.uniforms[ 'cameraNear' ].value = camera.near;
-            effect.uniforms[ 'cameraFar' ].value = camera.far;
-            effect.uniforms[ 'lumInfluence' ].value = .9;
-            effect.uniforms[ 'aoClamp' ].value = .5;
-            composer.addPass( effect );
-            
-            // depth of field
-            var bokehPass = new THREE.BokehPass( scene, camera, {
-                focus: .8,
-                aperture:	0.008,
-                maxblur:	1,
-                width:  window.innerWidth,
-                height: window.innerHeight
-                } );
-            bokehPass.renderToScreen = true;
-            composer.addPass( bokehPass );
-            }
-        }
-    }
-
-    // stats
-    {
-        container = document.getElementById( 'container' );
-        container.appendChild( renderer.domElement );
-
-        stats = new Stats();
-        stats.domElement.style.position = 'absolute';
-        stats.domElement.style.top = '150px';
-        stats.domElement.style.zIndex = 100;
-        container.appendChild( stats.domElement );
-    }
-
-    // first render to avoid blank screen before interaction
-    render();
-    render(); // for some reason lod needs that second render
-
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    controls.handleResize();
-    render();
-}
-
-function animate() {
-    requestAnimationFrame( animate );
-    controls.update();
-}
-
-function render() {
-    console.log("render");
-    scene.updateMatrixWorld();
-    scene.traverse( function ( object ) {
-        if ( object instanceof THREE.LOD ) {
-            object.update( camera );
-            object.objects.forEach( function(obj) {
-                    var visible = obj.object.visible;
-                    if ( obj.object instanceof THREE.Object3D ) {
-                        obj.object.traverse(function(child) {
-                                child.visible = visible;});
-                    }
-            });
-
-        }
-        else if ( object instanceof QuadTree ) {
-            object.update( camera );
-        }
-    } );
-
-
-    scene.overrideMaterial = depthMaterial;
-    renderer.render( scene, camera, depthTarget );
-    scene.overrideMaterial = null;
-    composer.render()
-    stats.update();
-
-    // load missing tiles
-    TileLoader.instance().load();
-}
-
-function onDocumentKeyDown( event ) {
-    if ( event.keyCode == 65 ){ // a pressed
-        camera.lookAt(new THREE.Vector3(0,0,0));
-        camera.position.x = 0;
-        camera.position.y = 0;
-        camera.position.w = 10000;
-        render();
-    }
-}
-function onDocumentMouseDown( event ) {
-    event.preventDefault();
-
-    var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, 
-                                  - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
-    projector.unprojectVector( vector, camera );
-
-    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-
-    var intersects = raycaster.intersectObjects( objects );
-
-    if ( intersects.length > 0 ) {
-
-            var text3d = new THREE.TextGeometry( 'face:'+intersects[ 0 ].faceIndex, {
-					size: 2,
-					height: .1,
-					curveSegments: 2,
-					font: "helvetiker"
-				});
-
-            //text3d.computeBoundingBox();
-            var textMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, overdraw: 0.5 } );
-            scene.remove( text );
-            text = new THREE.Mesh( text3d, textMaterial );
-            text.position = intersects[ 0 ].point;
-            scene.add( text );
-
-            // var material =  new THREE.MeshPhongMaterial( { color:0xbb0000 } );
-            // var particle = new THREE.Sprite( particleMaterial );
-            // particle.position = intersects[ 0 ].point;
-            // particle.scale.x = particle.scale.y = 16;
-            // scene.add( particle );
-            render();
-    }
 }
