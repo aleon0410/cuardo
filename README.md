@@ -13,6 +13,7 @@ Install and configure postgres/postgis
     createdb lyon
     psql lyon -c 'create extension postgis'
     psql lyon -c 'create extension postgis_sfcgal'
+    psql lyon -c 'create extension postgis_topology'
 
 Couche de points (toilettes publiques)
 
@@ -34,9 +35,24 @@ Couche de polygones pour bâti
     wget "http://smartdata.grandlyon.com/smartdata/wp-content/plugins/wp-smartdata/proxy.php?format=shape&name=fpc_fond_plan_communaut.fpctoit.zip&commune=undefined&href=https%3A%2F%2Fdownload.data.grandlyon.com%2Ffiles%2Fgrandlyon%2Flocalisation%2Ffpc_fond_plan_communaut.fpctoit.zip" -O out.zip && unzip out.zip
     shp2pgsql -W LATIN1 -I -s 3946  fpc_fond_plan_communaut_fpctoit.shp toitures | psql lyon
 
-Couche de polygones 3d texturés
+Couche de polygones 3d texturés 
 
     TODO
+
+Test for textured geometries, in psql:
+
+    create type texture as (url text,uv float[][]);
+    create table textured_geometry (gid serial primary key, geom geometry('MULTIPOLYGONZ',3946,3), name text, tex texture);
+    insert into textured_geometry(geom, name, tex) values ('SRID=3946;MULTIPOLYGON Z (((0 0 0,6 0 0,6 0 12,0 0 12,0 0 0)),((6 6 0,0 6 0,0 6 12,6 6 12,6 6 0)))'::geometry, 'toto', ROW('http://localhost/textures/building-texture1.jpg','{{0,0},{.7,.0},{.7,1},{0,1},{0,0},{0,0},{.7,.0},{.7,1},{0,1},{0,0}}'));
+
+Then install texture so that it can be served by apache:
+
+    cd /tmp
+    wget http://salzburndesigns.com/gaming/wp-content/uploads/2012/11/building-texture1.jpg 
+    sudo mkdir /var/www/html/textures
+    sudo cp building-texture1.jpg /var/www/html/textures
+
+Test (in browser) that you can access http://localhost/textures/building-texture1.jpg
 
 
 Configure tinows
@@ -88,6 +104,12 @@ Fichier /etc/tinyows.xml:
          name="toilettes_publiques"
          title="toilettes_publiques" />
 
+  <layer retrievable="1"
+	 writable="1"
+	 ns_prefix="tows"
+	 ns_uri="http://www.tinyows.org/"
+         name="textured_geometry"
+         title="textured_geometry" />
 </tinyows>
 </pre>
 
@@ -107,7 +129,6 @@ In this directory (the one with this README in it):
 
 Configure mapcache
 ------------------
-
 
 In /etc/apache2/apache2.conf, after your "Directory" sections, add:
 
@@ -140,6 +161,7 @@ Restart apache:
     sudo service apache2 restart
 
 Now try:
+    - http://localhost/demo/wfslayer_textured_geom_demo.html
     - http://localhost/demo/wfslayer_demo.html
     - http://localhost/demo/tiler_demo.html
 
