@@ -135,6 +135,10 @@ Create a link to this directory (the one with this README in it) in your server 
 
     sudo ln -s $PWD /var/www/html/demo
 
+Restart apache:
+
+    sudo service apache2 restart
+
 Now try:
     - http://localhost/demo/wfslayer_demo.html
     - http://localhost/demo/tiler_demo.html
