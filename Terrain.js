@@ -1,11 +1,12 @@
-Terrain = function ( urlDem, urlTex, translation, nbIntervals = 8 ) {
+Terrain = function ( urlDem, urlTex, translation, nbIntervals ) {
     this.urlDem = urlDem;
     this.urlTex = urlTex;
     this.translation = translation;
     this.srid = 3946;
     this.extent = [1780810,5111630,1905820,5242220];
+    this.nbIntervals = nbIntervals || 8;
 
-    this.geometryTerrain = new THREE.PlaneGeometry(1, 1, nbIntervals, nbIntervals);
+    this.geometryTerrain = new THREE.PlaneGeometry(1, 1, this.nbIntervals, this.nbIntervals);
     this.geometryTerrain.computeFaceNormals();
     this.geometryTerrain.computeVertexNormals();
     this.geometryTerrain.computeTangents();

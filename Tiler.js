@@ -1,8 +1,9 @@
-Tiler = function( layers = [], translation = new THREE.Vector3(0,0,0), nbIntervals = 8) {
-    this.translation = translation; // lyon epsg:3946 ~ [1849500, 5173000];
+Tiler = function( layers, translation, nbIntervals) {
+    this.translation = translation || new THREE.Vector3(0,0,0); // lyon epsg:3946 ~ [1849500, 5173000];
     this.size = 40000;
-    this.geom = new THREE.PlaneGeometry(1, 1, nbIntervals, nbIntervals);
-    this.layers = layers;
+    this.nbIntervals = nbIntervals || 8;
+    this.geom = new THREE.PlaneGeometry(1, 1, this.nbIntervals, this.nbIntervals);
+    this.layers = layers || [];
     this.srid = 0;
     this.tileIds = {};
     this.currentTileId = 0;

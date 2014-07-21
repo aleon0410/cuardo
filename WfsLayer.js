@@ -1,10 +1,10 @@
-WfsLayer = function (url, translation, nbIntervals = 8, terrain = null ) {
+WfsLayer = function (url, translation, nbIntervals, terrain) {
     this.url = url;
     this.translation = translation;
-    this.nbIntervals = nbIntervals;
+    this.nbIntervals = nbIntervals || 8;
     this.extent = [];
     this.srid = 0;
-    this.terrain = terrain;
+    this.terrain = terrain || null;
 
     // TODO select only the opropriate layer
     var object = this;
@@ -95,7 +95,7 @@ function clipperPath( wfsPolygon, translation ) {
     //return clipperPath; // centimetric precision
 }
 
-function clip( clipperPath, clipperRect, needsContour = true ) {
+function clip( clipperPath, clipperRect, needsContour ) {
     var clippedPoly = new ClipperLib.Paths();
     {
         var cpr = new ClipperLib.Clipper();
