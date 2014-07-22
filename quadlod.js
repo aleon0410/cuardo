@@ -23,32 +23,44 @@ TileLoader.instance = function()
 
 TileLoader.prototype.enqueue = function( quadtree, x, y, level )
 {
-    this.queue.push( { x:x, y:y, level:level, quadtree:quadtree } );
+    var e = { x:x, y:y, level:level, quadtree:quadtree };
+    if ( this.queue.indexOf(e) !== -1 ) {
+        return;
+    }
+    this.queue.push( e );
 }
 
+var lastRender = 0;
 TileLoader.prototype.load = function( renderFunction )
 {
     while ( this.queue.length > 0 ) {
         var p = this.queue.shift();
+
         if ( p.quadtree.tile.hasTile( p.x, p.y, p.level ) ) {
-            console.log("Tile already loaded");
+            // already loaded
             continue;
         }
-        var that = this;
+
         var f = ( function( pp ) {
             return function( obj ) {
                 if ( obj !== undefined ) {
                     obj.visible = false;
-                    p.quadtree.tile.addObject( obj, pp.x, pp.y, pp.level );
+                    p.quadtree.tile.setObject( obj, pp.x, pp.y, pp.level );
                     if ( renderFunction !== undefined ) {
-                        setTimeout(renderFunction,0);
+                        // only ask for a refresh when the last refresh was asked
+                        // not too much recently
+                        var now = performance.now();
+                        if ( (now - lastRender) > 50 ) { // milliseconds
+                            setTimeout(renderFunction,0);
+                            lastRender = now;
+                        }
                     }
                 }
             };
         }) ( p );
         var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
         c.z = 0;
-        var ss = p.quadtree.size >> p.level;
+        var ss = p.quadtree.size / Math.pow(2,p.level);
         (p.quadtree.tiler.tile)( c, ss, f );
     }
 }
@@ -75,7 +87,7 @@ Tile.prototype = Object.create( THREE.Object3D.prototype );
 
 Tile.prototype.hasTile = function( x, y, level ) {
     if ( level == 0 ) {
-        return true;
+        return this.object !== undefined;
     }
     nl = 1 << (level-1);
     var dx = ~~(x / nl);
@@ -87,12 +99,12 @@ Tile.prototype.hasTile = function( x, y, level ) {
     }
     return false;
 }
-Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
+Tile.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
         if ( this.object !== undefined ) {
-            // replacement
-            this.remove( this.object );
+            // already set
+            return;
         }
         this.object = object;
         this.add( object );
@@ -108,7 +120,7 @@ Tile.prototype.addObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
             this.tiles[dx][dy] = t;
             this.add( t );
         }
-        this.tiles[dx][dy].addObject( object, rx, ry, level-1 );
+        this.tiles[dx][dy].setObject( object, rx, ry, level-1 );
     }
 }
 
@@ -143,14 +155,6 @@ Tile.prototype.setVisible = function( visible ) {
     }
 }
 
-Tile.prototype.hasVisibleChildren = function()
-{
-    return this.children[0].visible || ( this.tiles[0][0] !== undefined && this.tiles[0][0].hasVisibleChildren() )
-        || ( this.tiles[0][1] !== undefined && this.tiles[0][1].hasVisibleChildren() )
-        || ( this.tiles[1][0] !== undefined && this.tiles[1][0].hasVisibleChildren() )
-        || ( this.tiles[1][1] !== undefined && this.tiles[1][1].hasVisibleChildren() );
-}
-
 Tile.prototype.hasAllChildren = function() {
     return (this.tiles[0][0] !== undefined) && (this.tiles[0][1] !== undefined) &&
         (this.tiles[1][0] !== undefined) && (this.tiles[1][1] !== undefined);
@@ -173,9 +177,10 @@ Tile.prototype.update = function( camera ) {
     if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
 
     if ( lod <= this.level ) {
-        if (this.children.length == 0) {
+        if (this.object === undefined) {
             TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
         }
+
         // set visible and children to invisible
         this.setVisible();
     }
@@ -225,31 +230,21 @@ QuadTree = function( size, lod, tiler ) {
 // inherits from Object3D
 QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
-// not used ??
-QuadTree.prototype.clone = function (object) {
-    if ( object === undefined ) object = new QuadTree( this.size, this.maxLOD, this.tiler );
-    THREE.Object3D.prototype.clone.call( this, object );
-
-    object.tile = this.children[0];
-
-    return object;
-}
-
-QuadTree.prototype.addObject = function( object, level )
+QuadTree.prototype.setObject = function( object, level )
 {
     var x = (object.position.x - this.position.x + this.size/2) / this.size;
     var y = (object.position.y - this.position.y + this.size/2) / this.size;
     var nl = 1<<level;
     var dx = ~~(x*nl);
     var dy = ~~(y*nl);
-    this.tile.addObject( object, dx, dy, level );
+    this.tile.setObject( object, dx, dy, level );
 }
 
 //
 // get center coordinates (in quadtree coordinates)
 QuadTree.prototype.centerCoordinates = function( x, y, level )
 {
-    var tileSize = this.size >> level;
+    var tileSize = this.size / Math.pow(2,level);
     var xc = (x+0.5) * tileSize - this.size / 2;
     var yc = (y+0.5) * tileSize - this.size / 2;
     return {x:xc, y:yc};

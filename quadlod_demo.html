@@ -44,7 +44,7 @@ function init() {
     {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
         //camera.position.y = -10000;
-        camera.position.z = 300;
+        camera.position.z = 100;
         camera.position.y = -800;
     }
 
@@ -91,13 +91,14 @@ function init() {
                     group.add(grid);
 
                     var f = function() { cont(group); }
-                    setTimeout( f, 125 );
+                    setTimeout( f, Math.random()*100+50 );
+//                    cont(group);
                 };
             }
 
-            var size = 800;
+            var size = 1000;
 
-            var maxLOD = 3;
+            var maxLOD = 4;
             var quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
