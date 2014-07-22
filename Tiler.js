@@ -22,7 +22,12 @@ Tiler = function( layers, translation, nbIntervals) {
 };
 
 Tiler.prototype.tile = function( center, size, callback ) {
-    var group = new THREE.Object3D();
+    var group = [];
+
+    for ( var lid = 0, l = this.layers.length; lid < l; lid++ ) {
+        group.push( new THREE.Object3D() );
+    }
+
     // add basic grid for debug
     {
         var mesh = new THREE.Mesh(this.geom, 
@@ -30,21 +35,24 @@ Tiler.prototype.tile = function( center, size, callback ) {
         mesh.position = center;
         mesh.scale.x = size;
         mesh.scale.y = size;
-        group.add(mesh);
+        group[0].add(mesh);
     }
     var remaining = this.layers.length;
     var object = this;
-    this.layers.forEach(function(l){
+    for ( var lid = 0, le = this.layers.length; lid < le; lid++ ) {
+        var l = this.layers[lid];
         l.tile( center, size, object.currentTileId,
-            function(mesh){
-                group.add(mesh);
-                remaining--;
-                if (!remaining) {
-
-                    callback(group);
-                }
-            });
-    });
+                (function(g) {
+                    return function(mesh) {
+                        g.add(mesh);
+                        remaining--;
+                        if (!remaining) {
+                            callback(group);
+                        }
+                    };
+                }) (group[lid])
+              );
+    }
     this.currentTileId++;
 };
 

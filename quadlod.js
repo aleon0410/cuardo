@@ -8,6 +8,14 @@ var text;
 var headerText;
 var EPSILON = 1e-12;
 
+changeVisibility = function( o, vis ) {
+    o.visible = vis;
+    o.traverse( function(obj) {
+        obj.visible = vis;
+    });
+}
+
+
 TileLoader = function()
 {
     this.queue = [];
@@ -44,7 +52,6 @@ TileLoader.prototype.load = function( renderFunction )
         var f = ( function( pp ) {
             return function( obj ) {
                 if ( obj !== undefined ) {
-                    obj.visible = false;
                     p.quadtree.tile.setObject( obj, pp.x, pp.y, pp.level );
                     if ( renderFunction !== undefined ) {
                         // only ask for a refresh when the last refresh was asked
@@ -70,6 +77,7 @@ Tile = function( size, x, y, level, quadtree ) {
 
     // sub tiles
     this.tiles= [ [undefined, undefined], [undefined, undefined] ];
+    // map of layerid -> 3d object
     this.object = undefined;
     // tile size FIXME useless ?
     this.size = size;
@@ -99,6 +107,9 @@ Tile.prototype.hasTile = function( x, y, level ) {
     }
     return false;
 }
+
+// assign an object to a leaf in the tree
+// object is a map of layerid -> Object3D (group)
 Tile.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
@@ -107,7 +118,12 @@ Tile.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
             return;
         }
         this.object = object;
-        this.add( object );
+        var that = this;
+        for ( var lid = 0, l = object.length; lid < l; lid++ ) {
+            if ( this.quadtree.visibleLayers.indexOf(lid) !== -1 ) {
+                this.add( object[lid] );
+            }
+        }
     }
     else {
         nl = 1 << (level-1);
@@ -124,32 +140,62 @@ Tile.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* 
     }
 }
 
-Tile.prototype.changeVisibility = function( vis )
+Tile.prototype.hideLayer = function( layer )
+{
+    if (( this.object !== undefined ) && (this.object[layer] !== undefined )) {
+        this.remove( this.object[layer] );
+    }
+    for ( var i = 0; i < 2; i++ ) {
+        for ( var j = 0; j < 2; j++ ) {
+            if (this.tiles[i][j] !== undefined ) {
+                this.tiles[i][j].hideLayer(layer);
+            }
+        }
+    }
+}
+
+Tile.prototype.showLayer = function( layer )
+{
+    if (( this.object !== undefined ) && (this.object[layer] !== undefined )) {
+        var o = this.object[layer];
+        if ( this.children.indexOf( o ) === -1 ) {
+            this.add( this.object[layer] );
+        }
+    }
+    for ( var i = 0; i < 2; i++ ) {
+        for ( var j = 0; j < 2; j++ ) {
+            if (this.tiles[i][j] !== undefined ) {
+                this.tiles[i][j].showLayer(layer);
+            }
+        }
+    }
+}
+
+Tile.prototype.changeVisibility = function( vis, layers )
 {
     if ( this.object === undefined ) {
         return;
     }
-    if ( this.object.visible != vis ) {
-//        consoleTer.log(this.x, this.y, this.level, "Changed from ", this.object.visible, " to ", vis );
-    }
-    this.object.visible = vis;
-    if ( this.object.constructor === THREE.Object3D ) {
-        // probably a group
-        this.object.children.forEach(function(c){
-            c.visible = vis;
-        });
+    if ( layers === undefined ) layers = this.quadtree.visibleLayers;
+
+    for ( var lid = 0, l = layers.length; lid < l; lid++ ) {
+        var o = this.object[lid];
+        if ( o.visible !== vis ) {
+            changeVisibility( o, vis );
+        }
     }
 }
 
 // set visible and all children invisible
-Tile.prototype.setVisible = function( visible ) {
+Tile.prototype.setVisible = function( visible, layers ) {
     if ( visible === undefined ) visible = true;
-    this.changeVisibility( visible );
+    if ( layers === undefined ) layers = this.quadtree.visibleLayers;
+    this.changeVisibility( visible, layers );
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
             if ( this.tiles[i][j] !== undefined ) {
-                this.tiles[i][j].setVisible( false );
+                this.tiles[i][j].setVisible( false, layers );
             }
         }
     }
@@ -225,6 +271,13 @@ QuadTree = function( size, lod, tiler ) {
     // the root tile
     this.tile = new Tile( size, 0, 0, 0, this );
     this.add( this.tile );
+
+    // visible layers
+    // all layers are visible at construction
+    this.visibleLayers = [];
+    for ( var lid = 0; lid < this.tiler.layers.length; lid++ ) {
+        this.visibleLayers.push(lid);
+    }
 }
 
 // inherits from Object3D
@@ -254,4 +307,29 @@ QuadTree.prototype.centerCoordinates = function( x, y, level )
 QuadTree.prototype.update = function( camera )
 {
     this.tile.update( camera );
+}
+
+QuadTree.prototype.setLayerVisibility = function( layer, vis )
+{
+    if (vis) this.tile.showLayer( layer );
+    else this.tile.hideLayer( layer );
+}
+
+QuadTree.prototype.setVisibleLayers = function( layers )
+{
+    var that = this;
+    layers.forEach( function(l) {
+        if ( that.visibleLayers.indexOf(l) === -1 ) {
+            // new visible layer
+            that.tile.showLayer(l);
+        }
+    });
+
+    this.visibleLayers.forEach(function(l) {
+        if ( layers.indexOf(l) === -1 ) {
+            // layer removed
+            that.tile.hideLayer(l);
+        }
+    });
+    this.visibleLayers = layers;
 }
