@@ -9,6 +9,7 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
     // TODO select only the opropriate layer
     var object = this;
     var baseUrl = this.url.split('?')[0];
+    console.log(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities');
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
             $(data).find('FeatureType').each(function() { 
@@ -32,13 +33,15 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
 var EPSILON = 1e-6;
 
 function repeated(p1, p2) {
+    if ( Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON )
+        throw 'repeated points should have been removed by clipper';
     return false;
-    //return Math.abs(p1.x - p2.x) < EPSILON &&  Math.abs(p1.y - p2.y) < EPSILON;
 }
 
 function collinear(pa, pb, pc) {
+    if ( Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON )
+        throw 'collinear points should have been removed by clipper';
     return false;
-    //return Math.abs((pa.x - pc.x) * (pb.y - pc.y) - (pa.y - pc.y) * (pb.x - pc.x)) < EPSILON;
 }
 
 function addLinesFromClipperPaths(geom, paths){
@@ -57,6 +60,31 @@ function addLinesFromClipperPaths(geom, paths){
     });
 }
 
+function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth){
+    var i = geom.vertices.length;
+    paths.forEach( function(ring) {
+        var lastPt;
+        ring.forEach( function(pt) {
+            if (lastPt){
+                geom.vertices.push(lastPt);
+                var lastPtH = new THREE.Vector3(lastPt.x, lastPt.y, heigth);
+                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
+                geom.vertices.push(lastPt);
+
+                geom.vertices.push(lastPtH);
+                lastPtH = new THREE.Vector3(lastPt.x, lastPt.y, heigth);
+                geom.vertices.push(lastPtH);
+                geom.faces.push( new THREE.Face3(i, i+1, i+2) );
+                geom.faces.push( new THREE.Face3(i+2, i+1, i+3) );
+                i+=4;
+            }
+            else {
+                lastPt = new THREE.Vector3(pt.X, pt.Y, 1);
+            }
+        });
+    });
+}
+
 function addTrianglesFromClipperPaths(geom, paths){
     var rings = [];
     paths.forEach( function(ring) {
@@ -64,6 +92,7 @@ function addTrianglesFromClipperPaths(geom, paths){
         rings.push([]);
         ring.forEach( function(point) {
             var pt = new poly2tri.Point(point.X, point.Y);
+            // TODO note: repeated and colinear should be deal with by clipper
             if ( !rings[r].length ||
                 !repeated(rings[r][rings[r].length-1], pt) ) {
                 if ( rings[r].length < 2 ||
@@ -172,8 +201,14 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
 
+    var clipperRect = [[{X:center.x-.5*size, Y:center.y-.5*size},
+                        {X:center.x+.5*size, Y:center.y-.5*size},
+                        {X:center.x+.5*size, Y:center.y+.5*size},
+                        {X:center.x-.5*size, Y:center.y+.5*size},
+                        ]];
 
     var object = this;
+    var is3d = false;
 
     var reqstart = new Date().getTime();
     console.log(this.url + '&BBOX='+ext.join(','));
@@ -190,13 +225,18 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             var nbPoly = 0;
             // MULTIPOLYGON ONLY
             data.features.forEach( function(feat) {
+                if (feat.geometry.bbox.length == 6 
+                    && Math.abs(feat.geometry.bbox[2]-feat.geometry.bbox[5] ) > EPSILON) {
+                        is3d = true;
+                    }
                 feat.geometry.coordinates.forEach( function(poly){
                     nbPoly++;
-                    var clipperRect = [[{X:center.x-.5*size, Y:center.y-.5*size},
-                                        {X:center.x+.5*size, Y:center.y-.5*size},
-                                        {X:center.x+.5*size, Y:center.y+.5*size},
-                                        {X:center.x-.5*size, Y:center.y+.5*size},
-                                        ]];
+
+
+                    // transform 3D polygons to put them in a plane
+                    // 
+
+
                     var clipped = clip( clipperPath( poly, translation ), 
                                 clipperRect, 
                                 object.symbology.polygon.lineColor || object.symbology.polygon.lineWidth );

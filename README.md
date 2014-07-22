@@ -39,11 +39,11 @@ Couche de polygones 3d texturés
 
     TODO
 
-Test for textured geometries, in psql:
+Test for textured geometries, in psql (a simple vertical face to display a building, note that it's an invalid multipolygon, but tin are not yet supported by tinyows):
 
     create type texture as (url text,uv float[][]);
     create table textured_geometry (gid serial primary key, geom geometry('MULTIPOLYGONZ',3946,3), name text, tex texture);
-    insert into textured_geometry(geom, name, tex) values ('SRID=3946;MULTIPOLYGON Z (((0 0 0,6 0 0,6 0 12,0 0 12,0 0 0)),((6 6 0,0 6 0,0 6 12,6 6 12,6 6 0)))'::geometry, 'toto', ROW('http://localhost/textures/building-texture1.jpg','{{0,0},{.7,.0},{.7,1},{0,1},{0,0},{0,0},{.7,.0},{.7,1},{0,1},{0,0}}'));
+    insert into textured_geometry(geom, name, tex) values ('SRID=3946;MULTIPOLYGON Z (((0 0 0,6 0 0,0 0 12,0 0 0)),((0 0 12,6 0 0,6 0 12,0 0 12)))'::geometry, 'toto', ROW('http://localhost/textures/building-texture1.jpg','{{0,0},{.81,.0},{0,1},{0,0},{0,1},{.81,.0},{.81,1},{0,1}}'));
 
 Then install texture so that it can be served by apache:
 
