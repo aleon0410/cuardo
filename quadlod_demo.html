@@ -1,0 +1,240 @@
+<html> 
+<head> 
+<title>My first Three.js app</title>
+<style>canvas { width: 100%; height: 100% }</style> 
+<!--script src="jquery-ui-1.11.0/jquery-ui.js"></script>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.theme.css"/>
+<link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
+</head> 
+<body> 
+<div id="header"><p id="header_text">hello</p></div>
+<div id="container"></div>
+<script src="three.js/build/three.js"></script> 
+<script src="three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="three.js/examples/js/Detector.js"></script>
+<script src="three.js/examples/js/libs/stats.min.js"></script>
+<script src="three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="three.js/examples/js/shaders/SSAOShader.js"></script>
+<script src="three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="three.js/src/extras/GeometryUtils.js"></script>
+<script src="three.js/examples/js/ShaderTerrain.js"></script>
+<script src="proj4-src.js"></script>
+<script src="proj4-srs.js"></script>
+<script src="jquery-2.1.1.js"></script>
+<script src="poly2tri.js"></script>
+<script src="Terrain.js"></script>
+<script src="Tiler.js"></script>
+<script src="quadlod.js"></script>
+<script>
+inRender = false;
+
+init();
+animate();
+
+function init() {
+    window.addEventListener( 'resize', onWindowResize, false );
+
+    // camera
+    {
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
+        //camera.position.y = -10000;
+        camera.position.z = 100;
+        camera.position.y = -800;
+    }
+
+    // trackball
+    {
+        controls = new THREE.TrackballControls( camera );
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 1.5;
+        controls.panSpeed = 1.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        controls.keys = [ 65, 83, 68 ];
+        controls.addEventListener( 'change', render );
+    }
+
+    // scene
+    {
+        scene = new THREE.Scene();
+
+        // my tiled ground
+        if (true){
+            var urlDem = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
+            var urlTex = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
+//            var translation = new THREE.Vector3(-1848500, -5173000, 0);
+            var translation = new THREE.Vector3(-1841548,-5174099,0);
+            var terrain = new Terrain(urlDem, urlTex, translation, 32);
+
+            var tiler = undefined;
+            if ( true ) {
+                tiler = new Tiler([terrain], translation, 1);
+            }
+            else {
+                tiler = function() {};
+                tiler.tile = function( center, size, cont ) {
+                    if ( size < 10 ) return;
+                    var group = new THREE.Object3D();
+                    var grid = new THREE.GridHelper( size/2, size/8 );
+                    var color = Math.random()*0xffffff;
+                    grid.setColors( color, color );
+                    grid.rotation.x = -Math.PI/2;
+                    grid.position = center;
+                    group.add(grid);
+
+                    var f = function() { cont(group); }
+                    setTimeout( f, Math.random()*100+50 );
+//                    cont(group);
+                };
+            }
+
+            var size = 1000;
+
+            var maxLOD = 4;
+            var quadtree = new QuadTree( size, maxLOD, tiler );
+            scene.add( quadtree );
+
+            quadtree.position.x = 0;
+            quadtree.position.y = 0;
+            quadtree.updateMatrix();
+            quadtree.matrixAutoUpdate = false;
+
+        }
+        
+
+        // lights
+        {
+            //light = new THREE.PointLight( 0xdddddd );
+            light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
+            light.position.set( 1000, 1000, 1000 );
+
+            light.castShadow = true;
+            light.shadowCameraVisible = true;
+            light.shadowCameraNear = 1000;
+            light.shadowCameraFar = 2000;
+            light.shadowCameraFov = 20;
+            light.shadowDarkness = 0.5;
+            light.shadowMapWidth = 1024;
+            light.shadowMapHeight = 512;
+
+            scene.add( light );
+            scene.add( new THREE.SpotLightHelper( light, 5 ) );
+
+            alight = new THREE.AmbientLight( 0xdddddd );
+            scene.add( alight );
+
+        }
+
+    }
+
+    // renderer
+    {
+        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setClearColor( 0x222222, 1 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        //renderer.shadowMapEnabled = true;
+        //renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+        // composer and effects
+        {
+            composer = new THREE.EffectComposer( renderer );
+            composer.addPass( new THREE.RenderPass( scene, camera ) );
+            
+            if (false){
+            // ssao
+            var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+            var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+            depthMaterial.blending = THREE.NoBlending;
+            depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+            var effect = new THREE.ShaderPass( THREE.SSAOShader );
+            effect.uniforms[ 'tDepth' ].value = depthTarget;
+            effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
+            effect.uniforms[ 'cameraNear' ].value = camera.near;
+            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'lumInfluence' ].value = .9;
+            effect.uniforms[ 'aoClamp' ].value = .5;
+            composer.addPass( effect );
+            
+            // depth of field
+            var bokehPass = new THREE.BokehPass( scene, camera, {
+                focus: .8,
+                aperture:	0.008,
+                maxblur:	1,
+                width:  window.innerWidth,
+                height: window.innerHeight
+                } );
+            bokehPass.renderToScreen = true;
+            composer.addPass( bokehPass );
+            }
+        }
+    }
+
+    // stats
+    {
+        container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '150px';
+        stats.domElement.style.zIndex = 100;
+        container.appendChild( stats.domElement );
+    }
+
+    // first render to avoid blank screen before interaction
+    render();
+    render(); // for some reason lod needs that second render
+
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    controls.handleResize();
+    render();
+}
+
+function animate() {
+    requestAnimationFrame( animate );
+    controls.update();
+}
+
+function render() {
+    if (inRender) {
+        // callback here, but a render is already in progress
+        return;
+    }
+    inRender = true;
+    scene.updateMatrixWorld();
+    scene.traverse( function ( object ) {
+        if ( object instanceof QuadTree ) {
+            object.update( camera );
+        }
+    } );
+
+
+    scene.overrideMaterial = depthMaterial;
+    renderer.render( scene, camera, depthTarget );
+    scene.overrideMaterial = null;
+    composer.render()
+    stats.update();
+
+    // load missing tiles
+    TileLoader.instance().load( render );
+    inRender = false;
+}
+
+</script>
+</body> 
+</html>

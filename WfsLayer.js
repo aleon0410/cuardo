@@ -209,9 +209,10 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var object = this;
     var is3d = false;
+    var translation = this.translation;
 
     var reqstart = new Date().getTime();
-    console.log(this.url + '&BBOX='+ext.join(','));
+//    console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
             var reqend = new Date().getTime();
