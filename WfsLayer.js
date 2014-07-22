@@ -26,8 +26,9 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
         }
     });
 
+    this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
     //this.symbology = {polygon:{extrude:'hfacade'}};
-    this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
+    //this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
 };
 
 var EPSILON = 1e-6;
@@ -50,11 +51,11 @@ function addLinesFromClipperPaths(geom, paths){
         ring.forEach( function(pt) {
             if (lastPt){
                 geom.vertices.push(lastPt);
-                lastPt = new THREE.Vector3(pt.X, pt.Y, 1);
+                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
                 geom.vertices.push(lastPt);
             }
             else {
-                lastPt = new THREE.Vector3(pt.X, pt.Y, 1);
+                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
             }
         });
     });
@@ -62,6 +63,8 @@ function addLinesFromClipperPaths(geom, paths){
 
 function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth){
     var i = geom.vertices.length;
+    var addedVtx = 0;
+    var addedFac = 0;
     paths.forEach( function(ring) {
         var lastPt;
         ring.forEach( function(pt) {
@@ -77,15 +80,17 @@ function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth){
                 geom.faces.push( new THREE.Face3(i, i+1, i+2) );
                 geom.faces.push( new THREE.Face3(i+2, i+1, i+3) );
                 i+=4;
+                addedVtx += 4;
+                addedFac += 2;
             }
             else {
-                lastPt = new THREE.Vector3(pt.X, pt.Y, 1);
+                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
             }
         });
     });
 }
 
-function addTrianglesFromClipperPaths(geom, paths){
+function addTrianglesFromClipperPaths(geom, paths, heigth ){
     var rings = [];
     paths.forEach( function(ring) {
         var r = rings.length;
@@ -118,7 +123,7 @@ function addTrianglesFromClipperPaths(geom, paths){
     var i = geom.vertices.length;
     triangles.forEach(function(t) {
         t.getPoints().forEach(function(p) {
-            geom.vertices.push(new THREE.Vector3(p.x, p.y, 0));
+            geom.vertices.push(new THREE.Vector3(p.x, p.y, heigth || 0));
         });
 
         geom.faces.push( new THREE.Face3(i, i+1, i+2) );
@@ -134,12 +139,21 @@ function clipperPath( wfsPolygon, translation ) {
             r.push({X:point[0]+translation.x,Y:point[1]+translation.y});
         });
         if (r.length) r.pop(); // last point is a repeat of first
+        if (  ( !clipperPath.length && r.length >= 3 && isClockwise(r) )
+           || ( clipperPath.length && r.length >= 3 && !isClockwise(r) ) ) r.reverse();
         clipperPath.push(r);
     });
     //return ClipperLib.Clipper.CleanPolygons(clipperPath, 0.0001); // centimetric precision
     return clipperPath;
 }
 
+function isClockwise( ring ) {
+    var u = {X:ring[0].X-ring[1].X, 
+             Y:ring[0].Y-ring[1].Y};
+    var v = {X:ring[2].X-ring[1].X, 
+             Y:ring[2].Y-ring[1].Y};
+    return (u.X*v.Y - v.X*u.Y ) > 0;
+}
 function clip( clipperPath, clipperRect, needsContour ) {
     var clippedPoly = new ClipperLib.Paths();
     {
@@ -182,13 +196,14 @@ function computeTileUv(geom, center, size) {
     // uv coord are relative to the tile
     {
         var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
-        for (var v=0; v<geom.vertices.length; v+=3){
-            var uv = [new THREE.Vector2((geom.vertices[v].x-tileOrigin.x)/size, 
-                                        (geom.vertices[v].y-tileOrigin.y)/size),
-                      new THREE.Vector2((geom.vertices[v+1].x-tileOrigin.x)/size, 
-                                        (geom.vertices[v+1].y-tileOrigin.y)/size),
-                      new THREE.Vector2((geom.vertices[v+2].x-tileOrigin.x)/size, 
-                                        (geom.vertices[v+2].y-tileOrigin.y)/size)];
+        for (var f=0; f<geom.faces.length; f+=1){
+            var face = geom.faces[f];
+            var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+                                        (geom.vertices[face.a].y-tileOrigin.y)/size),
+                      new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+                                        (geom.vertices[face.b].y-tileOrigin.y)/size),
+                      new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+                                        (geom.vertices[face.c].y-tileOrigin.y)/size)];
             geom.faceVertexUvs[ 0 ].push(uv);
         }
     }
@@ -217,8 +232,11 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         success: function(data, textStatus, jqXHR) {
             var reqend = new Date().getTime();
             //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
+            var userData = {name:'mesh',faceGidMap:[]};
+            var userDataWall = {name:'wallMesh',faceGidMap:[]};
             var start = new Date().getTime();
             var geom = new THREE.Geometry();
+            var wallGeom = new THREE.Geometry();
             var lineGeom = new THREE.Geometry();
             var errGeom = new THREE.Geometry();
             var errSpotGeom = new THREE.Geometry();
@@ -226,6 +244,9 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             var nbPoly = 0;
             // MULTIPOLYGON ONLY
             data.features.forEach( function(feat) {
+                //if (feat.properties.gid != 279240) return;
+                var nbFace = geom.faces.length;
+                var nbWallFace = wallGeom.faces.length;
                 if (feat.geometry.bbox.length == 6 
                     && Math.abs(feat.geometry.bbox[2]-feat.geometry.bbox[5] ) > EPSILON) {
                         is3d = true;
@@ -233,18 +254,20 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
                 feat.geometry.coordinates.forEach( function(poly){
                     nbPoly++;
 
+                    // TODO transform 3D polygons to put them in a plane
 
-                    // transform 3D polygons to put them in a plane
-                    // 
-
-
-                    var clipped = clip( clipperPath( poly, translation ), 
+                    var clipped = clip( clipperPath( poly, translation), 
                                 clipperRect, 
-                                object.symbology.polygon.lineColor || object.symbology.polygon.lineWidth );
+                                object.symbology.polygon.lineColor || object.symbology.polygon.lineWidth || object.symbology.polygon.extrude );
                     if (!clipped.poly.length) return;
 
                     try {
-                        addTrianglesFromClipperPaths(geom, clipped.poly);
+                        var heigth;
+                        if (object.symbology.polygon.extrude) {
+                            heigth = +feat.properties[ object.symbology.polygon.extrude];
+                            addTrianglesFromClipperPathsExtrusion(wallGeom, clipped.contour, heigth);
+                        }
+                        addTrianglesFromClipperPaths(geom, clipped.poly, heigth);
                         if (clipped.contour && clipped.contour.length) {
                             addLinesFromClipperPaths( lineGeom, clipped.contour );
                         }
@@ -262,7 +285,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
                         var simpPoly = ClipperLib.Clipper.SimplifyPolygons( clipped.poly, ClipperLib.PolyFillType.pftEvenOdd );
                         try {
                             addTrianglesFromClipperPaths(geom, simpPoly);
-                            console.log('fixed polygon gid=',feat.properties.gid);
+                            console.log('fixed polygon gid=',feat.properties.gid, err);
                         }
                         catch (err) {
                             // complete failed geom (before clipping)
@@ -282,15 +305,19 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
                     }
                 });
 
+
+
+                // create the map face -> gid
+                for (var f=nbFace; f<geom.faces.length; f++) {
+                    userData.faceGidMap.push(feat.properties.gid);
+                }
+                for (var f=nbWallFace; f<wallGeom.faces.length; f++) {
+                    userDataWall.faceGidMap.push(feat.properties.gid);
+                }
             });
             var end = new Date().getTime();
             console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons with '+nbInvalid+' failed triangulations');
 
-            geom.computeBoundingBox();
-            //console.log('bbox ', geom.boundingBox.min, geom.boundingBox.max);
-            //console.log('nb of vtx ', geom.vertices.length );
-            //console.log('nb of faces ', geom.faces.length );
-            geom.computeFaceNormals();
             var material;
             if (object.terrain && !object.symbology.polygon.extrude) {
                 var drapingShader = ShaderDraping[ "draping" ];
@@ -310,7 +337,9 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             }
             else {
                 material =  new THREE.MeshLambertMaterial( 
-                        { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
+                        { color:object.symbology.polygon.color, 
+                            ambient:0x555555, 
+                            difuse:object.symbology.polygon.color} );
             }
 
             computeTileUv(geom, center, size);
@@ -319,16 +348,31 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             geom.computeTangents();
 
             var group = new THREE.Object3D();
-            group.add(new THREE.Mesh( geom, material ));
-            console.log(lineGeom);
+            var mesh = new THREE.Mesh( geom, material );
+            mesh.userData = userData;
+            group.add(mesh);
             if ( object.symbology.polygon.lineColor && object.symbology.polygon.lineWidth){
                 group.add(new THREE.Line( lineGeom, 
-                            new THREE.LineBasicMaterial({ color:object.symbology.polygon.lineColor, 
-                                                          linewidth:object.symbology.polygon.lineWidth }) , 
+                            new THREE.LineBasicMaterial({ 
+                                color:object.symbology.polygon.lineColor, 
+                                linewidth:object.symbology.polygon.lineWidth }) , 
                             THREE.LinePieces ));
             }
-            group.add(new THREE.Line( errGeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 1 }) , THREE.LinePieces ));
-            group.add(new THREE.Line( errSpotGeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) , THREE.LinePieces ));
+            group.add(new THREE.Line( errGeom, 
+                        new THREE.LineBasicMaterial(
+                            { color:0xff0000, linewidth: 1 }) , 
+                        THREE.LinePieces ));
+            group.add(new THREE.Line( errSpotGeom, 
+                        new THREE.LineBasicMaterial(
+                            { color:0xff0000, linewidth: 3 }) , 
+                        THREE.LinePieces ));
+
+            if (object.symbology.polygon.extrude){
+                computeTileUv(wallGeom, center, size);
+                var wallMesh = new THREE.Mesh( wallGeom,  material );
+                wallMesh.userData = userDataWall;
+                group.add( wallMesh );
+            }
             
             callback(group);
         },
