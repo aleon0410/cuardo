@@ -188,7 +188,7 @@ function computeTileUv(geom, center, size) {
 }
 
 function vectorProcessing( d ) {
-    console.log("vector processing", d.tileId);
+//    console.log("vector processing", d.tileId);
     var data = d.data;
     var ctxt = d.ctxt;
 

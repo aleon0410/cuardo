@@ -25,6 +25,7 @@ TileLoader.prototype.enqueue = function( quadtree, x, y, level )
 var lastRender = 0;
 TileLoader.prototype.load = function( renderFunction )
 {
+    var remaining = this.queue.length;
     while ( this.queue.length > 0 ) {
         var p = this.queue.shift();
 
@@ -45,6 +46,10 @@ TileLoader.prototype.load = function( renderFunction )
                         if ( (now - lastRender) > 50 ) { // milliseconds
                             setTimeout(renderFunction,0);
                             lastRender = now;
+                        }
+                        remaining--;
+                        if (!remaining) {
+                            setTimeout(renderFunction,0);
                         }
                     }
                 }
