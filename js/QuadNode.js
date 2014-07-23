@@ -100,31 +100,23 @@ QuadNode.prototype.showLayer = function( layer )
     }
 }
 
-QuadNode.prototype.changeVisibility = function( vis, layers )
+QuadNode.prototype.changeVisibility = function( vis )
 {
     if ( ! this.object.isLoaded() ) {
         return;
     }
-    if ( layers === undefined ) layers = this.quadtree.visibleLayers;
-
-    for ( var lid = 0, l = layers.length; lid < l; lid++ ) {
-        var o = this.object.layers[lid];
-        if ( o.visible !== vis ) {
-            changeVisibility_( o, vis );
-        }
-    }
+    changeVisibility_( this, vis );
 }
 
 // set visible and all children invisible
-QuadNode.prototype.setVisible = function( visible, layers ) {
+QuadNode.prototype.setVisible = function( visible ) {
     if ( visible === undefined ) visible = true;
-    if ( layers === undefined ) layers = this.quadtree.visibleLayers;
-    this.changeVisibility( visible, layers );
+    this.changeVisibility( visible );
 
     for ( var i = 0; i < 2; i++ ) {
         for ( var j = 0; j < 2; j++ ) {
             if ( this.nodes[i][j] !== undefined ) {
-                this.nodes[i][j].setVisible( false, layers );
+                this.nodes[i][j].setVisible( false );
             }
         }
     }
@@ -193,7 +185,6 @@ QuadNode.prototype.update = function( camera ) {
 }
 
 changeVisibility_ = function( o, vis ) {
-    o.visible = vis;
     o.traverse( function(obj) {
         obj.visible = vis;
     });

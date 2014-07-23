@@ -53,8 +53,19 @@ QuadTree.prototype.update = function( camera )
 
 QuadTree.prototype.setLayerVisibility = function( layer, vis )
 {
-    if (vis) this.root.showLayer( layer );
-    else this.root.hideLayer( layer );
+    var idx = this.visibleLayers.indexOf(layer);
+    if (vis) {
+        if ( idx === -1 ) {
+            this.visibleLayers.push(layer);
+            this.root.showLayer( layer );
+        }
+    }
+    else {
+        if ( idx !== -1 ) {
+            this.visibleLayers.splice(idx, 1);
+            this.root.hideLayer( layer );
+        }
+    }
 }
 
 QuadTree.prototype.setVisibleLayers = function( layers )
