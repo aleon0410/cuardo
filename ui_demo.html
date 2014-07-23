@@ -2,7 +2,6 @@
 <head> 
 <title>My first Three.js app</title>
 
-<script src="jquery-2.1.1.js"></script>
 
 <style>
 #layerSelection {
@@ -31,33 +30,34 @@ font-family: "Arial";
 
 </div>
 <div id="container"></div>
-<script src="three.js/build/three.js"></script> 
-<script src="three.js/examples/js/controls/TrackballControls.js"></script>
-<script src="three.js/examples/js/Detector.js"></script>
-<script src="three.js/examples/js/libs/stats.min.js"></script>
-<script src="three.js/examples/js/shaders/CopyShader.js"></script>
-<script src="three.js/examples/js/shaders/SSAOShader.js"></script>
-<script src="three.js/examples/js/shaders/BokehShader.js"></script>
-<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="three.js/examples/js/postprocessing/MaskPass.js"></script>
-<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
-<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
-<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
-<script src="three.js/src/extras/GeometryUtils.js"></script>
-<script src="three.js/examples/js/ShaderTerrain.js"></script>
-<script src="proj4-src.js"></script>
-<script src="proj4-srs.js"></script>
-<script src="poly2tri.js"></script>
-<script src="Terrain.js"></script>
-<script src="WfsLayer.js"></script>
-<script src="Tiler.js"></script>
-<script src="poly2tri.js"></script>
-<script src="clipper.js"></script>
-<script src="ShaderDraping.js"></script>
-<script src="TileLoader.js"></script>
-<script src="Tile.js"></script>
-<script src="QuadTree.js"></script>
+<script src="thirdparty/three.js/build/three.js"></script> 
+<script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="thirdparty/three.js/examples/js/Detector.js"></script>
+<script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script>
+<script src="thirdparty/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="thirdparty/three.js/examples/js/shaders/SSAOShader.js"></script>
+<script src="thirdparty/three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="thirdparty/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="thirdparty/three.js/src/extras/GeometryUtils.js"></script>
+<script src="thirdparty/three.js/examples/js/ShaderTerrain.js"></script>
+<script src="thirdparty/proj4-src.js"></script>
+<script src="thirdparty/proj4-srs.js"></script>
+<script src="thirdparty/poly2tri.js"></script>
+<script src="thirdparty/poly2tri.js"></script>
+<script src="thirdparty/clipper.js"></script>
+<script src="thirdparty/jquery-2.1.1.js"></script>
+<script src="js/ShaderDraping.js"></script>
+<script src="js/Terrain.js"></script>
+<script src="js/WfsLayer.js"></script>
+<script src="js/Tiler.js"></script>
+<script src="js/TileLoader.js"></script>
+<script src="js/Tile.js"></script>
+<script src="js/QuadTree.js"></script>
 <script>
 inRender = false;
 var quadtree;
