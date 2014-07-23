@@ -30,9 +30,11 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
     //this.symbology = {polygon:{extrude:'hfacade'}};
     this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
 
-    this.worker = new Worker('vector_processing.js');
+    this.worker = new Worker('VectorProcessingWorker.js');
+    // map of tileId -> callbacks
     this.continuations = {};
     var that = this;
+    // mesh building after features have been processed
     this.worker.onmessage = function(o) { return that.onVectorProcessed(o); };
 };
 
@@ -70,7 +72,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 //    console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
-            // call the worker to process this features
+            // call the worker to process these features
             object.worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
         },
         async:   true,
@@ -82,25 +84,24 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     });
 }
 
-function cloneFakeGeometry( g ) {
-    var geom = new THREE.Geometry();
-    geom.vertices = g.vertices;
-/*    for ( var i = 0, l = g.faces.length; i < l; i++ ) {
-        geom.faces.push( new THREE.Face3(g.faces[i].a, g.faces[i].b, g.faces[i].c) );
-    }*/
-    geom.faces = g.faces;
-    geom.faceVertexUvs = g.faceVertexUvs;
-
-    return geom;
-}
-
 WfsLayer.prototype.onVectorProcessed = function( o ) {
+    // function called after worker has been executed
     var r = o.data;
-    console.log('on vector processed', r.tileId);
+
+    var cloneFakeGeometry = function( g ) {
+        // classes are not copied, only data
+        // so we rebuild full objects here
+        var geom = new THREE.Geometry();
+        geom.vertices = g.vertices;
+        geom.faces = g.faces;
+        geom.faceVertexUvs = g.faceVertexUvs;
+        return geom;
+    }
     var geom = cloneFakeGeometry( r.geom );
     var lineGeom = cloneFakeGeometry( r.lineGeom );
     var errGeom = cloneFakeGeometry( r.errGeom );
     var errSpotGeom = cloneFakeGeometry( r.errSpotGeom );
+    var wallGeom = cloneFakeGeometry( r.wallGeom );
     var material;
     if (this.terrain && !this.symbology.polygon.extrude) {
         var drapingShader = ShaderDraping[ "draping" ];
@@ -120,21 +121,36 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     }
     else {
         material =  new THREE.MeshLambertMaterial( 
-            { color:0x00ff00, ambient:0x00ff00, wireframe:true } );
+            { color:this.symbology.polygon.color, 
+              ambient:0x555555, 
+              difuse:this.symbology.polygon.color} );
     }
 
     var group = new THREE.Object3D();
-    group.add(new THREE.Mesh( geom, material ));
+    var mesh = new THREE.Mesh( geom, material );
+    mesh.userData = r.userData;
+    group.add(mesh);
     if ( this.symbology.polygon.lineColor && this.symbology.polygon.lineWidth){
         group.add(new THREE.Line( lineGeom, 
-                                  new THREE.LineBasicMaterial({ color:this.symbology.polygon.lineColor, 
-                                                                linewidth:this.symbology.polygon.lineWidth }) , 
+                                  new THREE.LineBasicMaterial({ 
+                                      color:this.symbology.polygon.lineColor, 
+                                      linewidth:this.symbology.polygon.lineWidth }),
                                   THREE.LinePieces ));
     }
-    group.add(new THREE.Line( errGeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 1 }) , THREE.LinePieces ));
-    group.add(new THREE.Line( errSpotGeom, new THREE.LineBasicMaterial({ color:0xff0000, linewidth: 3 }) , THREE.LinePieces ));
+    group.add(new THREE.Line( errGeom, 
+                              new THREE.LineBasicMaterial(
+                                  { color:0xff0000, linewidth: 1 }) , 
+                              THREE.LinePieces ));
+    group.add(new THREE.Line( errSpotGeom, 
+                              new THREE.LineBasicMaterial(
+                                  { color:0xff0000, linewidth: 3 }) , 
+                              THREE.LinePieces ));
+    if (this.symbology.polygon.extrude){
+        var wallMesh = new THREE.Mesh( wallGeom,  material );
+        wallMesh.userData = r.userDataWall;
+        group.add( wallMesh );
+    }
     
-    console.log('call continuation on', r.tileId);
     this.continuations[r.tileId](group);
 }
 
