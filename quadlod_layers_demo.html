@@ -87,7 +87,7 @@ function init() {
 
             var tiler = undefined;
             if ( true ) {
-                tiler = new Tiler([terrain, wfs], translation, 1);
+                tiler = new Tiler([terrain,wfs], translation, 1);
             }
             else {
                 tiler = function() {};
@@ -108,7 +108,7 @@ function init() {
             }
             var size = 1000;
 
-            var maxLOD = 2;
+            var maxLOD = 1;
             quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 

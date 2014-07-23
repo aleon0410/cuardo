@@ -100,11 +100,14 @@ function init() {
             var tiler = new Tiler([wfsBati], translation, 1);
             var nbTiles = 5;
             var tileSize = 300;
-            for (var i = 0; i<nbTiles; i++){http://mapproxy.org/
+            for (var i = 0; i<nbTiles; i++){
                 for (var j = 0; j<nbTiles; j++){
                     tiler.tile(new THREE.Vector3(i*tileSize,j*tileSize,0), tileSize, 
                             function(object){
-                                scene.add(object);
+                                console.log('******ok');
+                                for (var lid = 0, l = object.length; i <l ; i++ ) {
+                                    scene.add(object[lid]);
+                                }
                                 render();
                             });
                 }
