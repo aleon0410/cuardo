@@ -110,7 +110,7 @@ QuadNode.prototype.changeVisibility = function( vis, layers )
     for ( var lid = 0, l = layers.length; lid < l; lid++ ) {
         var o = this.object.layers[lid];
         if ( o.visible !== vis ) {
-            changeVisibility( o, vis );
+            changeVisibility_( o, vis );
         }
     }
 }
@@ -135,6 +135,13 @@ QuadNode.prototype.hasAllChildren = function() {
         (this.nodes[1][0] !== undefined) && (this.nodes[1][1] !== undefined);
 }
 
+QuadNode.prototype.hasAllChildrenLoaded = function() {
+    return this.nodes[0][0].object.isLoaded() &&
+        this.nodes[0][1].object.isLoaded() &&
+        this.nodes[1][0].object.isLoaded() &&
+        this.nodes[1][1].object.isLoaded();
+}
+
 // update visibility based on camera distance
 QuadNode.prototype.update = function( camera ) {
     var v1 = new THREE.Vector3();
@@ -155,14 +162,15 @@ QuadNode.prototype.update = function( camera ) {
         if (this.object.isEmpty()) {
             TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
         }
-
         // set visible and children to invisible
         this.setVisible();
     }
     else if ( lod > this.level ) {
         if ( this.hasAllChildren() ) {
             // children tiles are available
-            this.changeVisibility( false );
+            if ( this.hasAllChildrenLoaded() ) {
+                this.changeVisibility( false );
+            }
             this.nodes[0][0].update( camera );
             this.nodes[0][1].update( camera );
             this.nodes[1][0].update( camera );
@@ -170,12 +178,11 @@ QuadNode.prototype.update = function( camera ) {
         }
         else {
             // we need new tiles
-            var nNewTiles = 1 << (lod-this.level);
-            var xx = this.x << (lod-this.level);
-            var yy = this.y << (lod-this.level);
-            for ( var i = 0; i < nNewTiles; i++ ) {
-                for ( var j = 0; j < nNewTiles; j++ ) {
-                    TileLoader.instance().enqueue( this.quadtree, xx+i, yy+j, lod );
+            for ( var i = 0; i < 2; i++ ) {
+                for ( var j = 0; j < 2; j++ ) {
+                    if ( this.nodes[i][j] === undefined ) {
+                        TileLoader.instance().enqueue( this.quadtree, this.x*2+i, this.y*2+j, this.level+1 );
+                    }
                 }
             }
 
@@ -185,7 +192,7 @@ QuadNode.prototype.update = function( camera ) {
     }
 }
 
-changeVisibility = function( o, vis ) {
+changeVisibility_ = function( o, vis ) {
     o.visible = vis;
     o.traverse( function(obj) {
         obj.visible = vis;
