@@ -11,8 +11,8 @@ QuadTree = function( size, lod, tiler ) {
     this.tiler = tiler;
 
     // the root tile
-    this.tile = new Tile( size, 0, 0, 0, this );
-    this.add( this.tile );
+    this.root = new QuadNode( size, 0, 0, 0, this );
+    this.add( this.root );
 
     // visible layers
     // all layers are visible at construction
@@ -32,7 +32,7 @@ QuadTree.prototype.setObject = function( object, level )
     var nl = 1<<level;
     var dx = ~~(x*nl);
     var dy = ~~(y*nl);
-    this.tile.setObject( object, dx, dy, level );
+    this.root.setObject( object, dx, dy, level );
 }
 
 //
@@ -48,13 +48,13 @@ QuadTree.prototype.centerCoordinates = function( x, y, level )
 // update object visibility based on current camera
 QuadTree.prototype.update = function( camera )
 {
-    this.tile.update( camera );
+    this.root.update( camera );
 }
 
 QuadTree.prototype.setLayerVisibility = function( layer, vis )
 {
-    if (vis) this.tile.showLayer( layer );
-    else this.tile.hideLayer( layer );
+    if (vis) this.root.showLayer( layer );
+    else this.root.hideLayer( layer );
 }
 
 QuadTree.prototype.setVisibleLayers = function( layers )
@@ -63,14 +63,14 @@ QuadTree.prototype.setVisibleLayers = function( layers )
     layers.forEach( function(l) {
         if ( that.visibleLayers.indexOf(l) === -1 ) {
             // new visible layer
-            that.tile.showLayer(l);
+            that.root.showLayer(l);
         }
     });
 
     this.visibleLayers.forEach(function(l) {
         if ( layers.indexOf(l) === -1 ) {
             // layer removed
-            that.tile.hideLayer(l);
+            that.root.hideLayer(l);
         }
     });
     this.visibleLayers = layers;

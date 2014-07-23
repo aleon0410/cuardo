@@ -7,7 +7,6 @@
 <link  rel="stylesheet" href="jquery-ui-1.11.0/jquery-ui.structure.css"/-->
 </head> 
 <body> 
-<div id="header"><p id="header_text">hello</p></div>
 <div id="container"></div>
 <script src="thirdparty/three.js/build/three.js"></script> 
 <script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script>
@@ -30,8 +29,9 @@
 <script src="thirdparty/poly2tri.js"></script>
 <script src="js/Terrain.js"></script>
 <script src="js/Tiler.js"></script>
-<script src="js/Tile.js"></script>
 <script src="js/TileLoader.js"></script>
+<script src="js/Tile.js"></script>
+<script src="js/QuadNode.js"></script>
 <script src="js/QuadTree.js"></script>
 <script>
 inRender = false;
@@ -77,13 +77,15 @@ function init() {
             var terrain = new Terrain(urlDem, urlTex, translation, 32);
 
             var tiler = undefined;
-            if ( true ) {
+            if ( false ) {
                 tiler = new Tiler([terrain], translation, 1);
             }
             else {
                 tiler = function() {};
+                tiler.layers = [0];
                 tiler.tile = function( center, size, cont ) {
                     if ( size < 10 ) return;
+                    var ret = [];
                     var group = new THREE.Object3D();
                     var grid = new THREE.GridHelper( size/2, size/8 );
                     var color = Math.random()*0xffffff;
@@ -91,16 +93,16 @@ function init() {
                     grid.rotation.x = -Math.PI/2;
                     grid.position = center;
                     group.add(grid);
+                    ret.push(group);
 
-                    var f = function() { cont(group); }
+                    var f = function() { cont(ret); }
                     setTimeout( f, Math.random()*100+50 );
-//                    cont(group);
                 };
             }
 
             var size = 1000;
 
-            var maxLOD = 4;
+            var maxLOD = 1;
             var quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
