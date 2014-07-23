@@ -9,26 +9,26 @@
 <body> 
 <div id="header"><p id="header_text">hello</p></div>
 <div id="container"></div>
-<script src="three.js/build/three.js"></script> 
-<script src="three.js/examples/js/controls/TrackballControls.js"></script>
-<script src="three.js/examples/js/Detector.js"></script>
-<script src="three.js/examples/js/libs/stats.min.js"></script>
-<script src="three.js/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="three.js/examples/js/postprocessing/RenderPass.js"></script>
-<script src="three.js/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="three.js/examples/js/postprocessing/BokehPass.js"></script>
-<script src="three.js/examples/js/ShaderTerrain.js"></script>
-<script src="three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
-<script src="three.js/src/extras/GeometryUtils.js"></script>
-<script src="proj4-src.js"></script>
-<script src="proj4-srs.js"></script>
-<script src="jquery-2.1.1.js"></script>
-<script src="Terrain.js"></script>
-<script src="WfsLayer.js"></script>
-<script src="Tiler.js"></script>
-<script src="poly2tri.js"></script>
-<script src="clipper.js"></script>
-<script src="ShaderDraping.js"></script>
+<script src="thirdparty/three.js/build/three.js"></script> 
+<script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script>
+<script src="thirdparty/three.js/examples/js/Detector.js"></script>
+<script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="thirdparty/three.js/examples/js/postprocessing/BokehPass.js"></script>
+<script src="thirdparty/three.js/examples/js/ShaderTerrain.js"></script>
+<script src="thirdparty/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
+<script src="thirdparty/three.js/src/extras/GeometryUtils.js"></script>
+<script src="thirdparty/proj4-src.js"></script>
+<script src="thirdparty/proj4-srs.js"></script>
+<script src="thirdparty/jquery-2.1.1.js"></script>
+<script src="thirdparty/poly2tri.js"></script>
+<script src="thirdparty/clipper.js"></script>
+<script src="js/Terrain.js"></script>
+<script src="js/WfsLayer.js"></script>
+<script src="js/Tiler.js"></script>
+<script src="js/ShaderDraping.js"></script>
 <script> 
 
 var container, stats;
@@ -91,20 +91,22 @@ function init() {
 
         // terrain + wfs
         {
-            var urlWfsBati = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:toitures&outputFormat=JSON";
+            var urlWfsBati = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:bati&outputFormat=JSON";
             var urlDem = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
             var urlTex = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
             var translation = new THREE.Vector3(-1849500, -5173000, 0);
             var terrain = new Terrain(urlDem, urlTex, translation, 32);
             var wfsBati = new WfsLayer(urlWfsBati, translation, 32);
             var tiler = new Tiler([wfsBati], translation, 1);
-            var nbTiles = 5;
+            var nbTiles = 1;
             var tileSize = 300;
-            for (var i = 0; i<nbTiles; i++){http://mapproxy.org/
+            for (var i = 0; i<nbTiles; i++){
                 for (var j = 0; j<nbTiles; j++){
                     tiler.tile(new THREE.Vector3(i*tileSize,j*tileSize,0), tileSize, 
                             function(object){
-                                scene.add(object);
+                                for ( var lid = 0, l = object.length; lid < l; lid++ ) {
+                                    scene.add(object[lid]);
+                                }
                                 render();
                             });
                 }
