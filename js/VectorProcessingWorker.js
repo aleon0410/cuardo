@@ -4,9 +4,9 @@ function alert(msg)
     console.log("ALERT:" + msg);
 }
 
-importScripts('clipper.js');
-importScripts('poly2tri.js');
-importScripts('three.js/build/three.js');
+importScripts('../thirdparty/clipper.js');
+importScripts('../thirdparty/poly2tri.js');
+importScripts('../thirdparty/three.js/build/three.js');
 
 var EPSILON = 1e-6;
 

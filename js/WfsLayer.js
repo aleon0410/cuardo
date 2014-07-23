@@ -30,7 +30,7 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
     //this.symbology = {polygon:{extrude:'hfacade'}};
     this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
 
-    this.worker = new Worker('VectorProcessingWorker.js');
+    this.worker = new Worker('js/VectorProcessingWorker.js');
     // map of tileId -> callbacks
     this.continuations = {};
     var that = this;
