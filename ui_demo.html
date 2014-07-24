@@ -59,6 +59,7 @@ font-family: "Arial";
 <script src="js/Tile.js"></script>
 <script src="js/QuadNode.js"></script>
 <script src="js/QuadTree.js"></script>
+<script src="js/PlaneGeometry.js"></script>
 <script>
 inRender = false;
 var quadtree;
@@ -84,8 +85,8 @@ function init() {
     {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
         //camera.position.y = -10000;
-        camera.position.z = 200;
-        camera.position.y = -500;
+        camera.position.z = 500;
+        //camera.position.y = -500;
     }
 
     // trackball

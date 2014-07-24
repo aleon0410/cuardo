@@ -6,7 +6,7 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals ) {
     this.extent = [1780810,5111630,1905820,5242220];
     this.nbIntervals = nbIntervals || 8;
 
-    this.geometryTerrain = new THREE.PlaneGeometry(1, 1, this.nbIntervals, this.nbIntervals);
+    this.geometryTerrain = new PlaneGeometry(1, 1, this.nbIntervals, this.nbIntervals);
     this.geometryTerrain.computeFaceNormals();
     this.geometryTerrain.computeVertexNormals();
     this.geometryTerrain.computeTangents();

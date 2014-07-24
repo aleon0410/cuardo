@@ -134,7 +134,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
         var uniformsDraping = THREE.UniformsUtils.clone(drapingShader.uniforms);
         uniformsDraping['color'].value.setHex(this.symbology.polygon.color); 
         uniformsDraping['opacity'].value = this.symbology.polygon.opacity; 
-        uniformsDraping['uZoffset'].value = 2; 
+        uniformsDraping['uZoffset'].value = 1; 
         uniformsDraping[ "tDisplacement" ].value = this.terrain.demTextures[r.tileId];
         uniformsDraping[ "uDisplacementScale" ].value = 100;
         material = new THREE.ShaderMaterial({
@@ -157,6 +157,19 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var mesh = new THREE.Mesh( geom, material );
     mesh.userData = r.userData;
     group.add(mesh);
+
+    //{
+    //    var m= new THREE.Mesh( geom,   new THREE.MeshLambertMaterial( 
+    //        { color:this.symbology.polygon.color, 
+    //          ambient:0x555555, 
+    //          difuse:this.symbology.polygon.color,
+    //          wireframe:true} ));
+    //    m.userData = r.userData;
+    //    m.position.z = 100;
+    //    group.add(m);
+    //}
+
+
     if ( this.symbology.polygon.lineColor && this.symbology.polygon.lineWidth){
         group.add(new THREE.Line( lineGeom, 
                                   new THREE.LineBasicMaterial({ 
