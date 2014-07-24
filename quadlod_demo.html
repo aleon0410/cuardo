@@ -96,13 +96,13 @@ function init() {
                     ret.push(group);
 
                     var f = function() { cont(ret); }
-                    setTimeout( f, Math.random()*100+50 );
+                    setTimeout( f, Math.random()*1000+700 );
                 };
             }
 
             var size = 1000;
 
-            var maxLOD = 1;
+            var maxLOD = 3;
             var quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
@@ -190,7 +190,7 @@ function animate() {
 function render() {
     if (inRender) {
         // callback here, but a render is already in progress
-        return;
+//        return;
     }
     inRender = true;
     scene.updateMatrixWorld();
@@ -199,7 +199,6 @@ function render() {
             object.update( camera );
         }
     } );
-
 
     renderer.render( scene, camera );
     composer.render()

@@ -250,16 +250,17 @@ function render() {
     }
     inRender = true;
     scene.updateMatrixWorld();
+
     scene.traverse( function ( object ) {
         if ( object instanceof QuadTree ) {
             object.update( camera );
         }
     } );
 
-
     renderer.render( scene, camera );
     composer.render()
     stats.update();
+
 
     // load missing tiles
     TileLoader.instance().load( render );

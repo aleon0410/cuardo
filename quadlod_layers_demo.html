@@ -78,12 +78,13 @@ function init() {
         if (true){
             var urlDem = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
             var urlTex = "http://localhost/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=ortho&STYLES=&FORMAT=image/png&SRS=EPSG:3946&TILED=true&DPI=96&MAP_RESOLUTION=96&FORMAT_OPTIONS=dpi:96&TRANSPARENT=TRUE"
-            //var urlWfs = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:toitures&outputFormat=JSON";
-            var urlWfs = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:arrondissements&outputFormat=JSON";
+            var urlWfs = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
+            //var urlWfs = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&typeName=tows:arrondissements&outputFormat=JSON";
 //            var translation = new THREE.Vector3(-1848500, -5173000, 0);
             var translation = new THREE.Vector3(-1841548,-5174099,0);
             var terrain = new Terrain(urlDem, urlTex, translation, 32);
-            var wfs = new WfsLayer(urlWfs, translation, 32, terrain);
+            var wfs = new WfsLayer(urlWfs, translation, 32, terrain, [{size:0, layer:'tows:toitures'},
+                                                                      {size:500, layer:'tows:toitures_lod0'}]);
 
             var tiler = undefined;
             if ( true ) {
@@ -211,12 +212,12 @@ function render() {
     }
     inRender = true;
     scene.updateMatrixWorld();
+
     scene.traverse( function ( object ) {
         if ( object instanceof QuadTree ) {
             object.update( camera );
         }
     } );
-
 
     renderer.render( scene, camera );
     composer.render()

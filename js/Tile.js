@@ -2,7 +2,7 @@
 // i.e. some 3D objects per layer
 Tile = function( layers, state ) {
     // map of layer id -> 3D objects
-    if ( layers === undefined ) layers = {};
+    if ( layers === undefined ) layers = [];
     this.layers = layers;
 
     if ( state === undefined ) state = Tile.State.LOADED;
@@ -16,13 +16,13 @@ Tile.State = {
 };
 
 Tile.prototype.isEmpty = function() {
-    return this.state == Tile.State.EMPTY;
+    return this.state === Tile.State.EMPTY;
 }
 
 Tile.prototype.isLoading = function() {
-    return this.state == Tile.State.LOADING;
+    return this.state === Tile.State.LOADING;
 }
 
 Tile.prototype.isLoaded = function() {
-    return this.state == Tile.State.LOADED;
+    return this.state === Tile.State.LOADED;
 }

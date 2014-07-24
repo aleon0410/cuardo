@@ -25,6 +25,7 @@ TileLoader.prototype.enqueue = function( quadtree, x, y, level )
 var lastRender = 0;
 TileLoader.prototype.load = function( renderFunction )
 {
+    var remaining = this.queue.length;
     while ( this.queue.length > 0 ) {
         var p = this.queue.shift();
 
@@ -46,6 +47,10 @@ TileLoader.prototype.load = function( renderFunction )
                             setTimeout(renderFunction,0);
                             lastRender = now;
                         }
+                        remaining--;
+                        if (!remaining) {
+                            setTimeout(renderFunction,0);
+                        }
                     }
                 }
             };
@@ -53,7 +58,6 @@ TileLoader.prototype.load = function( renderFunction )
         var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
         c.z = 0;
         var ss = p.quadtree.size / Math.pow(2,p.level);
-        console.log('call tiler for', p.x, p.y, p.level);
         (p.quadtree.tiler.tile)( c, ss, f );
     }
 }

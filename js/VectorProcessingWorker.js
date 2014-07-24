@@ -316,7 +316,7 @@ function grid(poly, polyBbox, gridCenter, gridSize, gridNbDiv){
     return points;
 }
 function vectorProcessing( d ) {
-    console.log("vector processing", d.tileId);
+//    console.log("vector processing", d.tileId);
     var data = d.data;
     var ctxt = d.ctxt;
 
@@ -341,9 +341,8 @@ function vectorProcessing( d ) {
             && Math.abs(feat.geometry.bbox[2]-feat.geometry.bbox[5] ) > EPSILON) {
             is3d = true;
         }
-        feat.geometry.coordinates.forEach( function(poly){
-            nbPoly++;
 
+        var processPolygon = function( poly ) {
             // TODO transform 3D polygons to put them in a plane
 
             var clipped = clip( clipperPath( poly, ctxt.translation ), 
@@ -355,7 +354,7 @@ function vectorProcessing( d ) {
             var polyBbox = p2tBbox( paths );
             var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
 
-            //try {
+            try {
                 var heigth;
                 if (ctxt.symbology.polygon.extrude) {
                     heigth = +feat.properties[ ctxt.symbology.polygon.extrude];
@@ -365,7 +364,7 @@ function vectorProcessing( d ) {
                 if (clipped.contour && clipped.contour.length) {
                     addLinesFromClipperPaths( lineGeom, clipped.contour );
                 }
-            /*}
+            }
             catch (err) {
                 nbInvalid++;
                 // show error spots for debug
@@ -401,8 +400,24 @@ function vectorProcessing( d ) {
                         console.log('failed feature triangulation after simplification and fix atempts for gid=',feat.properties.gid, err);
                     }
                 }
-            }*/
-        });
+            }
+        }
+
+        switch ( feat.geometry.type ) {
+            case "MultiPolygon": {
+                feat.geometry.coordinates.forEach( function(poly){
+                    nbPoly++;
+                    processPolygon(poly);
+                });
+            }
+            break;
+            case "Polygon": {
+                processPolygon( feat.geometry.coordinates );
+            }
+            break;
+            default:
+            throw "Unsupported geometry type " + feat.geometry.type;
+        }
 
         // create the map face -> gid
         for (var f=nbFace; f<geom.faces.length; f++) {
