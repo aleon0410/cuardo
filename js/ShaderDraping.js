@@ -104,7 +104,7 @@ ShaderDraping = {
 
 					"vec3 dv = texture2D( tDisplacement, vUv ).xyz;",
 					"float df = uDisplacementScale * dv.x ;",
-					"vec3 displacedPosition = normal * (df + uZoffset) + position;",
+					"vec3 displacedPosition = vec3(0,0,1) * (df + uZoffset) + position;",
 
 					"vec4 worldPosition = modelMatrix * vec4( displacedPosition, 1.0 );",
 					"vec4 mvPosition = modelViewMatrix * vec4( displacedPosition, 1.0 );",

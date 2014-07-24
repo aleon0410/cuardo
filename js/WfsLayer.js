@@ -1,10 +1,13 @@
-WfsLayer = function (url, translation, nbIntervals, terrain, levels) {
+WfsLayer = function (url, translation, nbIntervals, terrain, symbology, levels) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
     this.extent = [];
     this.srid = 0;
     this.terrain = terrain || null;
+    //this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
+    //this.symbology = {polygon:{extrude:'hfacade'}};
+    this.symbology = symbology || {polygon:{color:0xffffff, opacity:.3, lineColor:0xff0000, lineWidth:2}};
 
 
     var object = this;
@@ -43,9 +46,6 @@ WfsLayer = function (url, translation, nbIntervals, terrain, levels) {
         }
     });
 
-    //this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
-    //this.symbology = {polygon:{extrude:'hfacade'}};
-    this.symbology = {polygon:{color:0x00ff00, opacity:.3, lineColor:0xff0000, lineWidth:2}};
 
     this.worker = new Worker('js/VectorProcessingWorker.js');
     // map of tileId -> callbacks
@@ -129,7 +129,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var errSpotGeom = cloneFakeGeometry( r.errSpotGeom );
     var wallGeom = cloneFakeGeometry( r.wallGeom );
     var material;
-    if ( this.terrain && !this.symbology.polygon.extrude) {
+    if ( this.terrain ) {
         var drapingShader = ShaderDraping[ "draping" ];
         var uniformsDraping = THREE.UniformsUtils.clone(drapingShader.uniforms);
         uniformsDraping['color'].value.setHex(this.symbology.polygon.color); 
@@ -148,9 +148,8 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     else {
         material =  new THREE.MeshLambertMaterial( 
             { color:this.symbology.polygon.color, 
-              ambient:0x555555, 
-              difuse:this.symbology.polygon.color,
-              wireframe:true} );
+              ambient:this.symbology.polygon.color, 
+              difuse:this.symbology.polygon.color} );
     }
 
     var group = new THREE.Object3D();

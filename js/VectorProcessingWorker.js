@@ -27,10 +27,11 @@ function addLinesFromClipperPaths(geom, paths){
     });
 }
 
-function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth){
+function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth, center, size){
     var i = geom.vertices.length;
+    var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
     var addedVtx = 0;
-    var addedFac = 0; 
+    var offetCenter = paths[0][0];
     paths.forEach( function(ring) {
         var lastPt;
         ring.forEach( function(pt) {
@@ -43,11 +44,25 @@ function addTrianglesFromClipperPathsExtrusion(geom, paths, heigth){
                 geom.vertices.push(lastPtH);
                 lastPtH = new THREE.Vector3(lastPt.x, lastPt.y, heigth);
                 geom.vertices.push(lastPtH);
-                geom.faces.push( new THREE.Face3(i, i+1, i+2) );
-                geom.faces.push( new THREE.Face3(i+2, i+1, i+3) );
+                var faces = [ new THREE.Face3(i, i+1, i+2), new THREE.Face3(i+2, i+1, i+3)];
+                faces.forEach( function(face){
+                    geom.faces.push( face );
+                    
+                    var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+                                                (geom.vertices[face.a].y-tileOrigin.y)/size),
+                              new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+                                                (geom.vertices[face.b].y-tileOrigin.y)/size),
+                              new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+                                                (geom.vertices[face.c].y-tileOrigin.y)/size)];
+                    //var uv = [new THREE.Vector2((offetCenter.x-tileOrigin.x)/size, 
+                    //                            (offetCenter.y-tileOrigin.y)/size),
+                    //          new THREE.Vector2((offetCenter.x-tileOrigin.x)/size, 
+                    //                            (offetCenter.y-tileOrigin.y)/size),
+                    //          new THREE.Vector2((offetCenter.x-tileOrigin.x)/size, 
+                    //                            (offetCenter.y-tileOrigin.y)/size)];
+                    geom.faceVertexUvs[ 0 ].push(uv);
+                });
                 i+=4;
-                addedVtx += 4;
-                addedFac += 2;
             }
             else {
                 lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
@@ -81,9 +96,10 @@ function p2tBbox( poly ) {
     return bbox;
 }
 
-function triangulate(geom, paths, additionalPoints, height){
+function triangulate(geom, paths, additionalPoints, height, center, size){
 
     if (!paths.length || !paths[0].length) return;
+    var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
 
     var swctx = new poly2tri.SweepContext(paths[0]);
     for (var r=1; r<paths.length; r++) {
@@ -98,9 +114,18 @@ function triangulate(geom, paths, additionalPoints, height){
             geom.vertices.push(new THREE.Vector3(p.x, p.y, height || 0));
         });
 
-        geom.faces.push( new THREE.Face3(i, i+1, i+2) );
+        var face = new THREE.Face3(i, i+1, i+2);
+        geom.faces.push( face );
+        var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.a].y-tileOrigin.y)/size),
+                  new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.b].y-tileOrigin.y)/size),
+                  new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.c].y-tileOrigin.y)/size)];
+        geom.faceVertexUvs[ 0 ].push(uv);
         i += 3;
     });
+
 }
 
 function clipperPath( wfsPolygon, translation ) {
@@ -115,8 +140,8 @@ function clipperPath( wfsPolygon, translation ) {
            || ( clipperPath.length && r.length >= 3 && !isClockwise(r) ) ) r.reverse();
         clipperPath.push(r);
     });
-    //return ClipperLib.Clipper.CleanPolygons(clipperPath, 0.0001); // centimetric precision
-    return clipperPath;
+    return ClipperLib.Clipper.CleanPolygons(clipperPath, 0.0001); // centimetric precision
+    //return clipperPath;
 }
 
 function isClockwise( ring ) {
@@ -165,22 +190,22 @@ function clip( clipperPath, clipperRect, needsContour ) {
     return {poly:clippedPoly, contour:clippedContour};
 }
 
-function computeTileUv(geom, center, size) {
-    // uv coord are relative to the tile
-    {
-        var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
-        for (var f=0; f<geom.faces.length; f+=1){
-            var face = geom.faces[f];
-            var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
-                                        (geom.vertices[face.a].y-tileOrigin.y)/size),
-                      new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
-                                        (geom.vertices[face.b].y-tileOrigin.y)/size),
-                      new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
-                                        (geom.vertices[face.c].y-tileOrigin.y)/size)];
-            geom.faceVertexUvs[ 0 ].push(uv);
-        }
-    }
-}
+//function computeTileUv(geom, center, size) {
+//    // uv coord are relative to the tile
+//    {
+//        var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
+//        for (var f=0; f<geom.faces.length; f+=1){
+//            var face = geom.faces[f];
+//            var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+//                                        (geom.vertices[face.a].y-tileOrigin.y)/size),
+//                      new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+//                                        (geom.vertices[face.b].y-tileOrigin.y)/size),
+//                      new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+//                                        (geom.vertices[face.c].y-tileOrigin.y)/size)];
+//            geom.faceVertexUvs[ 0 ].push(uv);
+//        }
+//    }
+//}
 
 // the poly should be clipped by grid before calling
 // return a list of points to add to poly2try
@@ -231,7 +256,7 @@ function grid(poly, polyBbox, gridCenter, gridSize, gridNbDiv){
                             // i.e. the ray enters and exist at this point
                             intersections.pop();
                             --hit;
-                            console.log('removed dupe at ',x,y)
+                            //console.log('removed dupe at ',x,y)
                         }
                         //console.log('hit');
                     }
@@ -351,19 +376,23 @@ function vectorProcessing( d ) {
             if (!clipped.poly.length) return;
 
             var paths = p2tPath( clipped.poly );
-            var polyBbox = p2tBbox( paths );
-            var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
+            var additionalPoints = [];
 
             try {
-                var heigth;
-                if (ctxt.symbology.polygon.extrude) {
-                    heigth = +feat.properties[ ctxt.symbology.polygon.extrude];
-                    addTrianglesFromClipperPathsExtrusion(wallGeom, clipped.contour, heigth);
-                }
-                triangulate(geom, paths, additionalPoints, heigth);
                 if (clipped.contour && clipped.contour.length) {
                     addLinesFromClipperPaths( lineGeom, clipped.contour );
                 }
+
+                var heigth;
+                if (!ctxt.symbology.polygon.extrude){
+                    var polyBbox = p2tBbox( paths );
+                    additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
+                }
+                if (ctxt.symbology.polygon.extrude) {
+                    heigth = +feat.properties[ ctxt.symbology.polygon.extrude];
+                    addTrianglesFromClipperPathsExtrusion(geom, clipped.contour, heigth, ctxt.center, ctxt.size);
+                }
+                triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size);
             }
             catch (err) {
                 nbInvalid++;
@@ -378,9 +407,9 @@ function vectorProcessing( d ) {
                 var simpPoly = ClipperLib.Clipper.SimplifyPolygons( clipped.poly, ClipperLib.PolyFillType.pftEvenOdd );
                 try {
                     var paths = p2tPath( simpPoly );
-                    var polyBbox = p2tBbox( paths );
-                    var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
-                    triangulate(geom, paths, heigth);
+                    //var polyBbox = p2tBbox( paths );
+                    //var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
+                    triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size);
                     console.log('fixed polygon gid=',feat.properties.gid, err);
                 }
                 catch (err) {
@@ -391,9 +420,9 @@ function vectorProcessing( d ) {
                     // TODO fix case with holes
                     try {
                         var paths = p2tPath( [simpPoly[0]] );
-                        var polyBbox = p2tBbox( paths );
-                        var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
-                        triangulate(geom, paths, heigth);
+                        //var polyBbox = p2tBbox( paths );
+                        //var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
+                        triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size);
                         console.log('dubious fix for gid=',feat.properties.gid);
                     }
                     catch (err){
@@ -430,13 +459,17 @@ function vectorProcessing( d ) {
     var end = new Date().getTime();
 //    console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons with '+nbInvalid+' failed triangulations');
 
-    computeTileUv(geom, ctxt.center, ctxt.size);
+    //computeTileUv(geom, ctxt.center, ctxt.size);
     geom.computeFaceNormals();
     geom.computeVertexNormals();
     geom.computeTangents();
 
+    wallGeom.computeFaceNormals();
+    wallGeom.computeVertexNormals();
+    wallGeom.computeTangents();
+
     if (ctxt.symbology.polygon.extrude){
-        computeTileUv(wallGeom, ctxt.center, ctxt.size);
+        //computeTileUv(wallGeom, ctxt.center, ctxt.size);
     }
     var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId };
     return r;
