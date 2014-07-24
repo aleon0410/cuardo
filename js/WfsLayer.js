@@ -1,4 +1,4 @@
-WfsLayer = function (url, translation, nbIntervals, terrain) {
+WfsLayer = function (url, translation, nbIntervals, terrain, levels) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
@@ -6,9 +6,26 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
     this.srid = 0;
     this.terrain = terrain || null;
 
-    // TODO select only the opropriate layer
+
     var object = this;
-    var baseUrl = this.url.split('?')[0];
+    var split = this.url.split('?');
+    var baseUrl = split[0];
+
+    // Level of details
+    // Sorted array of pairs (size,layer_name)
+    // The layer_name will be used for every tile size bigger or equal to size
+    // If layer_name is empty, nothing will be returned for these sizes
+    if ( levels === undefined ) {
+        var l = /typeName=([^&]+)/.exec(split[1]);
+        if (l) {
+            levels = [{size:0, layer:l[l.length-1]}]
+        }
+        else {
+            throw 'You must specify at least one level of detail';
+        }
+    }
+    this.levels = levels;
+
     console.log(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities');
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
@@ -58,6 +75,15 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var reqstart = new Date().getTime();
 
+    // look for the correct level
+    var level = undefined;
+    for ( var i = 0, l = this.levels.length; i < l; i++ ) {
+        if ( this.levels[i].size > size ) {
+            break;
+        }
+        level = this.levels[i];
+    }
+
     var ctxt = {
         translation: translation,
         clipperRect: clipperRect,
@@ -69,8 +95,8 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     this.continuations[tileId] = callback;
 
-//    console.log(this.url + '&BBOX='+ext.join(','));
-    jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
+    console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
+    jQuery.ajax(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer, {
         success: function(data, textStatus, jqXHR) {
             // call the worker to process these features
             object.worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );

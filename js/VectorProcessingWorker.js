@@ -213,9 +213,8 @@ function vectorProcessing( d ) {
             && Math.abs(feat.geometry.bbox[2]-feat.geometry.bbox[5] ) > EPSILON) {
             is3d = true;
         }
-        feat.geometry.coordinates.forEach( function(poly){
-            nbPoly++;
 
+        var processPolygon = function( poly ) {
             // TODO transform 3D polygons to put them in a plane
 
             var clipped = clip( clipperPath( poly, ctxt.translation ), 
@@ -265,7 +264,23 @@ function vectorProcessing( d ) {
                     }
                 }
             }
-        });
+        }
+
+        switch ( feat.geometry.type ) {
+            case "MultiPolygon": {
+                feat.geometry.coordinates.forEach( function(poly){
+                    nbPoly++;
+                    processPolygon(poly);
+                });
+            }
+            break;
+            case "Polygon": {
+                processPolygon( feat.geometry.coordinates );
+            }
+            break;
+            default:
+            throw "Unsupported geometry type " + feat.geometry.type;
+        }
 
         // create the map face -> gid
         for (var f=nbFace; f<geom.faces.length; f++) {

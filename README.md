@@ -39,6 +39,11 @@ Couche de polygones 3d texturés
 
     TODO
 
+LOD0
+
+alter table toitures add column lod0(polygon,3946);
+update toitures set lod0 = st_envelope(geom);
+
 Test for textured geometries, in psql (a simple vertical face to display a building, note that it's an invalid multipolygon, but tin are not yet supported by tinyows):
 
     create type texture as (url text,uv float[][]);
@@ -77,11 +82,23 @@ Fichier /etc/tinyows.xml:
 	    title="TinyOWS Server - Demo Service" />
 
   <layer retrievable="1"
-	 writable="1"
+	 writable="0"
 	 ns_prefix="tows"
 	 ns_uri="http://www.tinyows.org/"
+         include_items="hfacade,geom"
          name="toitures"
-         title="toitures" />
+         title="toitures"
+         />
+
+  <layer retrievable="1"
+	 writable="0"
+	 ns_prefix="tows"
+	 ns_uri="http://www.tinyows.org/"
+         include_items="hfacade,lod0"
+         name="toitures_lod0"
+         title="toitures_lod0"
+         table="toitures"
+         />
 
   <layer retrievable="1"
 	 writable="1"
