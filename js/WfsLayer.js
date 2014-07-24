@@ -26,9 +26,9 @@ WfsLayer = function (url, translation, nbIntervals, terrain) {
         }
     });
 
-    this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
+    //this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
     //this.symbology = {polygon:{extrude:'hfacade'}};
-    this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
+    this.symbology = {polygon:{color:0x00ff00, opacity:.3, lineColor:0xff0000, lineWidth:2}};
 
     this.worker = new Worker('js/VectorProcessingWorker.js');
     // map of tileId -> callbacks
@@ -54,17 +54,17 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var object = this;
     var is3d = false;
-    var translation = this.translation;
 
     var reqstart = new Date().getTime();
 
     var ctxt = {
-        translation: translation,
+        translation: this.translation,
         clipperRect: clipperRect,
         symbology: object.symbology,
         is3d: is3d,
         center: center,
-        size:size
+        size:size,
+        nbIntervals: this.nbIntervals
     };
 
     this.continuations[tileId] = callback;
@@ -103,12 +103,12 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var errSpotGeom = cloneFakeGeometry( r.errSpotGeom );
     var wallGeom = cloneFakeGeometry( r.wallGeom );
     var material;
-    if (this.terrain && !this.symbology.polygon.extrude) {
+    if ( this.terrain && !this.symbology.polygon.extrude) {
         var drapingShader = ShaderDraping[ "draping" ];
         var uniformsDraping = THREE.UniformsUtils.clone(drapingShader.uniforms);
         uniformsDraping['color'].value.setHex(this.symbology.polygon.color); 
         uniformsDraping['opacity'].value = this.symbology.polygon.opacity; 
-        uniformsDraping['uZoffset'].value = 1; 
+        uniformsDraping['uZoffset'].value = 2; 
         uniformsDraping[ "tDisplacement" ].value = this.terrain.demTextures[r.tileId];
         uniformsDraping[ "uDisplacementScale" ].value = 100;
         material = new THREE.ShaderMaterial({
@@ -123,7 +123,8 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
         material =  new THREE.MeshLambertMaterial( 
             { color:this.symbology.polygon.color, 
               ambient:0x555555, 
-              difuse:this.symbology.polygon.color} );
+              difuse:this.symbology.polygon.color,
+              wireframe:true} );
     }
 
     var group = new THREE.Object3D();
