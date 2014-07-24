@@ -190,20 +190,19 @@ function animate() {
 function render() {
     if (inRender) {
         // callback here, but a render is already in progress
-        return;
+//        return;
     }
     inRender = true;
     scene.updateMatrixWorld();
-
-    renderer.render( scene, camera );
-    composer.render()
-    stats.update();
-
     scene.traverse( function ( object ) {
         if ( object instanceof QuadTree ) {
             object.update( camera );
         }
     } );
+
+    renderer.render( scene, camera );
+    composer.render()
+    stats.update();
 
     // load missing tiles
     TileLoader.instance().load( render );

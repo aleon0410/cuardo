@@ -58,7 +58,6 @@ TileLoader.prototype.load = function( renderFunction )
         var c = p.quadtree.centerCoordinates( p.x, p.y, p.level );
         c.z = 0;
         var ss = p.quadtree.size / Math.pow(2,p.level);
-        console.log('call tiler for', p.x, p.y, p.level);
         (p.quadtree.tiler.tile)( c, ss, f );
     }
 }

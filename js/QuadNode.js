@@ -122,20 +122,8 @@ QuadNode.prototype.setVisible = function( visible ) {
     }
 }
 
-QuadNode.prototype.hasAllChildren = function() {
-    return (this.nodes[0][0] !== undefined) && (this.nodes[0][1] !== undefined) &&
-        (this.nodes[1][0] !== undefined) && (this.nodes[1][1] !== undefined);
-}
-
-QuadNode.prototype.hasAllChildrenLoaded = function() {
-    return this.nodes[0][0].object.isLoaded() &&
-        this.nodes[0][1].object.isLoaded() &&
-        this.nodes[1][0].object.isLoaded() &&
-        this.nodes[1][1].object.isLoaded();
-}
-
 // update visibility based on camera distance
-QuadNode.prototype.update = function( camera ) {
+QuadNode.prototype.update = function( camera, lastLoaded ) {
     var v1 = new THREE.Vector3();
     var v2 = new THREE.Vector3();
     v1.setFromMatrixPosition( camera.matrixWorld );
@@ -150,36 +138,50 @@ QuadNode.prototype.update = function( camera ) {
     var lod = ~~(1/d*1700);
     if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
 
-    if ( lod <= this.level ) {
-        if (this.object.isEmpty()) {
-            TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
-        }
-        // set visible and children to invisible
-        this.setVisible();
+    if ( (lod == this.level) && (this.object.isEmpty()) ) {
+        TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
     }
-    else if ( lod > this.level ) {
-        if ( this.hasAllChildren() ) {
-            // children tiles are available
-            if ( this.hasAllChildrenLoaded() ) {
-                this.changeVisibility( false );
-            }
-            this.nodes[0][0].update( camera );
-            this.nodes[0][1].update( camera );
-            this.nodes[1][0].update( camera );
-            this.nodes[1][1].update( camera );
+
+    if ( this.level >= lod ) {
+        if ( this.object.isLoaded() ) {
+            // set visible and children to invisible
+            this.setVisible();
         }
         else {
-            // we need new tiles
+            var isLeaf = true;
             for ( var i = 0; i < 2; i++ ) {
                 for ( var j = 0; j < 2; j++ ) {
-                    if ( this.nodes[i][j] === undefined ) {
-                        TileLoader.instance().enqueue( this.quadtree, this.x*2+i, this.y*2+j, this.level+1 );
+                    if ( this.nodes[i][j] !== undefined ) {
+                        isLeaf = false;
+                        this.nodes[i][j].update( camera, lastLoaded );
                     }
                 }
             }
+            if ( isLeaf && lastLoaded ) {
+                lastLoaded.changeVisibility( true );
+            }
+        }
+    }
+    else if ( this.level < lod ) {
+        if ( this.object.isLoaded() ) {
+            // set to invisible for now
+            this.changeVisibility( false );
+            // but it could be reverted to visible if no children can be visible
+            lastLoaded = this;
+        }
 
-            // stop at this level for now
-            this.setVisible();
+        for ( var i = 0; i < 2; i++ ) {
+            for ( var j = 0; j < 2; j++ ) {
+                if ( this.nodes[i][j] === undefined ) {
+                    TileLoader.instance().enqueue( this.quadtree, this.x*2+i, this.y*2+j, this.level+1 );
+                    if ( lastLoaded ) {
+                        lastLoaded.changeVisibility( true );
+                    }
+                }
+                else {
+                    this.nodes[i][j].update( camera, lastLoaded );
+                }
+            }
         }
     }
 }
