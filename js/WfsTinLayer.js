@@ -51,6 +51,13 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
             var nbPoly = 0;
             var group = new THREE.Object3D();
             data.features.forEach( function(feat) {
+                var xmin = feat.geometry.bbox[3];
+                var ymin = feat.geometry.bbox[4];
+                if ( (feat.geometry.bbox[3] > ext[2]) || (feat.geometry.bbox[4] > ext[3]) ) {
+                    // only keep objects inside the extent
+                    // and on the left and bottom border of the tile
+                    return;
+                }
                 var geom = new THREE.Geometry();
 
                 var tex;
