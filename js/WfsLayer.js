@@ -136,7 +136,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
         uniformsDraping['opacity'].value = this.symbology.polygon.opacity; 
         uniformsDraping['uZoffset'].value = 1; 
         uniformsDraping[ "tDisplacement" ].value = this.terrain.demTextures[r.tileId];
-        uniformsDraping[ "uDisplacementScale" ].value = 100;
+        uniformsDraping[ "uDisplacementScale" ].value = 255;
         material = new THREE.ShaderMaterial({
             uniforms:uniformsDraping,
             vertexShader:drapingShader.vertexShader,
