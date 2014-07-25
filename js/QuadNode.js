@@ -135,7 +135,7 @@ QuadNode.prototype.update = function( camera, lastLoaded ) {
     v2.setY( c.y );
     var d = v1.distanceTo( v2 );
     // requested lod
-    var lod = ~~(1/d*1700);
+    var lod = ~~(1/d*this.quadtree.size*1.4);
     if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
 
     if ( (lod == this.level) && (this.object.isEmpty()) ) {
