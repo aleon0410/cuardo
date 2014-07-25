@@ -51,7 +51,8 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
     // the displacement determines the height of a vector, mapped to
     // the heightmap
     uniformsTerrain[ "tDisplacement" ].value = textureDem;
-    uniformsTerrain[ "uDisplacementScale" ].value = 100;
+    uniformsTerrain[ "uDisplacementScale" ].value = 255;
+    uniformsTerrain[ "uDisplacementBias" ].value = 0;
 
     // the following textures can be use to finetune how
     // the map is shown. These are good defaults for simple

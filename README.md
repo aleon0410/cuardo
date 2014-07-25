@@ -37,12 +37,87 @@ Couche de polygones pour bâti
 
 Couche de polygones 3d texturés 
 
-    TODO
+* unzip the archive LYON_CityGML.zip
+* Modify LYON_3.gml, disable (comment out) the following cityObjectMember:
+**  49_PREFECTURE
+** LYON_3EME_00004
+** LYON_3EME_00054
+** LYON_3EME_00318
+
+CityGML import :
+* Download the java citygml2postgis application from http://www.3dcitydb.net
+* Create a PostGIS database 'citygml'
+* Initialize it with 3dcitydb/postgis/CREATE_DB.sql
+* Launch 3DCityDB-Importer-Exporter
+* Set preferences to:
+** Import / Features Classes / Select only 'Building'
+** Preferences / Appearance / Import appearance, do not import textures
+** Preferences / Import / gml:id / Use UUID in case of missing gml:id (optional, for better feedback in case of errors)
+* Set the proper database parameters in the 'Database' tab
+* Launch the import
+* Ignore missing appearance XLinks errors
+
+Textured data loading:
+
+Once the loading is done, execute :
+
+<pre>
+CREATE OR REPLACE FUNCTION tex2vector(varchar) RETURNS float[][] AS $$
+DECLARE
+    outv float[][];
+    arr varchar[];
+    i int;
+BEGIN
+    arr := string_to_array($1,' ');
+    FOR i IN 0..array_length(arr,1)/2-1
+    LOOP
+	outv := outv || array[[arr[i*2+1]::float, arr[i*2+2]::float]];
+    END LOOP;
+    return outv;
+END;
+$$ language plpgsql;
+
+DROP AGGREGATE IF EXISTS array_accum(float[][]);
+CREATE AGGREGATE array_accum (float[][])
+(
+    sfunc = array_cat,
+    stype = float[][],
+    initcond = '{}'
+);
+
+drop type if exists texture;
+create type texture as (url text,uv float[][]);
+
+drop table if exists textured_citygml;
+create table textured_citygml (gid serial primary key, geom geometry('MULTIPOLYGONZ',3946,3), tex texture);
+
+insert into textured_citygml
+select root_id as gid,
+  st_collect(g.geometry order by g.id) as geom,
+  ('http://localhost/textures/' || tex_image_uri, array_accum(tex2vector(texture_coordinates) order by g.id) )::texture as tex
+from
+   surface_geometry as g,
+   surface_data as d,
+   textureparam as t
+
+where
+    t.surface_data_id = d.id
+and t.surface_geometry_id = g.id
+group by root_id, tex_image_uri
+;
+</pre>
+
+... then copy the table to the final database
+pg_dump lyon -t textured_citygml | psql lyon
+
 
 LOD0
 
-alter table toitures add column lod0(polygon,3946);
+alter table toitures add column lod0 Geometry(polygon,3946);
 update toitures set lod0 = st_envelope(geom);
+
+create index on toitures using gist(geom);
+create index on toitures using gist(lod0);
 
 Test for textured geometries, in psql (a simple vertical face to display a building, note that it's an invalid multipolygon, but tin are not yet supported by tinyows):
 
