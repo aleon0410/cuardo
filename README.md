@@ -124,11 +124,13 @@ Test for textured geometries, in psql (a simple vertical face to display a build
     create type texture as (url text,uv float[][]);
     create table textured_geometry (gid serial primary key, geom geometry('MULTIPOLYGONZ',3946,3), name text, tex texture);
     insert into textured_geometry(geom, name, tex) values ('SRID=3946;MULTIPOLYGON Z (((0 0 0,6 0 0,0 0 12,0 0 0)),((0 0 12,6 0 0,6 0 12,0 0 12)))'::geometry, 'toto', ROW('http://localhost/textures/building-texture1.jpg','{{0,0},{.81,.0},{0,1},{0,0},{0,1},{.81,.0},{.81,1},{0,1}}'));
+    insert into textured_geometry(geom, name, tex) values ('SRID=3946;MULTIPOLYGON Z (((0 0 0,0 6 0,0 0 12,0 0 0)),((0 0 12,0 6 0,0 6 12,0 0 12)))'::geometry, 'tata', ROW('http://localhost/textures/building-texture2.jpg','{{0,0},{.81,.0},{0,1},{0,0},{0,1},{.81,.0},{.81,1},{0,1}}'));
 
 Then install texture so that it can be served by apache:
 
     cd /tmp
     wget http://salzburndesigns.com/gaming/wp-content/uploads/2012/11/building-texture1.jpg 
+    wget http://texturelib.com/Textures/buildings/buildings/buildings_buildings_0095_01_preview.jpg -O building-texture2.jpg
     sudo mkdir /var/www/html/textures
     sudo cp building-texture1.jpg /var/www/html/textures
 
