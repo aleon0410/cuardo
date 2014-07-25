@@ -52,7 +52,7 @@ function init() {
     {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
         //camera.position.y = -10000;
-        camera.position.z = 200;
+        camera.position.z = 3000;
         camera.position.y = -500;
     }
 
@@ -84,18 +84,26 @@ function init() {
 //            var translation = new THREE.Vector3(-1848500, -5173000, 0);
 //            var translation = new THREE.Vector3(-1841548,-5174099,0);
             // Lyon 3
-            var translation = new THREE.Vector3(-1843818.1,-5174854.2,0);
-            var translation = new THREE.Vector3(-1843818.1,-5174884.2,0);
+            var translation = new THREE.Vector3(-1843818.1,-5175084.2,0);
             var terrain = new Terrain(urlDem, urlTex, translation, 32);
-            var wfs = new WfsLayer(urlWfs, translation, 32, terrain, [{size:0, layer:'tows:toitures'},
-                                                                      {size:500, layer:'tows:toitures_lod0'}]);
+
+            var lod0_url = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:toitures_lod0";
+            var lod0 = new WfsLayer(lod0_url, translation, 32, terrain,
+                                    {polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:2, opacity:0.5}}
+                                    , [1000,1999] );
+
+
+            var lod1_url = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:toitures";
+            var lod1 = new WfsLayer(lod1_url, translation, 32, terrain,
+                                    {polygon:{color:0xaaaaaa, extrude:'hfacade', lineColor:0xffffff, lineWidth:2, opacity:0.8}}
+                                    , [250, 999] );
 
             var urlTin = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:textured_citygml";
-            var tin = new WfsTinLayer( urlTin, translation, 32, terrain );
+            var tin = new WfsTinLayer( urlTin, translation, 32, terrain, [0,249] );
 
             var tiler = undefined;
             if ( true ) {
-                tiler = new Tiler([terrain,tin], translation, 1);
+                tiler = new Tiler([terrain,lod0,lod1,tin], translation, 1);
             }
             else {
                 tiler = function() {};
@@ -114,9 +122,9 @@ function init() {
 //                    cont(group);
                 };
             }
-            var size = 10;
+            var size = 2000;
 
-            var maxLOD = 2;
+            var maxLOD = 4;
             quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
@@ -161,6 +169,34 @@ function init() {
         {
             composer = new THREE.EffectComposer( renderer );
             composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+/*            // ssao
+            var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+            var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+            depthMaterial.blending = THREE.NoBlending;
+            depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+
+            var effect = new THREE.ShaderPass( THREE.SSAOShader );
+            effect.uniforms[ 'tDepth' ].value = depthTarget;
+            effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
+            effect.uniforms[ 'cameraNear' ].value = camera.near;
+            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'lumInfluence' ].value = .9;
+            effect.uniforms[ 'aoClamp' ].value = .5;
+            composer.addPass( effect );
+
+            // depth of field
+            var bokehPass = new THREE.BokehPass( scene, camera, {
+                focus: .8,
+                aperture:	0.0008,
+                maxblur:	1,
+                width:  window.innerWidth,
+                height: window.innerHeight
+                } );
+            bokehPass.renderToScreen = true;
+            composer.addPass( bokehPass );
+*/
         }
     }
 

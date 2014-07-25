@@ -1,12 +1,15 @@
 // deals only with triagulated 3D surfaces
 //
-WfsTinLayer = function (url, translation, nbIntervals, terrain) {
+WfsTinLayer = function (url, translation, nbIntervals, terrain, range) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
     this.extent = [];
     this.srid = 0;
     this.terrain = terrain || null;
+
+    // size range for which this tile is visible
+    this.range = range || [0,1000000];
 
     // TODO select only the opropriate layer
     var object = this;
@@ -37,6 +40,11 @@ var EPSILON = 1e-6;
 
 
 WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
+    if ( (size < this.range[0]) || (size > this.range[1]) ) {
+        // return null if not visible
+        callback();
+        return;
+    }
     var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
@@ -104,6 +112,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
 
                 group.add(new THREE.Mesh( geom, material ));
             });
+
             
             callback(group);
         },

@@ -1,4 +1,4 @@
-WfsLayer = function (url, translation, nbIntervals, terrain, symbology, levels) {
+WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     this.url = url;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
@@ -14,7 +14,7 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, levels) 
     var split = this.url.split('?');
     var baseUrl = split[0];
 
-    // Level of details
+/*    // Level of details
     // Sorted array of pairs (size,layer_name)
     // The layer_name will be used for every tile size bigger or equal to size
     // If layer_name is empty, nothing will be returned for these sizes
@@ -27,7 +27,8 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, levels) 
             throw 'You must specify at least one level of detail';
         }
     }
-    this.levels = levels;
+    this.levels = levels;*/
+    this.range = range || [0,1000000];
 
     console.log(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities');
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
@@ -57,6 +58,11 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, levels) 
 
 
 WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
+    if ( (size < this.range[0]) || (size > this.range[1]) ) {
+        // return null if not visible
+        callback();
+        return;
+    }
     var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
@@ -74,6 +80,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var reqstart = new Date().getTime();
 
+/*
     // look for the correct level
     var level = undefined;
     for ( var i = 0, l = this.levels.length; i < l; i++ ) {
@@ -82,6 +89,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         }
         level = this.levels[i];
     }
+*/
 
     var ctxt = {
         translation: this.translation,
@@ -95,8 +103,10 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     this.continuations[tileId] = callback;
 
-    console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
-    jQuery.ajax(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer, {
+//    console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
+//    jQuery.ajax(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer, {
+    console.log(this.url + '&BBOX='+ext.join(','));
+    jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
             // call the worker to process these features
             object.worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
