@@ -19,6 +19,7 @@ ShaderDraping = {
 
 			"tDisplacement": { type: "t", value: null },
 
+			"uDisplacementBias": { type: "f", value: 0.0 },
 			"uDisplacementScale": { type: "f", value: 1.0 },
 
 			"color": { type: "c", value: new THREE.Color( 0xeeeeee ) },
@@ -70,6 +71,7 @@ ShaderDraping = {
 
 				"uniform sampler2D tDisplacement;",
 				"uniform float uDisplacementScale;",
+				"uniform float uDisplacementBias;",
 				"uniform float uZoffset;",
 
 			"#endif",
@@ -103,7 +105,7 @@ ShaderDraping = {
 				"#ifdef VERTEX_TEXTURES",
 
 					"vec3 dv = texture2D( tDisplacement, vUv ).xyz;",
-					"float df = uDisplacementScale * dv.x ;",
+					"float df = uDisplacementScale * dv.x + uDisplacementBias;",
 					"vec3 displacedPosition = vec3(0,0,1) * (df + uZoffset) + position;",
 
 					"vec4 worldPosition = modelMatrix * vec4( displacedPosition, 1.0 );",

@@ -94,7 +94,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                     for (var t=0; t<3; t++) {
                         geom.vertices.push( new THREE.Vector3(tri[0][t][0]+object.translation.x, 
                                                               tri[0][t][1]+object.translation.y,
-                                                              tri[0][t][2]) );
+                                                              tri[0][t][2]+object.translation.z) );
                         if (tex) uv.push( new THREE.Vector2(tex.uv[j+t][0], tex.uv[j+t][1]) );
                         else uv.push( new THREE.Vector2(0, 0) );
                     }

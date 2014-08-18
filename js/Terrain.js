@@ -52,7 +52,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
     // the heightmap
     uniformsTerrain[ "tDisplacement" ].value = textureDem;
     uniformsTerrain[ "uDisplacementScale" ].value = 255;
-    uniformsTerrain[ "uDisplacementBias" ].value = 0;
+    uniformsTerrain[ "uDisplacementBias" ].value = this.translation.z;
 
     // the following textures can be use to finetune how
     // the map is shown. These are good defaults for simple

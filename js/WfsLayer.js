@@ -147,6 +147,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
         uniformsDraping['uZoffset'].value = 1; 
         uniformsDraping[ "tDisplacement" ].value = this.terrain.demTextures[r.tileId];
         uniformsDraping[ "uDisplacementScale" ].value = 255;
+        uniformsDraping[ "uDisplacementBias" ].value = this.translation.z;
         material = new THREE.ShaderMaterial({
             uniforms:uniformsDraping,
             vertexShader:drapingShader.vertexShader,
