@@ -48,10 +48,10 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
     console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
-            var geom = new THREE.Geometry();
             var nbPoly = 0;
             var group = new THREE.Object3D();
             data.features.forEach( function(feat) {
+                var geom = new THREE.Geometry();
 
                 var tex;
                 var material;
