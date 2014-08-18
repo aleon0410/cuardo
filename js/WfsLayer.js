@@ -48,12 +48,17 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     });
 
 
-    this.worker = new Worker('js/VectorProcessingWorker.js');
     // map of tileId -> callbacks
     this.continuations = {};
     var that = this;
-    // mesh building after features have been processed
-    this.worker.onmessage = function(o) { return that.onVectorProcessed(o); };
+    this.workers = [];
+    this.maxWorkers = 4;
+    for ( var i = 0; i < this.maxWorkers; i++ ) {
+        this.workers[i] = new Worker('js/VectorProcessingWorker.js');
+        // mesh building after features have been processed
+        this.workers[i].onmessage = function(o) { return that.onVectorProcessed(o); };
+    }
+    this.currentWorker = 0;
 };
 
 
@@ -108,8 +113,13 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
+            var reqend = new Date().getTime();
             // call the worker to process these features
-            object.worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
+
+            var worker = object.workers[object.currentWorker];
+            console.log('GET time ' + (reqend-reqstart) + ' ' + reqstart + " using worker #" + object.currentWorker);
+            worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
+            object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
         },
         async:   true,
         dataType: 'json',

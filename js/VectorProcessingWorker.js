@@ -457,7 +457,6 @@ function vectorProcessing( d ) {
         }
     });
     var end = new Date().getTime();
-//    console.log((end-start)/1000.+'sec to triangulate '+nbPoly+' polygons with '+nbInvalid+' failed triangulations');
 
     //computeTileUv(geom, ctxt.center, ctxt.size);
     geom.computeFaceNormals();
@@ -472,6 +471,7 @@ function vectorProcessing( d ) {
         //computeTileUv(wallGeom, ctxt.center, ctxt.size);
     }
     var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId };
+    console.log('Processing time ' + (end-reqend));
     return r;
 }
 
