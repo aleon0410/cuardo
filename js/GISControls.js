@@ -165,69 +165,21 @@ THREE.GISControls = function ( object, domElement ) {
         };
 
 	this.update = function () {
+            phi = Math.min( 80, Math.max( -20, phi ) );
 
-/*
-function onDocumentMouseMove( event ) {
-
-    event.preventDefault();
-
-    if ( isMouseDown ) {
-
-        theta = - ( ( event.clientX - onMouseDownPosition.x ) * 0.5 )
-                + onMouseDownTheta;
-        phi = ( ( event.clientY - onMouseDownPosition.y ) * 0.5 )
-              + onMouseDownPhi;
-
-        phi = Math.min( 180, Math.max( 0, phi ) );
-
-        camera.position.x = radious * Math.sin( theta * Math.PI / 360 )
-                            * Math.cos( phi * Math.PI / 360 );
-        camera.position.y = radious * Math.sin( phi * Math.PI / 360 );
-        camera.position.z = radious * Math.cos( theta * Math.PI / 360 )
-                            * Math.cos( phi * Math.PI / 360 );
-        camera.updateMatrix();
-
-    }
-
-    mouse3D = projector.unprojectVector(
-        new THREE.Vector3(
-            ( event.clientX / renderer.domElement.width ) * 2 - 1,
-            - ( event.clientY / renderer.domElement.height ) * 2 + 1,
-            0.5
-        ),
-        camera
-    );
-    ray.direction = mouse3D.subSelf( camera.position ).normalize();
-
-    interact();
-    render();
-
-}
-*/
-
-//            phi = Math.min( -90, Math.max( -170, phi ) );
-            console.log('theta ' + theta + ' phi ' + phi );
-
-            var p = phi + 360;
-            var t = theta + 360;
-            this.object.position.x = distance * Math.cos( t * Math.PI / 180 ) * Math.sin( p * Math.PI / 180 ) + pan.x;
-            this.object.position.y = distance * Math.sin( t * Math.PI / 180 ) * Math.sin( p * Math.PI / 180 ) + pan.y;
-            this.object.position.z = distance * Math.cos( p * Math.PI / 180 );
+            this.object.position.x = distance * Math.cos( theta * Math.PI / 180 ) * Math.sin( phi * Math.PI / 180 ) + pan.x;
+            this.object.position.y = distance * Math.sin( theta * Math.PI / 180 ) * Math.sin( phi * Math.PI / 180 ) + pan.y;
+            this.object.position.z = distance * Math.cos( phi * Math.PI / 180 );
 
             this.object.up.x = 0;
             this.object.up.y = 0;
-            this.object.up.z = 1;
+            this.object.up.z = phi >= 0 ? 1 : -1;
             this.object.lookAt( pan );
 
-
-		if ( lastPosition.distanceToSquared( this.object.position ) > EPS ) {
-
-		    this.dispatchEvent( changeEvent );
-
-		    lastPosition.copy( this.object.position );
-
-		}
-
+	    if ( lastPosition.distanceToSquared( this.object.position ) > EPS ) {
+		this.dispatchEvent( changeEvent );
+		lastPosition.copy( this.object.position );
+	    }
 	};
 
 
