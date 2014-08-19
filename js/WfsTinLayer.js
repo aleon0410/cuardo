@@ -66,6 +66,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                     // and on the left and bottom border of the tile
                     return;
                 }
+
                 var geom = new THREE.Geometry();
 
                 var tex;

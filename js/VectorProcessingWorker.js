@@ -96,7 +96,7 @@ function p2tBbox( poly ) {
     return bbox;
 }
 
-function triangulate(geom, paths, additionalPoints, height, center, size){
+function triangulate(geom, paths, additionalPoints, height, center, size, gridVertices, gridNbIntervals ){
 
     if (!paths.length || !paths[0].length) return;
     var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
@@ -111,7 +111,12 @@ function triangulate(geom, paths, additionalPoints, height, center, size){
     var i = geom.vertices.length;
     triangles.forEach(function(t) {
         t.getPoints().forEach(function(p) {
-            geom.vertices.push(new THREE.Vector3(p.x, p.y, height || 0));
+            if ( gridVertices ) {
+                geom.vertices.push(new THREE.Vector3(p.x, p.y, gridAltitude( p.x, p.y, gridVertices, gridNbIntervals ) + ( height || 0 ) ));
+            }
+            else {
+                geom.vertices.push(new THREE.Vector3(p.x, p.y, height || 0));
+            }
         });
 
         var face = new THREE.Face3(i, i+1, i+2);
@@ -188,6 +193,86 @@ function clip( clipperPath, clipperRect, needsContour ) {
     }
 
     return {poly:clippedPoly, contour:clippedContour};
+}
+
+
+// the plane should not be rotated and additional geometries should be placed
+// after the initial plane geometry for this to workout
+function gridAltitude( x, y, vertices, nbIntervals ){
+
+    var gridX1 = nbIntervals + 1;
+    var gridX1sq = gridX1*gridX1;
+
+    var bbox = [ vertices[0].x, vertices[0].y,
+                 vertices[gridX1sq - 1].x, vertices[gridX1sq - 1].y ];
+
+   if ( x < bbox[0] || x > bbox[2] || y < bbox[1] || y > bbox[3] ) {
+       throw 'out of plane'+x+' '+y+' '+bbox.join( ', ' );
+   }
+
+   var segment_width = vertices[1].x - vertices[0].x;
+
+   var dx = (x - bbox[0]) / segment_width;
+   var dy = (y - bbox[1]) / segment_width;
+   var ix = Math.round( dx );
+   var iy = Math.round( dy );
+   var orig = gridX1 * Math.floor( dy ) + Math.floor( dx );
+
+   if ( Math.abs(ix - dx) < EPSILON && Math.abs(iy - dy) < EPSILON ) return vertices[orig].z;
+
+   var border = false;
+      
+   if ( iy == nbIntervals ) { // on the top border
+       var a = vertices[orig]; 
+       var b = vertices[orig+1]; 
+       var alpha = (x - a.x) / (b.x - a.x);
+       return (1 - alpha) * a.z + alpha * b.z;
+   }
+   
+   if ( ix == nbIntervals ) { // on the right border
+       var a = vertices[orig]; 
+       var d = vertices[orig+gridX1]; 
+       var alpha = (y - a.y) / (d.y - a.y);
+       return (1 - alpha) * a.z + alpha * d.z;
+   }
+
+
+   // TODO fix the interpolation
+   return vertices[orig].z; 
+
+   //d---c
+   //| \ |
+   //a---b
+   try {
+   if ( ix < dx && iy < dy ){ // lower left triangle
+       var a = vertices[orig]; 
+       var b = vertices[orig+1]; 
+       var d = vertices[orig+gridX1]; 
+       var det = segment_width*segment_width;
+       var lambda1 = ( (d.x - b.x) * (y - b.y)  - (d.y - b.y) * (x - b.x) ) / det ;
+       if (lambda1 > 1 || lambda1 < 0 ) throw 'll lambda1'+lambda1;
+       var lambda3 = ( (b.x - a.x) * (y - a.y)  - (b.y - a.y) * (x - a.x) ) / det ;
+       if (lambda3 > 1 || lambda3 < 0 ) throw 'll lambda3'+lambda3;
+       var lambda2 = 1 - lambda1 - lambda3 ;
+       return lambda1*a.z + lambda2*b.z + lambda3*d.z;
+   }
+   else { // upper right
+       var b = vertices[orig+1]; 
+       var c = vertices[orig+gridX1+1]; 
+       var d = vertices[orig+gridX1]; 
+       var det = segment_width*segment_width;
+       var lambda1 = ( (d.x - c.x) * (y - c.y)  - (d.y - c.y) * (x - c.x) ) / det ;
+       if (lambda1 > 1 || lambda1 < 0 ) throw 'ur lambda1'+lambda1;
+       var lambda3 = ( (c.x - b.x) * (y - b.y)  - (c.y - b.y) * (x - b.x) ) / det ;
+       if (lambda3 > 1 || lambda3 < 0 ) throw 'ur lambda3'+lambda3;
+       var lambda2 = 1 - lambda1 - lambda3 ;
+       return lambda1*b.z + lambda2*c.z + lambda3*d.z;
+   }
+   }
+   catch (err) {
+       console.log('error ', border, ix < dx && iy < dy, err);
+       return vertices[orig].z;
+   }
 }
 
 //function computeTileUv(geom, center, size) {
@@ -389,13 +474,14 @@ function vectorProcessing( d ) {
                     additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
                 }
                 if (ctxt.symbology.polygon.extrude) {
-                    heigth = +feat.properties[ ctxt.symbology.polygon.extrude];
+                    heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
                     addTrianglesFromClipperPathsExtrusion(geom, clipped.contour, heigth, ctxt.center, ctxt.size);
                 }
-                triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size);
+                triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size, ctxt.gridVertices, ctxt.gridNbIntervals );
             }
             catch (err) {
                 nbInvalid++;
+                //throw err;
                 // show error spots for debug
                 if (err.points) {
                     var points = [];

@@ -1,100 +1,76 @@
-Terrain = function ( urlDem, urlTex, translation, nbIntervals ) {
+Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
     this.urlDem = urlDem;
     this.urlTex = urlTex;
     this.translation = translation;
     this.srid = 3946;
     this.extent = [1780810,5111630,1905820,5242220];
     this.nbIntervals = nbIntervals || 8;
+    this.zScale = zScale || 255;
 
-    this.geometryTerrain = new THREE.PlaneGeometry(1, 1, this.nbIntervals, this.nbIntervals);
-    this.geometryTerrain.computeFaceNormals();
-    this.geometryTerrain.computeVertexNormals();
-    this.geometryTerrain.computeTangents();
-
-    this.demTextures = {};
-    var terrainShader = THREE.ShaderTerrain[ "terrain" ];
-    this.material = new THREE.ShaderMaterial({
-        vertexShader:terrainShader.vertexShader,
-        fragmentShader:terrainShader.fragmentShader,
-        lights:true,
-        fog:false
-    });
-
+    this.geom = {};
+    this.canvas = document.createElement( 'canvas' );
 }
+
+Terrain.prototype.getImageData = function( image ) {
+
+    this.canvas.width = image.width;
+    this.canvas.height = image.height;
+
+    var context = this.canvas.getContext( '2d' );
+    context.drawImage( image, 0, 0 );
+
+    return context.getImageData( 0, 0, image.width, image.height );
+}
+
+var OVER_255 = 1./255;
+function getPixel(imagedata, dx, dy) {
+    var x = Math.round((imagedata.width - 1) * dx);
+    var y = Math.round((imagedata.height -1) * (1-dy));
+
+    var position = ( x + imagedata.width * y ) * 4, data = imagedata.data;
+    
+    return { r: imagedata.data[ position ] * OVER_255, 
+             g: imagedata.data[ position + 1 ] * OVER_255, 
+             b: imagedata.data[ position + 2 ] * OVER_255, 
+             a: imagedata.data[ position + 3 ] * OVER_255};
+}
+
 
 Terrain.prototype.tile = function( center, size, tileId, callback ) {
     var mesh;
-    var remaining = 3;
+    var remaining = 2;
+    var textureDem;
+    var textureTex;
+    var object = this;
     var loaded = function(){
         remaining--;
-        if (!remaining) callback(mesh);
+        if (!remaining){
+            var imagedata = object.getImageData( textureDem.image );
+            var geom =  new PlaneGeometry(center, size, object.nbIntervals);
+            var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
+            geom.vertices.forEach(function( v ) {
+                var coord = [((v.x-tileOrigin.x)/size), (v.y-tileOrigin.y)/size ];
+                v.z = object.zScale * getPixel( imagedata, coord[0], coord[1]).r;
+            });
+            geom.computeFaceNormals();
+            geom.computeVertexNormals();
+            geom.computeTangents();
+            var material = new THREE.MeshLambertMaterial( 
+                    { color: 0xfffffff,
+                      map : textureTex,
+                      //wireframe:true
+                    } );
+            mesh = new THREE.Mesh(geom, material);
+            object.geom[tileId] = geom;
+            callback(mesh);
+        }
     };
     var extendCenter = new THREE.Vector3().subVectors(center, this.translation );
     var ext = [extendCenter.x - size*.5,
                extendCenter.y - size*.5,
                extendCenter.x + size*.5,
                extendCenter.y + size*.5];
-    textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded );
-    //console.log(this.urlDem + '&BBOX='+ext.join(','));
+    textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded);
     textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
-    //console.log(this.urlTex + '&BBOX='+ext.join(','));
 
-    var terrainShader = THREE.ShaderTerrain[ "terrain" ];
-    var uniformsTerrain = THREE.UniformsUtils.clone(terrainShader.uniforms);
-    
-
-    this.demTextures[tileId] = textureDem;
-
-    uniformsTerrain[ "tNormal" ].value = textureDem;
-    uniformsTerrain[ "uNormalScale" ].value = 1;
-
-    // the displacement determines the height of a vector, mapped to
-    // the heightmap
-    uniformsTerrain[ "tDisplacement" ].value = textureDem;
-    uniformsTerrain[ "uDisplacementScale" ].value = 255;
-    uniformsTerrain[ "uDisplacementBias" ].value = this.translation.z;
-
-    // the following textures can be use to finetune how
-    // the map is shown. These are good defaults for simple
-    // rendering
-    uniformsTerrain[ "tDiffuse1" ].value = textureTex;
-    //uniformsTerrain[ "tDetail" ].value = texture;
-    uniformsTerrain[ "enableDiffuse1" ].value = true;
-    //uniformsTerrain[ "enableDiffuse2" ].value = true;
-    //uniformsTerrain[ "enableSpecular" ].value = true;
-
-    // diffuse is based on the light reflection
-    //uniformsTerrain[ "diffuse" ].value.setHex(0xcccccc);
-    //uniformsTerrain[ "specular" ].value.setHex(0xff0000);
-    // is the base color of the terrain
-    uniformsTerrain[ "ambient" ].value.setHex(0xffffff);
-
-    // how shiny is the terrain
-    uniformsTerrain[ "shininess" ].value = 3;
-
-    // handles light reflection
-    //uniformsTerrain[ "uPixelScale" ].value.set(
-    //        (ext[2]-ext[0])/texture.image.width, 
-    //        (ext[3]-ext[1])/texture.image.height);
-
-
-    // configure the material that reflects our terrain
-    //var material = new THREE.ShaderMaterial({
-    //    uniforms:uniformsTerrain,
-    //    vertexShader:terrainShader.vertexShader,
-    //    fragmentShader:terrainShader.fragmentShader,
-    //    lights:true,
-    //    fog:false
-    //});
-    //var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true } );
-
-    var material = this.material.clone();
-    material.uniforms = uniformsTerrain; 
-    // we use a plain to render as terrain
-    // create a 3D object to add
-    mesh = new THREE.Mesh(this.geometryTerrain, material);
-    mesh.position = center;
-    mesh.scale.x = size;
-    mesh.scale.y = size;
-    loaded();
 }

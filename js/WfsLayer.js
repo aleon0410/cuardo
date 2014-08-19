@@ -103,14 +103,19 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         is3d: is3d,
         center: center,
         size:size,
-        nbIntervals: this.nbIntervals
+        nbIntervals: this.nbIntervals,
+        gridVertices : null,
+        gridNbIntervals : null
     };
+    if (this.terrain){
+        //console.log('terrain geom ', tileId, this.terrain.geom[tileId]);
+        ctxt.gridVertices = this.terrain.geom[tileId].vertices;
+        ctxt.gridNbIntervals = this.terrain.nbIntervals;
+    }
 
     this.continuations[tileId] = callback;
 
-//    console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
-//    jQuery.ajax(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer, {
-    console.log(this.url + '&BBOX='+ext.join(','));
+    //console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
             var reqend = new Date().getTime();
@@ -126,7 +131,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         error: function(jqXHR, textStatus, errorThrown) {
             console.log(textStatus+' :'+errorThrown);
             throw errorThrown;
-        }
+        },
     });
 }
 
@@ -148,30 +153,11 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var errGeom = cloneFakeGeometry( r.errGeom );
     var errSpotGeom = cloneFakeGeometry( r.errSpotGeom );
     var wallGeom = cloneFakeGeometry( r.wallGeom );
-    var material;
-    if ( this.terrain ) {
-        var drapingShader = ShaderDraping[ "draping" ];
-        var uniformsDraping = THREE.UniformsUtils.clone(drapingShader.uniforms);
-        uniformsDraping['color'].value.setHex(this.symbology.polygon.color); 
-        uniformsDraping['opacity'].value = this.symbology.polygon.opacity; 
-        uniformsDraping['uZoffset'].value = 1; 
-        uniformsDraping[ "tDisplacement" ].value = this.terrain.demTextures[r.tileId];
-        uniformsDraping[ "uDisplacementScale" ].value = 255;
-        uniformsDraping[ "uDisplacementBias" ].value = this.translation.z;
-        material = new THREE.ShaderMaterial({
-            uniforms:uniformsDraping,
-            vertexShader:drapingShader.vertexShader,
-            fragmentShader:drapingShader.fragmentShader,
-            lights:true,
-            transparent: true
-        });
-    }
-    else {
-        material =  new THREE.MeshLambertMaterial( 
-            { color:this.symbology.polygon.color, 
-              ambient:this.symbology.polygon.color, 
-              difuse:this.symbology.polygon.color} );
-    }
+    var material =  new THREE.MeshLambertMaterial( 
+            { color:this.symbology.polygon.color,
+              ambient:this.symbology.polygon.color,
+              opacity:this.symbology.polygon.opacity || 1.,
+              wireframe:this.symbology.polygon.wireframe || false } );
 
     var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );

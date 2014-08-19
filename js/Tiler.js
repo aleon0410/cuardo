@@ -6,7 +6,7 @@ Tiler = function( layers, translation, nbIntervals) {
     this.layers = layers || [];
     this.srid = 0;
     this.tileIds = {};
-    this.currentTileId = 0;
+    this.currentTileId = -1;
 
     this.layers.forEach(function(l){
         var ext = l.extent;
@@ -23,10 +23,8 @@ Tiler = function( layers, translation, nbIntervals) {
 
 Tiler.prototype.tile = function( center, size, callback ) {
     var group = [];
-
-    for ( var lid = 0, l = this.layers.length; lid < l; lid++ ) {
-        group.push( new THREE.Object3D() );
-    }
+    for ( var lid = 0 ; lid < this.layers.length; lid++ ) group.push( new THREE.Object3D() );
+    this.currentTileId++;
 
     // add basic grid for debug
     {
@@ -39,20 +37,29 @@ Tiler.prototype.tile = function( center, size, callback ) {
     }
     var remaining = this.layers.length;
     var object = this;
-    for ( var lid = 0, le = this.layers.length; lid < le; lid++ ) {
-        var l = this.layers[lid];
-        l.tile( center, size, object.currentTileId,
-                (function(g) {
-                    return function(mesh) {
-                        g.add(mesh);
-                        remaining--;
-                        if (!remaining) {
-                            callback(group);
-                        }
-                    };
-                }) (group[lid])
-              );
-    }
-    this.currentTileId++;
+
+
+    var tileId = object.currentTileId;
+    //console.log('starting tile ', tileId);
+    this.layers[0].tile( center, size, tileId,
+            function( terrainmesh ){
+                group[0].add(terrainmesh);
+                //console.log('added terrain ', tileId);
+                callback(group);
+                remaining--;
+                for ( var lid = 1 ; lid < object.layers.length; lid++ ) {
+                    object.layers[lid].tile( center, size, tileId,
+                        (function(g) {
+                            return function(mesh) {
+                                    g.add(mesh);
+                                    remaining--;
+                                    if (!remaining) {
+                                        callback(group);
+                                    }
+                            };
+                        })(group[lid])
+                        );
+                }
+            });
 };
 
