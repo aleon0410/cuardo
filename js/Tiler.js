@@ -45,7 +45,7 @@ Tiler.prototype.tile = function( center, size, callback ) {
             function( terrainmesh ){
                 group[0].add(terrainmesh);
                 //console.log('added terrain ', tileId);
-                callback(group);
+//                callback(group);
                 remaining--;
                 for ( var lid = 1 ; lid < object.layers.length; lid++ ) {
                     object.layers[lid].tile( center, size, tileId,
