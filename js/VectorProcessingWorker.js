@@ -81,6 +81,7 @@ function p2tPath( clipperPath ) {
 } 
 
 function p2tBbox( poly ) {
+    if (!poly.length || !poly[0].length ) return null;
     var bbox = [poly[0][0].x, poly[0][0].y, poly[0][0].x, poly[0][0].y ];
     poly.forEach( function(ring) {
         ring.forEach( function(point) {
@@ -112,6 +113,7 @@ function triangulate(geom, paths, additionalPoints, center, size ){
         ring.forEach( function(p){
             p.id = geom.vertices.length;
             geom.vertices.push(new THREE.Vector3(p.x, p.y, 0 ));
+
         });
         additionalPoints.forEach( function(p){
             p.id = geom.vertices.length;
@@ -317,6 +319,7 @@ function gridAltitude( x, y, vertices, nbIntervals ){
 // the poly should be clipped by grid before calling
 // return a list of points to add to poly2try
 function grid(poly, polyBbox, gridCenter, gridSize, gridNbDiv){
+    if (!polyBbox) return [];
     // ray tracing along x
     var y0 = gridCenter.y - 0.5*gridSize;
     var x0 = gridCenter.x - 0.5*gridSize;
@@ -631,6 +634,18 @@ function vectorProcessing( d ) {
 
             T['merge'].start();
             // append geometry to geom
+
+            // color feature
+            if (ctxt.symbology.polygon.colorFun){
+                eval( 'var f =' + ctxt.symbology.polygon.colorFun);
+                var c = new THREE.Color(f(feat));
+                geometry.faces.forEach(function(face){
+                    face.color = c;
+                });
+                wallGeometry.faces.forEach(function(face){
+                    face.color = c;
+                });
+            }
             geom.merge(geometry);
             wallGeom.merge(wallGeometry);
             lineGeom.merge(lineGeometry);

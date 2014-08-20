@@ -158,6 +158,8 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
               ambient:this.symbology.polygon.color,
               opacity:this.symbology.polygon.opacity || 1.,
               transparent: (this.symbology.polygon.opacity || 1) < 1, 
+              vertexColors: (this.symbology.polygon.colorFun ? THREE.FaceColors : THREE.NoColors),
+              blending: THREE.NormalBlending,
               wireframe:this.symbology.polygon.wireframe || false } );
 
     var group = new THREE.Object3D();
