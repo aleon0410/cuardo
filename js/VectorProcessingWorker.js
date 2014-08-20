@@ -536,35 +536,37 @@ function vectorProcessing( d ) {
                 addTrianglesFromExtrusion(wallGeometry, contours, heigth, ctxt.center, ctxt.size);
             }
 
+            var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
+                        + (ctxt.symbology.zOffset || 0);
             // now offset the vertices
             if ( ctxt.symbology.draping ){
                 geometry.vertices.forEach( function(v){
-                    v.z = gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals );
+                    v.z = gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals ) + zOffset;
                 });
                 wallGeometry.vertices.forEach( function(v){
-                    v.z += gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals );
+                    v.z += gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals ) + zOffset;
+                });
+                lineGeometry.vertices.forEach( function(v){
+                    v.z += gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals ) + zOffset;
                 });
             }
-
-            var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
-                        + (ctxt.symbology.zOffset || 0);
-
-            if ( !ctxt.symbology.draping ){ 
+            else {
                 zOffset +=  gridAltitude( bboxCenter.x, bboxCenter.y, 
                                  ctxt.gridVertices, ctxt.gridNbIntervals );
                 wallGeometry.vertices.forEach( function(v){
                     v.z += zOffset;
                 });
-            }
-            
-            if (ctxt.symbology.polygon.extrude){
-                zOffset += +feat.properties[ ctxt.symbology.polygon.extrude ];
-            }
 
-            geometry.vertices.forEach( function(v){
-                v.z += zOffset;
-            });
-
+                lineGeometry.vertices.forEach( function(v){
+                    v.z += zOffset;
+                });
+                if (ctxt.symbology.polygon.extrude){
+                    zOffset += +feat.properties[ ctxt.symbology.polygon.extrude ];
+                }
+                geometry.vertices.forEach( function(v){
+                    v.z += zOffset;
+                });
+            }
 
             // append geometry to geom
             geom.merge(geometry);
