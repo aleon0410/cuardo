@@ -448,7 +448,23 @@ function grid(poly, polyBbox, gridCenter, gridSize, gridNbDiv){
     return points;
 }
 function vectorProcessing( d ) {
-//    console.log("vector processing", d.tileId);
+    // timers
+    var T = {
+        global: new Timer(),
+        clip: new Timer(),
+        normals: new Timer(),
+        extrusion: new Timer(),
+        p2t: new Timer(),
+        contours: new Timer(),
+        zOffset: new Timer(),
+        lines: new Timer(),
+        map: new Timer(),
+        merge: new Timer(),
+        triangulation: new Timer()
+    };
+    
+    T['global'].start();
+
     var data = d.data;
     var ctxt = d.ctxt;
 
@@ -467,10 +483,6 @@ function vectorProcessing( d ) {
     var nbInvalid = 0;
     var nbPoly = 0;
 
-    var clipTimer = new Timer();
-    var triangulateTimer = new Timer();
-    // MULTIPOLYGON ONLY
-//    console.log(data);
     data.features.forEach( function(feat) {
         var nbFace = geom.faces.length;
         var nbWallFace = wallGeom.faces.length;
@@ -507,12 +519,14 @@ function vectorProcessing( d ) {
             var additionalPoints = [];
             var addContour = ctxt.symbology.polygon.lineColor || ctxt.symbology.polygon.lineWidth || ctxt.symbology.polygon.extrude;
             if (ctxt.symbology.draping){
-                clipTimer.start();
+                T['clip'].start();
                 var clipped = clip( clipperPath( poly, ctxt.translation ), 
                                     ctxt.clipperRect, 
                                     addContour );
-                clipTimer.stop();
+                T['clip'].stop();
+                T['p2t'].start();
                 paths = p2tPath( clipped.poly );
+                T['p2t'].stop();
                 additionalPoints = grid( paths, p2tBbox( paths ), ctxt.center, ctxt.size, ctxt.nbIntervals );
                 if (addContour) contours = p2tPath( clipped.contour ); 
             }
@@ -521,9 +535,12 @@ function vectorProcessing( d ) {
                   || bboxCenter.y <= bboxTile[1]
                   || bboxCenter.x > bboxTile[2]
                   || bboxCenter.y > bboxTile[3] ) return; // feature will be included by another tile
+                T['p2t'].start();
                 paths = p2tPath( clipperPath( poly, ctxt.translation ) );
+                T['p2t'].stop();
                 
                 if (addContour){
+                    T['contours'].start();
                     paths.forEach( function(ring) {
                         var r = contours.length;
                         contours.push([]);
@@ -532,8 +549,10 @@ function vectorProcessing( d ) {
                         });
                         if (contours[r].length) contours[r].push(contours[r][0]);
                     });
+                    T['contours'].stop();
                 }
             }
+
 
 
 //gridAltitude( p.x, p.y, gridVertices, gridNbIntervals ) + ( height || 0 )
@@ -546,9 +565,9 @@ function vectorProcessing( d ) {
 
             try {
                 // WATCHOUT, path is modified here
-                triangulateTimer.start();
+                T['triangulation'].start();
                 triangulate(geometry, paths, additionalPoints, ctxt.center, ctxt.size);
-                triangulateTimer.stop();
+                T['triangulation'].stop();
             }
             catch (err) {
                 nbInvalid++;
@@ -563,18 +582,23 @@ function vectorProcessing( d ) {
 
             // add lines if needed
             if ( ctxt.symbology.polygon.lineColor || ctxt.symbology.polygon.lineWidth ){
+                T['lines'].start();
                 addLines( lineGeometry, contours );
+                T['lines'].stop();
             }
 
             // extrude walls if needed
             if ( ctxt.symbology.polygon.extrude ){ 
+                T['extrusion'].start();
                 var heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
                 addTrianglesFromExtrusion(wallGeometry, contours, heigth, ctxt.center, ctxt.size);
+                T['extrusion'].stop();
             }
 
             var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
                         + (ctxt.symbology.zOffset || 0);
             // now offset the vertices
+            T['zOffset'].start();
             if ( ctxt.symbology.draping ){
                 geometry.vertices.forEach( function(v){
                     v.z = gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals ) + zOffset;
@@ -603,11 +627,14 @@ function vectorProcessing( d ) {
                     v.z += zOffset;
                 });
             }
+            T['zOffset'].stop();
 
+            T['merge'].start();
             // append geometry to geom
             geom.merge(geometry);
             wallGeom.merge(wallGeometry);
             lineGeom.merge(lineGeometry);
+            T['merge'].stop();
         }
 
         switch ( feat.geometry.type ) {
@@ -626,6 +653,7 @@ function vectorProcessing( d ) {
             throw "Unsupported geometry type " + feat.geometry.type;
         }
 
+        T['map'].start();
         // create the map face -> gid
         for (var f=nbFace; f<geom.faces.length; f++) {
             userData.faceGidMap.push(feat.properties.gid);
@@ -633,9 +661,11 @@ function vectorProcessing( d ) {
         for (var f=nbWallFace; f<wallGeom.faces.length; f++) {
             userDataWall.faceGidMap.push(feat.properties.gid);
         }
+        T['map'].stop();
     });
 
     //computeTileUv(geom, ctxt.center, ctxt.size);
+    T['normals'].start();
     geom.computeFaceNormals();
     geom.computeVertexNormals();
     geom.computeTangents();
@@ -643,13 +673,23 @@ function vectorProcessing( d ) {
     wallGeom.computeFaceNormals();
     wallGeom.computeVertexNormals();
     wallGeom.computeTangents();
+    T['normals'].stop();
 
     if (ctxt.symbology.polygon.extrude){
         //computeTileUv(wallGeom, ctxt.center, ctxt.size);
     }
+    T['global'].stop();
     var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId };
-    console.log('Processing time: clipping ' + clipTimer.get() + " triangulate " + triangulateTimer.get() );
+    var s = '';
+    for ( var t in T ) {
+        s += ' ' + t + ': ' + T[t].get();
+    }
+    console.log('Timing ' + s );
     return r;
+// performance note:
+// data get copied from the worker back to the main thread
+// Here ThreeJs geometries can take LOTS of memory
+// FIXME: compute only what is necessary inside the worker
 }
 
 
