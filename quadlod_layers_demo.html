@@ -62,7 +62,7 @@ function init() {
         controls.panSpeed = 1.8;
         controls.keys = [ 65, 83, 68 ];
         // distance to the center
-        controls.distance = 4000;
+        controls.distance = 10000;
         controls.addEventListener( 'change', render );
     }
 
@@ -118,9 +118,9 @@ function init() {
 //                    cont(group);
                 };
             }
-            var size = 10000;
+            var size = 2500;
 
-            var maxLOD = 6;
+            var maxLOD = 4;
             quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
