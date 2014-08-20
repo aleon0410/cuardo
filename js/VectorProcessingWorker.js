@@ -476,8 +476,8 @@ function vectorProcessing( d ) {
                     ctxt.center.x + .5*ctxt.size,
                     ctxt.center.y + .5*ctxt.size];
     //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
-    var userData = {name:'mesh',faceGidMap:[]};
-    var userDataWall = {name:'wallMesh',faceGidMap:[]};
+    var userData = {name:'mesh',faceGidMap:[], url:''};
+    var userDataWall = {name:'wallMesh',faceGidMap:[], url:''};
     var geom = new THREE.Geometry();
     var wallGeom = new THREE.Geometry();
     var lineGeom = new THREE.Geometry();
@@ -671,10 +671,10 @@ function vectorProcessing( d ) {
         T['map'].start();
         // create the map face -> gid
         for (var f=nbFace; f<geom.faces.length; f++) {
-            userData.faceGidMap.push(feat.properties.gid);
+            userData.faceGidMap.push(+feat.properties.gid);
         }
         for (var f=nbWallFace; f<wallGeom.faces.length; f++) {
-            userDataWall.faceGidMap.push(feat.properties.gid);
+            userDataWall.faceGidMap.push(+feat.properties.gid);
         }
         T['map'].stop();
     });

@@ -66,6 +66,7 @@ font-family: "Arial";
 <script src="js/Tiler.js"></script>
 <script src="js/Tile.js"></script>
 <script src="js/PlaneGeometry.js"></script>
+<script src="js/GISControls.js"></script>
 <script> 
 
 inRender = false;
@@ -73,6 +74,7 @@ var container, stats;
 var camera, controls, scene, renderer;
 var depthMaterial, depthTarget;
 var quadtree;
+var restoreColors = [];
 
 init();
 animate();
@@ -124,15 +126,13 @@ function init() {
 
     // trackball
     {
-        controls = new THREE.TrackballControls( camera );
+        controls = new THREE.GISControls( camera );
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
-        controls.noZoom = false;
-        controls.noPan = false;
-        controls.staticMoving = true;
-        controls.dynamicDampingFactor = 0.3;
         controls.keys = [ 65, 83, 68 ];
+        // distance to the center
+        controls.distance = 10000;
         controls.addEventListener( 'change', render );
     }
 
@@ -162,12 +162,12 @@ function init() {
                     '} ' +
                     'return 0xaaaaaa; '+ 
                 '}';
-            var arrond = new WfsLayer(urlArrond, translation, 32, terrain, {zOffsetPercent:1e-3, draping:true, polygon:{color:0xffffff, lineColor:0xff0000, lineWidth:2, wireframe:false, colorFun:colFun, opacity:.5}});
+            var arrond = new WfsLayer(urlArrond, translation, 32, terrain, {zOffsetPercent:1e-3, draping:true, polygon:{color:0xffffff, lineColor:0xff0000, lineWidth:2, wireframe:false, colorFun:colFun, opacity:.2}});
 
             var lod0_url = baseUrl+"&typeName=tows:toitures_lod0";
             var lod0 = new WfsLayer(lod0_url, translation, 32, terrain,
                                     {draping:true, zOffsetPercent:2e-3, polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:2}}
-                                    , [1000,9999] );
+                                    , [1000,5999] );
 
 
             var lod1_url = baseUrl+"&typeName=tows:toitures";
@@ -180,7 +180,7 @@ function init() {
 
             var tiler = new Tiler([terrain, arrond, lod0, lod1, tin], translation, 1);
 
-            var size = 1000;
+            var size = 1500;
 
             var maxLOD = 3;
             quadtree = new QuadTree( size, maxLOD, tiler );
@@ -215,7 +215,7 @@ function init() {
             scene.add( light );
             scene.add( new THREE.SpotLightHelper( light, 5 ) );
 
-            alight = new THREE.AmbientLight( 0xdddddd );
+            alight = new THREE.AmbientLight( 0xeeeeee );
             scene.add( alight );
 
         }
@@ -223,7 +223,7 @@ function init() {
 
     // renderer
     {
-        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setClearColor( 0x222222, 1 );
         renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -269,6 +269,10 @@ function init() {
     {
         container = document.getElementById( 'container' );
         container.appendChild( renderer.domElement );
+        container.style.position = 'absolute';
+        container.style.top = '0px';
+        container.style.left = '0px';
+        container.style.zIndex = -1;
 
         stats = new Stats();
         stats.domElement.style.position = 'absolute';
@@ -322,6 +326,13 @@ function render() {
 
 function onDocumentMouseDown( event ) {
     event.preventDefault();
+    // highlight
+    restoreColors.forEach(function(obj){
+            obj.face.color = obj.color;
+            obj.geom.colorsNeedUpdate = true;
+        });
+    restoreColors = [];
+    render()
 
     var objects = [];
     scene.traverse( function(obj) {
@@ -342,9 +353,28 @@ function onDocumentMouseDown( event ) {
     var intersects = raycaster.intersectObjects( objects );
 
     document.getElementById('diplayInfo').innerHTML="";
-    if ( intersects.length > 0 ) {
-        console.log('intersection ',intersects[ 0 ].object.userData.name,' gid', intersects[ 0 ].object.userData.faceGidMap[ intersects[ 0 ].faceIndex ]);
-        document.getElementById('diplayInfo').innerHTML="GID = " + intersects[ 0 ].object.userData.faceGidMap[ intersects[ 0 ].faceIndex ];
+    for (var idx = 0; idx < intersects.length; idx++ ) {
+        var object = intersects[ idx ].object;
+        if ( !object.visible ) continue;
+        var map = object.userData.faceGidMap;
+        var gid = map[ intersects[ 0 ].faceIndex ];
+        console.log('intersection ',object.userData.name,' gid', map[ intersects[ 0 ].faceIndex ]);
+        document.getElementById('diplayInfo').innerHTML="GID = " +gid;
+
+        scene.traverse( function(obj) {
+            var c = new THREE.Color(0xffff33);
+            if ( obj.userData && obj.userData.faceGidMap && obj.userData.url == object.userData.url) {
+                for (var i=0; i<obj.geometry.faces.length; i++){
+                    if ( obj.userData.faceGidMap[i] == gid ){
+                       restoreColors.push( {geom:obj.geometry, face:obj.geometry.faces[i], color:obj.geometry.faces[i].color});
+                       obj.geometry.faces[i].color = c;
+                    }
+                }
+                obj.geometry.colorsNeedUpdate = true;
+            }
+        });
+        render(); 
+        break;
     }
 
 }

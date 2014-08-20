@@ -158,13 +158,15 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
               ambient:this.symbology.polygon.color,
               opacity:this.symbology.polygon.opacity || 1.,
               transparent: (this.symbology.polygon.opacity || 1) < 1, 
-              vertexColors: (this.symbology.polygon.colorFun ? THREE.FaceColors : THREE.NoColors),
+              vertexColors: THREE.FaceColors,
+              //vertexColors: (this.symbology.polygon.colorFun ? THREE.FaceColors : THREE.NoColors),
               blending: THREE.NormalBlending,
               wireframe:this.symbology.polygon.wireframe || false } );
 
     var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );
     mesh.userData = r.userData;
+    mesh.userData.url = this.url;
     group.add(mesh);
 
     //{
@@ -197,6 +199,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     if (this.symbology.polygon.extrude){
         var wallMesh = new THREE.Mesh( wallGeom,  material );
         wallMesh.userData = r.userDataWall;
+        wallMesh.userData.url = this.url;
         group.add( wallMesh );
     }
     
