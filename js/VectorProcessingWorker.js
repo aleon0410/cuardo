@@ -549,12 +549,15 @@ function vectorProcessing( d ) {
             var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
                         + (ctxt.symbology.zOffset || 0);
 
-            if ( ctxt.symbology.polygon.extrude ){ 
+            if ( !ctxt.symbology.draping ){ 
                 zOffset +=  gridAltitude( bboxCenter.x, bboxCenter.y, 
                                  ctxt.gridVertices, ctxt.gridNbIntervals );
                 wallGeometry.vertices.forEach( function(v){
                     v.z += zOffset;
                 });
+            }
+            
+            if (ctxt.symbology.polygon.extrude){
                 zOffset += +feat.properties[ ctxt.symbology.polygon.extrude ];
             }
 
