@@ -165,6 +165,9 @@ THREE.GISControls = function ( object, domElement ) {
     };
 
 
+    this.handleResize = function () {
+    };
+
     this.reset = function () {
 
 	state = STATE.NONE;
