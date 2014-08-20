@@ -31,9 +31,9 @@ Timer.prototype.get = function() {
 
 function addLines(geom, paths){
     paths.forEach(function(ring) {
-        for (var i=0; i<ring.length; i++){
+        for (var i=1; i<ring.length; i++){
+            geom.vertices.push( new THREE.Vector3(ring[i-1].x, ring[i-1].y, 0) );
             geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, 0) );
-            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, 0) );
         }
     });
 }
@@ -43,12 +43,12 @@ function addTrianglesFromExtrusion(geom, paths, heigth, center, size){
     var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
 
     paths.forEach( function(ring) {
-        for (var i=0; i<ring.length; i++){
+        for (var i=1; i<ring.length; i++){
             var j = geom.vertices.length;
+            geom.vertices.push( new THREE.Vector3(ring[i-1].x, ring[i-1].y, 0) );
             geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, 0) );
-            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, 0) );
-            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, heigth) );
             geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, heigth) );
+            geom.vertices.push( new THREE.Vector3(ring[i-1].x, ring[i-1].y, heigth) );
             var faces = [ 
                 new THREE.Face3(j, j+1, j+2), 
                 new THREE.Face3(j, j+2, j+3)
@@ -159,8 +159,8 @@ function clipperPath( wfsPolygon, translation ) {
             r.push({X:point[0]+translation.x,Y:point[1]+translation.y});
         });
         if (r.length) r.pop(); // last point is a repeat of first
-        if (  ( !clipperPath.length && r.length >= 3 && isClockwise(r) )
-           || ( clipperPath.length && r.length >= 3 && !isClockwise(r) ) ) r.reverse();
+        if (  ( !clipperPath.length && isClockwise(r) )
+           || ( clipperPath.length && !isClockwise(r) ) ) r.reverse();
         clipperPath.push(r);
     });
     return ClipperLib.Clipper.CleanPolygons(clipperPath, 0.0001); // centimetric precision
@@ -502,8 +502,8 @@ function vectorProcessing( d ) {
             // first chose if we clip + simplify + add points or if we just exclude feature on south and west
             // if we drape we want to do that
             //
-            var paths;
-            var contours;
+            var paths = [];
+            var contours = [];
             var additionalPoints = [];
             var addContour = ctxt.symbology.polygon.lineColor || ctxt.symbology.polygon.lineWidth || ctxt.symbology.polygon.extrude;
             if (ctxt.symbology.draping){
@@ -514,7 +514,7 @@ function vectorProcessing( d ) {
                 clipTimer.stop();
                 paths = p2tPath( clipped.poly );
                 additionalPoints = grid( paths, p2tBbox( paths ), ctxt.center, ctxt.size, ctxt.nbIntervals );
-                if (addContour) contours = p2tPath( clipped.contour ) || null; 
+                if (addContour) contours = p2tPath( clipped.contour ); 
             }
             else {
                 if ( bboxCenter.x <= bboxTile[0]
@@ -522,7 +522,17 @@ function vectorProcessing( d ) {
                   || bboxCenter.x > bboxTile[2]
                   || bboxCenter.y > bboxTile[3] ) return; // feature will be included by another tile
                 paths = p2tPath( clipperPath( poly, ctxt.translation ) );
-                if (addContour) contours = p2tPath( clipperPath( poly, ctxt.translation ) ); 
+                
+                if (addContour){
+                    paths.forEach( function(ring) {
+                        var r = contours.length;
+                        contours.push([]);
+                        ring.forEach( function(point) {
+                            contours[r].push({x:point.x, y:point.y});
+                        });
+                        if (contours[r].length) contours[r].push(contours[r][0]);
+                    });
+                }
             }
 
 
@@ -546,7 +556,7 @@ function vectorProcessing( d ) {
                 if (err.points) {
                     var points = [];
                     err.points.forEach(function(p){ points.push({X:p.x, Y:p.y}); });
-                    addLinesFromClipperPaths(errSpotGeom, [points])
+                    addLines(errSpotGeom, [points])
                 }
                 console.log('failed feature triangulation gid=',feat.properties.gid, err);
             }
@@ -560,6 +570,7 @@ function vectorProcessing( d ) {
             if ( ctxt.symbology.polygon.extrude ){ 
                 var heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
                 addTrianglesFromExtrusion(wallGeometry, contours, heigth, ctxt.center, ctxt.size);
+                console.log('extrude ', heigth);
             }
 
             var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
