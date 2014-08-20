@@ -11,56 +11,42 @@ importScripts('../thirdparty/three.js/build/three.js');
 var EPSILON = 1e-6;
 
 
-function addLinesFromClipperPaths(geom, paths){
+function addLines(geom, paths){
     paths.forEach(function(ring) {
-        var lastPt;
-        ring.forEach( function(pt) {
-            if (lastPt){
-                geom.vertices.push(lastPt);
-                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
-                geom.vertices.push(lastPt);
-            }
-            else {
-                lastPt = new THREE.Vector3(pt.X, pt.Y, 0);
-            }
-        });
+        for (var i=0; i<ring.length; i++){
+            geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, 0) );
+            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, 0) );
+        }
     });
 }
 
 function addTrianglesFromExtrusion(geom, paths, heigth, center, size){
     var i = geom.vertices.length;
     var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
-    var addedVtx = 0;
-    paths.forEach( function(ring) {
-        var lastPt;
-        ring.forEach( function(pt) {
-            if (lastPt){
-                geom.vertices.push(lastPt);
-                var lastPtH = new THREE.Vector3(lastPt.x, lastPt.y, heigth);
-                lastPt = new THREE.Vector3(pt.x, pt.y, 0);
-                geom.vertices.push(lastPt);
 
-                geom.vertices.push(lastPtH);
-                lastPtH = new THREE.Vector3(lastPt.x, lastPt.y, heigth);
-                geom.vertices.push(lastPtH);
-                var faces = [ new THREE.Face3(i, i+1, i+2), new THREE.Face3(i+2, i+1, i+3)];
-                faces.forEach( function(face){
-                    geom.faces.push( face );
-                    
-                    var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
-                                                (geom.vertices[face.a].y-tileOrigin.y)/size),
-                              new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
-                                                (geom.vertices[face.b].y-tileOrigin.y)/size),
-                              new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
-                                                (geom.vertices[face.c].y-tileOrigin.y)/size)];
-                    geom.faceVertexUvs[ 0 ].push(uv);
-                });
-                i+=4;
-            }
-            else {
-                lastPt = new THREE.Vector3(pt.x, pt.y, 0);
-            }
-        });
+    paths.forEach( function(ring) {
+        for (var i=0; i<ring.length; i++){
+            var j = geom.vertices.length;
+            geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, 0) );
+            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, 0) );
+            geom.vertices.push( new THREE.Vector3(ring[(i+1)%ring.length].x, ring[(i+1)%ring.length].y, heigth) );
+            geom.vertices.push( new THREE.Vector3(ring[i].x, ring[i].y, heigth) );
+            var faces = [ 
+                new THREE.Face3(j, j+1, j+2), 
+                new THREE.Face3(j, j+2, j+3)
+            ];
+            faces.forEach( function(face){
+                geom.faces.push( face );
+                
+                var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+                                            (geom.vertices[face.a].y-tileOrigin.y)/size),
+                          new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+                                            (geom.vertices[face.b].y-tileOrigin.y)/size),
+                          new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+                                            (geom.vertices[face.c].y-tileOrigin.y)/size)];
+                geom.faceVertexUvs[ 0 ].push(uv);
+            });
+        }
     });
 }
 
@@ -135,15 +121,19 @@ function clipperPath( wfsPolygon, translation ) {
         clipperPath.push(r);
     });
     return ClipperLib.Clipper.CleanPolygons(clipperPath, 0.0001); // centimetric precision
-    //return clipperPath;
 }
 
-function isClockwise( ring ) {
-    var u = {X:ring[0].X-ring[1].X, 
-             Y:ring[0].Y-ring[1].Y};
-    var v = {X:ring[2].X-ring[1].X, 
-             Y:ring[2].Y-ring[1].Y};
-    return (u.X*v.Y - v.X*u.Y ) > 0;
+function isClockwise( ring ){
+    return area(ring) < 0;
+}
+
+// area is negative if polygon is clockwise
+function area( ring ) {
+    var sum = 0;
+    for (var i=0; i<ring.length; i ++){
+        sum -= (ring[(i+1)%ring.length].X*ring[i].Y)-(ring[(i+1)%ring.length].Y*ring[i].X);
+    }
+    return sum*.5;
 }
 
 function clip( clipperPath, clipperRect, needsContour ) {
@@ -466,6 +456,7 @@ function vectorProcessing( d ) {
 
             var geometry = new THREE.Geometry();
             var wallGeometry = new THREE.Geometry();
+            var lineGeometry = new THREE.Geometry();
             // first chose if we clip + simplify + add points or if we just exclude feature on south and west
             // if we drape we want to do that
             //
@@ -487,7 +478,7 @@ function vectorProcessing( d ) {
                   || bboxCenter.x > bboxTile[2]
                   || bboxCenter.y > bboxTile[3] ) return; // feature will be included by another tile
                 paths = p2tPath( clipperPath( poly, ctxt.translation ) );
-                if (addContour) contours = paths; 
+                if (addContour) contours = p2tPath( clipperPath( poly, ctxt.translation ) ); 
             }
 
 
@@ -495,15 +486,11 @@ function vectorProcessing( d ) {
 //gridAltitude( p.x, p.y, gridVertices, gridNbIntervals ) + ( height || 0 )
 //                    addLinesFromClipperPaths( lineGeom, clipped.contour );
 
-// heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
 // FIX 1
 // var simpPoly = ClipperLib.Clipper.SimplifyPolygons( clipped.poly, ClipperLib.PolyFillType.pftEvenOdd );
 // FIX 2
 // var paths = p2tPath( [simpPoly[0]] );
-// //var polyBbox = p2tBbox( paths );
-// //var additionalPoints = grid( paths, polyBbox, ctxt.center, ctxt.size, ctxt.nbIntervals );
-// triangulate(geom, paths, additionalPoints, heigth, ctxt.center, ctxt.size);
-// console.log('dubious fix for gid=',feat.properties.gid);
+
             try {
                 triangulate(geometry, paths, additionalPoints, ctxt.center, ctxt.size);
             }
@@ -518,6 +505,11 @@ function vectorProcessing( d ) {
                 console.log('failed feature triangulation gid=',feat.properties.gid, err);
             }
 
+            // add lines if needed
+            if ( ctxt.symbology.polygon.lineColor || ctxt.symbology.polygon.lineWidth ){
+                addLines( lineGeometry, contours );
+            }
+
             // extrude walls if needed
             if ( ctxt.symbology.polygon.extrude ){ 
                 var heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
@@ -529,9 +521,9 @@ function vectorProcessing( d ) {
                 geometry.vertices.forEach( function(v){
                     v.z = gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals );
                 });
-                //wallGeometry.vertices.forEach( function(v){
-                //    v.z += gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals );
-                //});
+                wallGeometry.vertices.forEach( function(v){
+                    v.z += gridAltitude( v.x, v.y, ctxt.gridVertices, ctxt.gridNbIntervals );
+                });
             }
 
             var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
@@ -541,7 +533,7 @@ function vectorProcessing( d ) {
                 zOffset +=  gridAltitude( bboxCenter.x, bboxCenter.y, 
                                  ctxt.gridVertices, ctxt.gridNbIntervals );
                 wallGeometry.vertices.forEach( function(v){
-                    v.z += 30;
+                    v.z += zOffset;
                 });
                 zOffset += +feat.properties[ ctxt.symbology.polygon.extrude ];
             }
@@ -554,6 +546,7 @@ function vectorProcessing( d ) {
             // append geometry to geom
             geom.merge(geometry);
             wallGeom.merge(wallGeometry);
+            lineGeom.merge(lineGeometry);
         }
 
         switch ( feat.geometry.type ) {
