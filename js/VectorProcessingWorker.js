@@ -107,6 +107,30 @@ function triangulate(geom, paths, additionalPoints, center, size ){
     var triangles = swctx.getTriangles();
     var i = geom.vertices.length;
     // TODO: the points in poly2try are in the order they were input, dont make it a triangle soup
+
+    paths.forEach( function(ring){
+        ring.forEach( function(p){
+            p.id = geom.vertices.length;
+            geom.vertices.push(new THREE.Vector3(p.x, p.y, 0 ));
+        });
+        additionalPoints.forEach( function(p){
+            p.id = geom.vertices.length;
+            geom.vertices.push(new THREE.Vector3(p.x, p.y, 0 ));
+        });
+    });
+    triangles.forEach(function(t) {
+        var face = new THREE.Face3(t.getPoint(0).id, t.getPoint(1).id, t.getPoint(2).id );
+        geom.faces.push( face );
+        var uv = [new THREE.Vector2((geom.vertices[face.a].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.a].y-tileOrigin.y)/size),
+                  new THREE.Vector2((geom.vertices[face.b].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.b].y-tileOrigin.y)/size),
+                  new THREE.Vector2((geom.vertices[face.c].x-tileOrigin.x)/size, 
+                                    (geom.vertices[face.c].y-tileOrigin.y)/size)];
+        geom.faceVertexUvs[ 0 ].push(uv);
+    });
+
+    /*
     triangles.forEach(function(t) {
         t.getPoints().forEach(function(p) {
             geom.vertices.push(new THREE.Vector3(p.x, p.y, 0 ));
@@ -123,6 +147,7 @@ function triangulate(geom, paths, additionalPoints, center, size ){
         geom.faceVertexUvs[ 0 ].push(uv);
         i += 3;
     });
+    */
 
 }
 
@@ -510,6 +535,7 @@ function vectorProcessing( d ) {
 // var paths = p2tPath( [simpPoly[0]] );
 
             try {
+                // WATCHOUT, path is modified here
                 triangulateTimer.start();
                 triangulate(geometry, paths, additionalPoints, ctxt.center, ctxt.size);
                 triangulateTimer.stop();

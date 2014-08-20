@@ -157,6 +157,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
             { color:this.symbology.polygon.color,
               ambient:this.symbology.polygon.color,
               opacity:this.symbology.polygon.opacity || 1.,
+              transparent: (this.symbology.polygon.opacity || 1) < 1, 
               wireframe:this.symbology.polygon.wireframe || false } );
 
     var group = new THREE.Object3D();
