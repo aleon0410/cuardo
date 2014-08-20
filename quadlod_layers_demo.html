@@ -9,7 +9,6 @@
 <body> 
 <div id="container"></div>
 <script src="thirdparty/three.js/build/three.js"></script> 
-<script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script>
 <script src="thirdparty/three.js/examples/js/Detector.js"></script>
 <script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script>
 <script src="thirdparty/three.js/examples/js/shaders/CopyShader.js"></script>
@@ -40,11 +39,12 @@
 <script src="js/QuadNode.js"></script>
 <script src="js/QuadTree.js"></script>
 <script src="js/PlaneGeometry.js"></script>
+<script src="js/GISControls.js"></script>
 <script>
 inRender = false;
 
 init();
-animate();
+//animate();
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );
@@ -52,22 +52,17 @@ function init() {
     // camera
     {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
-        //camera.position.y = -10000;
-        camera.position.z = 3000;
-        camera.position.y = -500;
     }
 
     // trackball
     {
-        controls = new THREE.TrackballControls( camera );
+        controls = new THREE.GISControls( camera );
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
-        controls.noZoom = false;
-        controls.noPan = false;
-        controls.staticMoving = true;
-        controls.dynamicDampingFactor = 0.3;
         controls.keys = [ 65, 83, 68 ];
+        // distance to the center
+        controls.distance = 10000;
         controls.addEventListener( 'change', render );
     }
 
@@ -123,9 +118,9 @@ function init() {
 //                    cont(group);
                 };
             }
-            var size = 10000;
+            var size = 2500;
 
-            var maxLOD = 6;
+            var maxLOD = 4;
             quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 

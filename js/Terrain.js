@@ -58,7 +58,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
             var material = new THREE.MeshLambertMaterial( 
                     { color: 0xfffffff,
                       map : textureTex,
-                      wireframe:true
+//                      wireframe:true
                     } );
             mesh = new THREE.Mesh(geom, material);
             object.geom[tileId] = geom;

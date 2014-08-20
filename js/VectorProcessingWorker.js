@@ -10,6 +10,24 @@ importScripts('../thirdparty/three.js/build/three.js');
 
 var EPSILON = 1e-6;
 
+var Timer = function() {
+    this.t = null;
+    // accumulated time
+    this.acc = 0;
+}; 
+
+Timer.prototype.start = function() {
+    this.t = new Date().getTime();
+};
+
+Timer.prototype.stop = function() {
+    var t = new Date().getTime();
+    this.acc += t - this.t;
+}
+
+Timer.prototype.get = function() {
+    return this.acc;
+}
 
 function addLines(geom, paths){
     paths.forEach(function(ring) {
@@ -413,12 +431,9 @@ function vectorProcessing( d ) {
                     ctxt.center.y - .5*ctxt.size,
                     ctxt.center.x + .5*ctxt.size,
                     ctxt.center.y + .5*ctxt.size];
-
-    var reqend = new Date().getTime();
     //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
     var userData = {name:'mesh',faceGidMap:[]};
     var userDataWall = {name:'wallMesh',faceGidMap:[]};
-    var start = new Date().getTime();
     var geom = new THREE.Geometry();
     var wallGeom = new THREE.Geometry();
     var lineGeom = new THREE.Geometry();
@@ -426,6 +441,9 @@ function vectorProcessing( d ) {
     var errSpotGeom = new THREE.Geometry();
     var nbInvalid = 0;
     var nbPoly = 0;
+
+    var clipTimer = new Timer();
+    var triangulateTimer = new Timer();
     // MULTIPOLYGON ONLY
 //    console.log(data);
     data.features.forEach( function(feat) {
@@ -437,7 +455,6 @@ function vectorProcessing( d ) {
         }
 
         var processPolygon = function( poly ) {
-
             
             var bboxCenter = feat.geometry.bbox.length == 4 ? 
                 {
@@ -465,9 +482,11 @@ function vectorProcessing( d ) {
             var additionalPoints = [];
             var addContour = ctxt.symbology.polygon.lineColor || ctxt.symbology.polygon.lineWidth || ctxt.symbology.polygon.extrude;
             if (ctxt.symbology.draping){
+                clipTimer.start();
                 var clipped = clip( clipperPath( poly, ctxt.translation ), 
                                     ctxt.clipperRect, 
                                     addContour );
+                clipTimer.stop();
                 paths = p2tPath( clipped.poly );
                 additionalPoints = grid( paths, p2tBbox( paths ), ctxt.center, ctxt.size, ctxt.nbIntervals );
                 if (addContour) contours = p2tPath( clipped.contour ) || null; 
@@ -482,7 +501,6 @@ function vectorProcessing( d ) {
             }
 
 
-
 //gridAltitude( p.x, p.y, gridVertices, gridNbIntervals ) + ( height || 0 )
 //                    addLinesFromClipperPaths( lineGeom, clipped.contour );
 
@@ -492,7 +510,9 @@ function vectorProcessing( d ) {
 // var paths = p2tPath( [simpPoly[0]] );
 
             try {
+                triangulateTimer.start();
                 triangulate(geometry, paths, additionalPoints, ctxt.center, ctxt.size);
+                triangulateTimer.stop();
             }
             catch (err) {
                 nbInvalid++;
@@ -573,7 +593,6 @@ function vectorProcessing( d ) {
             userDataWall.faceGidMap.push(feat.properties.gid);
         }
     });
-    var end = new Date().getTime();
 
     //computeTileUv(geom, ctxt.center, ctxt.size);
     geom.computeFaceNormals();
@@ -588,7 +607,7 @@ function vectorProcessing( d ) {
         //computeTileUv(wallGeom, ctxt.center, ctxt.size);
     }
     var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId };
-    console.log('Processing time ' + (end-reqend));
+    console.log('Processing time: clipping ' + clipTimer.get() + " triangulate " + triangulateTimer.get() );
     return r;
 }
 

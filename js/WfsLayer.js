@@ -122,7 +122,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             // call the worker to process these features
 
             var worker = object.workers[object.currentWorker];
-            console.log('GET time ' + (reqend-reqstart) + ' ' + reqstart + " using worker #" + object.currentWorker);
+            console.log('GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
             worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
             object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
         },
