@@ -570,7 +570,6 @@ function vectorProcessing( d ) {
             if ( ctxt.symbology.polygon.extrude ){ 
                 var heigth = +feat.properties[ ctxt.symbology.polygon.extrude ];
                 addTrianglesFromExtrusion(wallGeometry, contours, heigth, ctxt.center, ctxt.size);
-                console.log('extrude ', heigth);
             }
 
             var zOffset = (ctxt.symbology.zOffsetPercent * ctxt.size || 0)
