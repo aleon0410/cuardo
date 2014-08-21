@@ -309,12 +309,24 @@ function animate() {
     controls.update();
 }
 
+var lastRender = null;
+
 function render() {
     if (inRender) {
         // callback here, but a render is already in progress
         return;
     }
     inRender = true;
+    var now = performance.now();
+    if ( lastRender ) {
+        // if we are asked for too fast consecutive renders, abort
+        if ( (now - lastRender) < 15 ) {
+            inRender = false;
+            return;
+        }
+    }
+    lastRender = now;
+
     scene.updateMatrixWorld();
 
     scene.traverse( function ( object ) {
