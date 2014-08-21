@@ -181,6 +181,36 @@ function area( ring ) {
     return sum*.5;
 }
 
+
+function intersects( point, bbox ){
+    return point.x >= bbox[0]
+        && point.y >= bbox[1]
+        && point.x <= bbox[2]
+        && point.y <= bbox[3];
+}
+/*
+function fastClip( paths, bbox, needsContour ){
+    // determine if we start inside or outside
+    // goes alog the path
+    // if we are inside, adds the point
+    // if we cross the side, we add a point there
+
+    var clippedPoly = [];
+    var clippedContour = [];
+
+    paths.forEach( function(ring){
+        if (!ring.length) continue;
+        var inside = intersects(ring[0], bbox);
+        for (var i=0; i<ring.length; i++){
+            if (intersects(ring[i], bbox))
+        }
+    });
+
+    return {poly:clippedPoly, contour:clippedContour};
+
+}
+*/
+
 function clip( clipperPath, clipperRect, needsContour ) {
     var clippedPoly = new ClipperLib.Paths();
     {
