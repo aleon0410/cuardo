@@ -165,9 +165,9 @@ function init() {
                 '}';
             var arrond = new WfsLayer(urlArrond, translation, 32, terrain, {zOffsetPercent:1e-3, draping:true, polygon:{color:0xffffff, lineColor:0xff0000, lineWidth:2, wireframe:false, colorFun:colFun, opacity:.2}});
 
-            var lod0_url = baseUrl+"&typeName=tows:toitures_lod0";
+            var lod0_url = baseUrl+"&typeName=tows:toitures";
             var lod0 = new WfsLayer(lod0_url, translation, 32, terrain,
-                                    {draping:true, zOffsetPercent:2e-3, polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:2}}
+                                    {zOffsetPercent:2e-3, zOffset:10, polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:1}}
                                     , [1000,5999] );
 
 
@@ -190,9 +190,9 @@ function init() {
         }
 
         // grid
-        if (0)
+        if (1)
         {
-            var helper = new THREE.GridHelper( 200, 10 );
+            var helper = new THREE.GridHelper( 10000, 1000 );
             helper.setColors( 0x0000ff, 0xf0f0f0 );
             helper.rotation.x = -Math.PI/2;
             scene.add( helper );
@@ -202,7 +202,7 @@ function init() {
         {
             //light = new THREE.PointLight( 0xdddddd );
             light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
-            light.position.set( 1000, 1000, 1000 );
+            light.position.set( 5000, 5000, 5000 );
 
             light.castShadow = true;
             light.shadowCameraVisible = true;
@@ -290,10 +290,6 @@ function init() {
         stats.domElement.style.zIndex = 100;
         container.appendChild( stats.domElement );
     }
-
-    // first render to avoid blank screen before interaction
-    render();
-
 }
 
 function onWindowResize() {
@@ -301,12 +297,13 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
     controls.handleResize();
-    render();
+    //render();
 }
 
 function animate() {
     requestAnimationFrame( animate );
     controls.update();
+    render();
 }
 
 var lastRender = null;
@@ -317,15 +314,15 @@ function render() {
         return;
     }
     inRender = true;
-    var now = performance.now();
-    if ( lastRender ) {
-        // if we are asked for too fast consecutive renders, abort
-        if ( (now - lastRender) < 15 ) {
-            inRender = false;
-            return;
-        }
-    }
-    lastRender = now;
+    //var now = performance.now();
+    //if ( lastRender ) {
+    //    // if we are asked for too fast consecutive renders, abort
+    //    if ( (now - lastRender) < 20 ) {
+    //        inRender = false;
+    //        return;
+    //    }
+    //}
+    //lastRender = now;
 
     scene.updateMatrixWorld();
 
@@ -354,7 +351,7 @@ function onDocumentMouseDown( event ) {
             obj.geom.colorsNeedUpdate = true;
         });
     restoreColors = [];
-    render()
+    //render()
 
     var objects = [];
     scene.traverse( function(obj) {
@@ -395,7 +392,7 @@ function onDocumentMouseDown( event ) {
                 obj.geometry.colorsNeedUpdate = true;
             }
         });
-        render(); 
+        //render(); 
         break;
     }
 
