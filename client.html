@@ -41,6 +41,7 @@ font-family: "Arial";
 <script src="thirdparty/three.js/examples/js/shaders/CopyShader.js"></script>
 <script src="thirdparty/three.js/examples/js/shaders/SSAOShader.js"></script>
 <script src="thirdparty/three.js/examples/js/shaders/BokehShader.js"></script>
+<script src="thirdparty/three.js/examples/js/shaders/FXAAShader.js"></script>
 <script src="thirdparty/three.js/examples/js/postprocessing/EffectComposer.js"></script>
 <script src="thirdparty/three.js/examples/js/postprocessing/MaskPass.js"></script>
 <script src="thirdparty/three.js/examples/js/postprocessing/RenderPass.js"></script>
@@ -258,9 +259,18 @@ function init() {
                 maxblur:	1,
                 width:  window.innerWidth,
                 height: window.innerHeight
-                } );
+            } );
             bokehPass.renderToScreen = true;
             composer.addPass( bokehPass );
+
+            var fxaa = new THREE.ShaderPass( THREE.FXAAShader );
+            var dpr = 1;
+            if (window.devicePixelRatio !== undefined) {
+                dpr = window.devicePixelRatio;
+            }
+            fxaa.uniforms['resolution'].value.set(1 / (window.innerWidth * dpr), 1 / (window.innerHeight * dpr));
+            fxaa.renderToScreen = true;
+            composer.addPass(fxaa);
             }
         }
     }
@@ -299,12 +309,24 @@ function animate() {
     controls.update();
 }
 
+var lastRender = null;
+
 function render() {
     if (inRender) {
         // callback here, but a render is already in progress
         return;
     }
     inRender = true;
+    var now = performance.now();
+    if ( lastRender ) {
+        // if we are asked for too fast consecutive renders, abort
+        if ( (now - lastRender) < 15 ) {
+            inRender = false;
+            return;
+        }
+    }
+    lastRender = now;
+
     scene.updateMatrixWorld();
 
     scene.traverse( function ( object ) {

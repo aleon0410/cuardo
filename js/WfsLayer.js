@@ -139,6 +139,8 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     // function called after worker has been executed
     var r = o.data;
 
+    var timing = new Date().getTime() - r.sendDate;
+    console.log('Copy from worker ' + timing);
     var cloneFakeGeometry = function( g ) {
         // classes are not copied, only data
         // so we rebuild full objects here
