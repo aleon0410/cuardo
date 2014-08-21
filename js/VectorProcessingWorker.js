@@ -694,7 +694,7 @@ function vectorProcessing( d ) {
         //computeTileUv(wallGeom, ctxt.center, ctxt.size);
     }
     T['global'].stop();
-    var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId };
+    var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId, sendDate: new Date().getTime() };
     var s = '';
     for ( var t in T ) {
         s += ' ' + t + ': ' + T[t].get();
