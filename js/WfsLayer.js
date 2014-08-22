@@ -1,7 +1,6 @@
 WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     this.url = url;
     this.translation = translation;
-    this.nbIntervals = nbIntervals || 8;
     this.extent = [];
     this.srid = 0;
     this.terrain = terrain || null;
@@ -74,12 +73,6 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
 
-    var clipperRect = [[{X:center.x-.5*size, Y:center.y-.5*size},
-                        {X:center.x+.5*size, Y:center.y-.5*size},
-                        {X:center.x+.5*size, Y:center.y+.5*size},
-                        {X:center.x-.5*size, Y:center.y+.5*size},
-                        ]];
-
     var object = this;
     var is3d = false;
 
@@ -98,19 +91,17 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var ctxt = {
         translation: this.translation,
-        clipperRect: clipperRect,
         symbology: object.symbology,
         is3d: is3d,
         center: center,
         size:size,
-        nbIntervals: this.nbIntervals,
         gridVertices : null,
         gridNbIntervals : null
     };
     if (this.terrain){
         //console.log('terrain geom ', tileId, this.terrain.geom[tileId]);
         ctxt.gridVertices = this.terrain.geom[tileId].vertices;
-        ctxt.gridNbIntervals = this.terrain.nbIntervals;
+        ctxt.nbIntervals = this.terrain.nbIntervals;
     }
 
     this.continuations[tileId] = callback;
@@ -144,10 +135,9 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var cloneFakeGeometry = function( g ) {
         // classes are not copied, only data
         // so we rebuild full objects here
-        var geom = new THREE.Geometry();
-        geom.vertices = g.vertices;
-        geom.faces = g.faces;
-        geom.faceVertexUvs = g.faceVertexUvs;
+        var geom = new THREE.BufferGeometry();
+        geom.offsets = g.offsets;
+        geom.attributes = g.attributes;
         return geom;
     }
     var geom = cloneFakeGeometry( r.geom );
@@ -167,9 +157,9 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
 
     var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );
-    mesh.userData = r.userData;
-    mesh.userData.url = this.url;
+    mesh.userData = {name:'mesh', url:this.url, faceGidMap:r.gidMap};
     group.add(mesh);
+
 
     //{
     //    var m= new THREE.Mesh( geom,   new THREE.MeshLambertMaterial( 
@@ -200,8 +190,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
                               THREE.LinePieces ));
     if (this.symbology.polygon.extrude){
         var wallMesh = new THREE.Mesh( wallGeom,  material );
-        wallMesh.userData = r.userDataWall;
-        wallMesh.userData.url = this.url;
+        wallMesh.userData = {name:'mesh', url:this.url, faceGidMap:r.gidMapWall};
         group.add( wallMesh );
     }
     

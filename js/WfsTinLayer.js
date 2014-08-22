@@ -51,6 +51,11 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                extentCenter.x + size*.5,
                extentCenter.y + size*.5];
 
+    var bboxTile = [center.x - .5*size,
+                    center.y - .5*size,
+                    center.x + .5*size,
+                    center.y + .5*size];
+
     var object = this;
 
     console.log(this.url + '&BBOX='+ext.join(','));
@@ -59,6 +64,26 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
             var nbPoly = 0;
             var group = new THREE.Object3D();
             data.features.forEach( function(feat) {
+
+                var bboxCenter = feat.geometry.bbox.length == 4 ? 
+                    {
+                        x: ( (+feat.geometry.bbox[0]) 
+                             + (+feat.geometry.bbox[2]) )*.5 + object.translation.x,
+                        y: ( (+feat.geometry.bbox[1]) 
+                                + (+feat.geometry.bbox[3]) )*.5 +object.translation.y 
+                    }
+                    :
+                    {
+                        x: ( (+feat.geometry.bbox[0]) 
+                             + (+feat.geometry.bbox[3]) )*.5 + object.translation.x,
+                        y: ( (+feat.geometry.bbox[1]) 
+                                + (+feat.geometry.bbox[4]) )*.5 +object.translation.y 
+                    };
+                if ( bboxCenter.x <= bboxTile[0]
+                  || bboxCenter.y <= bboxTile[1]
+                  || bboxCenter.x > bboxTile[2]
+                  || bboxCenter.y > bboxTile[3] ) return; // feature will be included by another tile
+                /*
                 var xmin = feat.geometry.bbox[3];
                 var ymin = feat.geometry.bbox[4];
                 if ( (feat.geometry.bbox[3] > ext[2]) || (feat.geometry.bbox[4] > ext[3]) ) {
@@ -66,6 +91,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                     // and on the left and bottom border of the tile
                     return;
                 }
+                */
 
                 var geom = new THREE.Geometry();
 
