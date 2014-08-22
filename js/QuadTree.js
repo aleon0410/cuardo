@@ -1,5 +1,5 @@
 // quad of size x size, centered on x,y
-QuadTree = function( size, lod, tiler ) {
+QuadTree = function( size, lod, tiler, maxCachedTiles ) {
     THREE.Object3D.call( this );
 
     // max LOD
@@ -13,6 +13,10 @@ QuadTree = function( size, lod, tiler ) {
     // the root tile
     this.root = new QuadNode( size, 0, 0, 0, this );
     this.add( this.root );
+
+    // list of loaded nodes
+    this.cache = []
+    this.maxCachedTiles = maxCachedTiles || 32;
 
     // visible layers
     // all layers are visible at construction
@@ -85,4 +89,20 @@ QuadTree.prototype.setVisibleLayers = function( layers )
         }
     });
     this.visibleLayers = layers;
+}
+
+QuadTree.prototype.addToCache = function( node )
+{
+    // delete old tiles
+    console.log('nb nodes ' + this.cache.length + ' max ' + this.maxCachedTiles);
+    if ( this.cache.length >= this.maxCachedTiles ) {
+        var nb = this.cache.length - this.maxCachedTiles + 1;
+        for ( var i = 0; i < nb; i++ ) {
+            var n = this.cache.shift();
+            console.log('Discard ' + n.x + ' ' + n.y + ' ' + n.level);
+            n.resetObject();
+        }
+    }
+
+    this.cache.push( node )
 }
