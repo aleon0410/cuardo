@@ -96,7 +96,7 @@ function layerToggle(cb) {
             break;
 
     }
-    render();
+    //render();
 }
 
 function identifyToggle(cb) {
@@ -134,7 +134,7 @@ function init() {
         controls.keys = [ 65, 83, 68 ];
         // distance to the center
         controls.distance = 10000;
-        controls.addEventListener( 'change', render );
+//        controls.addEventListener( 'change', render );
     }
 
     // scene
@@ -339,7 +339,7 @@ function render() {
     stats.update();
 
     // load missing tiles
-    TileLoader.instance().load( render );
+    TileLoader.instance().load( function(){} );
     inRender = false;
 }
 
