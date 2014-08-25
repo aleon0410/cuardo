@@ -43,10 +43,14 @@ QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level
             // already set
             return;
         }
+
         this.object = object;
         if ( ! this.object.isLoaded() ) {
             return;
         }
+        // add the object to the cache
+        this.quadtree.addToCache( this );
+
         var that = this;
         for ( var lid = 0, l = object.layers.length; lid < l; lid++ ) {
             if ( this.quadtree.visibleLayers.indexOf(lid) !== -1 ) {
@@ -67,6 +71,17 @@ QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level
         }
         this.nodes[dx][dy].setObject( object, rx, ry, level-1 );
     }
+}
+
+QuadNode.prototype.resetObject = function()
+{
+    var object = this.object;
+    for ( var lid = 0, l = object.layers.length; lid < l; lid++ ) {
+        if ( this.quadtree.visibleLayers.indexOf(lid) !== -1 ) {
+            this.remove( object.layers[lid] );
+        }
+    }
+    this.object = new Tile( {}, Tile.State.EMPTY );
 }
 
 QuadNode.prototype.hideLayer = function( layer )
