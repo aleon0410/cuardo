@@ -390,8 +390,8 @@ function onDocumentMouseDown( event ) {
         var object = intersects[ idx ].object;
         if ( !object.visible ) continue;
         var map = object.userData.vertexGidMap;
-        var gid = map[ intersects[ 0 ].indices[0] ];
-        console.log('intersection ',object.userData.name,' on face',intersects[ 0 ].faceIndex , ' gid', map[ intersects[ 0 ].faceIndex ]);
+        var gid = map[ intersects[ idx ].indices[0] ];
+        console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
         document.getElementById('diplayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {
