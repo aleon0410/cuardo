@@ -46,12 +46,12 @@ Geom.prototype.merge = function( other ) {
     if (other.indexed){
         if (!this.indexed) throw 'cannot merge indexed and unindexed geom';
         var offset = 0;
-        if ( (this.position.length + other.position.length)/3 > 21845 ){
+        var lastOffset = this.offsets.length-1;
+        if ( (this.position.length + other.position.length)/3 - this.offsets[lastOffset].index > 21845 ){
             this.offsets.push({start:this.index.length, 
                                count:other.index.length, 
                                index:this.position.length/3});
         } else {
-            var lastOffset = this.offsets.length-1;
             offset = this.position.length/3 - this.offsets[lastOffset].index;
             this.offsets[lastOffset].count += other.index.length;
         }
