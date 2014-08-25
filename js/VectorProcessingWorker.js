@@ -33,10 +33,10 @@ var Geom = function(indexed) {
     this.indexed = indexed || false;
     this.position=[];
     this.color=[];
+    this.gidMap = [];
     if (this.indexed){
         this.index = [];
         this.offsets = [{start:0, count:0, index:0}];
-        this.gidMap = [];
     }
 };
 
@@ -60,9 +60,9 @@ Geom.prototype.merge = function( other ) {
 
         var object = this;
         other.index.forEach(function(idx){ object.index.push(idx + offset)});
-        Array.prototype.push.apply(this.gidMap, other.gidMap);
     }
 
+    Array.prototype.push.apply(this.gidMap, other.gidMap);
     Array.prototype.push.apply(this.position, other.position);
     Array.prototype.push.apply(this.color, other.color);
     if (other.uv) {
@@ -680,10 +680,10 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     T['color'].stop();
 
     T['map'].start();
-    for (var f=0, end=res.geometry.index.length/3; f<end; f++) {
+    for (var f=0, end=res.geometry.position.length; f<end; f+=3) {
         res.geometry.gidMap.push(+properties.gid);
     }
-    for (var f=0, end=res.wallGeometry.index.length/3; f<end; f++) {
+    for (var f=0, end=res.wallGeometry.position.length; f<end; f+=3) {
         res.wallGeometry.gidMap.push(+properties.gid);
     }
     T['map'].stop();

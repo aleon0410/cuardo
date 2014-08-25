@@ -359,14 +359,17 @@ function render() {
 function onDocumentMouseDown( event ) {
     event.preventDefault();
     // highlight
-    restoreColors.forEach(function(obj){
-            obj();
+    restoreColors.forEach(function(r){
+            r.obj.geometry.attributes.color.array[r.idx] = r.color.r;
+            r.obj.geometry.attributes.color.array[r.idx+1] = r.color.g;
+            r.obj.geometry.attributes.color.array[r.idx+2] = r.color.b;
+            r.obj.geometry.attributes.color.needsUpdate = true;
         });
     restoreColors = [];
 
     var objects = [];
     scene.traverse( function(obj) {
-        if ( obj.userData && obj.userData.faceGidMap ) {
+        if ( obj.userData && obj.userData.vertexGidMap ) {
             objects.push( obj );
         }
     });
@@ -386,23 +389,34 @@ function onDocumentMouseDown( event ) {
     for (var idx = 0; idx < intersects.length; idx++ ) {
         var object = intersects[ idx ].object;
         if ( !object.visible ) continue;
-        var map = object.userData.faceGidMap;
-        var gid = map[ intersects[ 0 ].faceIndex ];
+        var map = object.userData.vertexGidMap;
+        var gid = map[ intersects[ 0 ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ 0 ].faceIndex , ' gid', map[ intersects[ 0 ].faceIndex ]);
         document.getElementById('diplayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {
-            var c = new THREE.Color(0xffff33);
-            if ( obj.userData && obj.userData.faceGidMap && obj.userData.url == object.userData.url) {
-                for (var i=0; i<obj.geometry.faces.length; i++){
-                    if ( obj.userData.faceGidMap[i] == gid ){
-                        restoreColors.push( function(){} );
+            var c = new THREE.Color(0xffff00);
+            if ( obj.userData && obj.userData.vertexGidMap && obj.userData.url == object.userData.url) {
+                
+                for (var i=0, end = obj.geometry.attributes.position.array.length/3; i<end; i++){
+                    if ( obj.userData.vertexGidMap[i] == gid ){
+                        restoreColors.push({
+                            obj: obj,
+                            idx: i*3, 
+                            color: { 
+                                r:obj.geometry.attributes.color.array[i*3], 
+                                g:obj.geometry.attributes.color.array[i*3+1], 
+                                b:obj.geometry.attributes.color.array[i*3+2]}});
+                        obj.geometry.attributes.color.array[i*3] = c.r;
+                        obj.geometry.attributes.color.array[i*3+1] = c.g;
+                        obj.geometry.attributes.color.array[i*3+2] = c.b;
+                        //console.log('changed color of vtx', i )
                            
                            //{geom:obj.geometry, face:obj.geometry.faces[i], color:obj.geometry.faces[i].color});
                        //obj.geometry.faces[i].color = c;
                     }
                 }
-                obj.geometry.colorsNeedUpdate = true;
+                obj.geometry.attributes.color.needsUpdate = true;
             }
         });
         break;

@@ -156,7 +156,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
 
     var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );
-    mesh.userData = {name:'mesh', url:this.url, faceGidMap:r.gidMap};
+    mesh.userData = {name:'mesh', url:this.url, vertexGidMap:r.gidMap};
     group.add(mesh);
 
 
@@ -189,7 +189,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
                               THREE.LinePieces ));
     if (this.symbology.polygon.extrude){
         var wallMesh = new THREE.Mesh( wallGeom,  material );
-        wallMesh.userData = {name:'mesh', url:this.url, faceGidMap:r.gidMapWall};
+        wallMesh.userData = {name:'mesh', url:this.url, vertexGidMap:r.gidMapWall};
         group.add( wallMesh );
     }
     
