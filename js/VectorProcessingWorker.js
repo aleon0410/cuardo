@@ -689,8 +689,11 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     return res;
 }
 
-
-function vectorProcessing( d ) {
+onmessage = function(o) {
+    var data = o.data.data;
+    var ctxt = o.data.ctxt;
+    var tileId = o.data.tileId;
+    console.log('ctxt', ctxt);
     // timers
     var T = {
         global: new Timer(),
@@ -712,13 +715,13 @@ function vectorProcessing( d ) {
 
     //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
     var res = new PolygonGeometries();
-    var tile = new Tile( d.ctxt.center, d.ctxt.size, d.ctxt.nbIntervals, d.ctxt.gridVertices );
+    var tile = new Tile( ctxt.center, ctxt.size, ctxt.nbIntervals, ctxt.gridVertices );
 
-    d.data.features.forEach( function(feat) {
+    data.features.forEach( function(feat) {
         switch ( feat.geometry.type ) {
             case "MultiPolygon": {
                 feat.geometry.coordinates.forEach( function(poly){
-                    var r = processPolygon(poly, feat.geometry.bbox, feat.properties, tile, d.ctxt.translation, d.ctxt.symbology, T);
+                    var r = processPolygon(poly, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T);
                     T['merge'].start();
                     res.merge( r );
                     T['merge'].stop();
@@ -726,7 +729,7 @@ function vectorProcessing( d ) {
             }
             break;
             case "Polygon": {
-                res = processPolygon( feat.geometry.coordinates, feat.geometry.bbox, feat.properties, tile, d.ctxt.translation, d.ctxt.symbology, T );
+                res = processPolygon( feat.geometry.coordinates, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T );
             }
             break;
             default:
@@ -737,9 +740,7 @@ function vectorProcessing( d ) {
     T['convert'].start();
     var trGeom = res.geometry.bufferGeometry();
     trGeom.computeVertexNormals();
-    console.log('trGeom ', trGeom);
     trGeom.computeTangents();
-    console.log('trGeom tgt', trGeom);
     
     var trWallGeom = res.wallGeometry.bufferGeometry();
     trWallGeom.computeVertexNormals();
@@ -756,22 +757,20 @@ function vectorProcessing( d ) {
     T['convert'].stop();
 
     T['global'].stop();
-    var r = { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: d.tileId, sendDate: new Date().getTime() };
-    //var r = { geom:geom, lineGeom:lineGeom, errGeom:errGeom, errSpotGeom:errSpotGeom, wallGeom:wallGeom, userDataWall:userDataWall, userData:userData, tileId: d.tileId, sendDate: new Date().getTime() };
     var s = '';
     for ( var t in T ) {
         s += ' ' + t + ': ' + T[t].get();
     }
     console.log('Timing ' + s );
-    return r;
-// performance note:
-// data get copied from the worker back to the main thread
-// Here ThreeJs geometries can take LOTS of memory
-// FIXME: compute only what is necessary inside the worker
-}
-
-
-onmessage = function(o) {
-    var res = vectorProcessing( o.data, o.ctxt );
-    postMessage( res );
+    postMessage( { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: tileId, sendDate: new Date().getTime() }, 
+            [
+            trGeom.attributes.position.array.buffer, 
+            trGeom.attributes.index.array.buffer,
+            trGeom.attributes.color.array.buffer,
+            trGeom.attributes.normal.array.buffer,
+            trGeom.attributes.uv.array.buffer,
+            trGidMap.buffer,
+            trGidMapWall.buffer,
+            trLineGeom.attributes.position.array.buffer, 
+            ] );
 }
