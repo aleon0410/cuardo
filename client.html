@@ -187,7 +187,7 @@ function init() {
 
             var size = 1500;
 
-            var maxLOD = 3;
+            var maxLOD = 6;
             quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
@@ -202,7 +202,7 @@ function init() {
                           "images/s_posZ.png",
                           "images/s_negZ.png"];
 
-	    var skyGeometry = new THREE.BoxGeometry( 10000, 10000, 10000 );
+	    var skyGeometry = new THREE.BoxGeometry( 20000, 20000, 20000 );
 	
 	    var materialArray = [];
 	    for (var i = 0; i < 6; i++)

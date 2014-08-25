@@ -100,7 +100,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     };
     if (this.terrain){
         //console.log('terrain geom ', tileId, this.terrain.geom[tileId]);
-        ctxt.gridVertices = this.terrain.geom[tileId].vertices;
+        ctxt.gridVertices = this.terrain.geom[tileId].attributes.position.array;
         ctxt.nbIntervals = this.terrain.nbIntervals;
     }
 

@@ -47,14 +47,13 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
         if (!remaining){
             var imagedata = object.getImageData( textureDem.image );
             var geom =  new PlaneGeometry(center, size, object.nbIntervals);
-            var tileOrigin = {x:center.x-size*.5, y:center.y-size*.5};
-            geom.vertices.forEach(function( v ) {
-                var coord = [((v.x-tileOrigin.x)/size), (v.y-tileOrigin.y)/size ];
-                v.z = object.zScale * getPixel( imagedata, coord[0], coord[1]).r;
-            });
-            geom.computeFaceNormals();
+            var pos = geom.attributes.position.array;
+            var uv = geom.attributes.uv.array;
+            for (var i=0, end=geom.attributes.position.array.length/3; i<end; i++){
+                pos[i*3+2] = object.zScale * getPixel( imagedata, uv[i*2], uv[i*2+1]).r;
+            }
             geom.computeVertexNormals();
-            geom.computeTangents();
+            //geom.computeTangents();
             var material = new THREE.MeshLambertMaterial( 
                     { color: 0xfffffff,
                       map : textureTex,

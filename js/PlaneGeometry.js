@@ -2,73 +2,57 @@
 //d---c
 //| \ |
 //a---b
-PlaneGeometry = function ( center, width, widthSegments ) {
+PlaneGeometry = function ( center, width, nbIntervals ) {
+    console.log('nbIntervals', nbIntervals);
 
-	THREE.Geometry.call( this );
+	THREE.BufferGeometry.call( this );
 
-	this.parameters = {
-		width: width,
-		widthSegments: widthSegments,
-	};
-
-	var ix, iy;
 	var width_half = width / 2;
 
-	var gridX = widthSegments || 1.;
+	var nbIntervals1 = nbIntervals + 1;
 
-	var gridX1 = gridX + 1;
+	var segment_width = width / nbIntervals;
 
-	var segment_width = width / gridX;
+        var position = {array:new Float32Array( nbIntervals1*nbIntervals1*3 ), itemSize:3};
+        var uv = {array:new Float32Array( nbIntervals1*nbIntervals1*2 ), itemSize:2};
 
-	var normal = new THREE.Vector3( 0, 0, 1 );
-
-	for ( iy = 0; iy < gridX1; iy ++ ) {
-
+	for ( var iy = 0, end = nbIntervals+1; iy < end; iy ++ ) {
 		var y = center.y + iy * segment_width - width_half;
+		for ( var ix = 0; ix < end; ix ++ ) {
+                        var idx = ix + iy*nbIntervals1;
+			position.array[idx*3  ] = center.x + ix * segment_width - width_half;
+			position.array[idx*3+1] = y;
+			position.array[idx*3+2] = 0;
+                        uv.array[idx*2  ] = ix / nbIntervals;
+                        uv.array[idx*2+1] = iy / nbIntervals;
+		}
+	}
 
-		for ( ix = 0; ix < gridX1; ix ++ ) {
+        var index = {array:new Uint16Array( nbIntervals*nbIntervals*2*3 ), itemSize:3};
 
-			var x = center.x + ix * segment_width - width_half;
+	for ( iy = 0; iy < nbIntervals; iy ++ ) {
+		for ( ix = 0; ix < nbIntervals; ix ++ ) {
+			var a = ix + nbIntervals1 * iy;
+			var b = ix + 1 + nbIntervals1 * iy;
+			var c = ix + 1 + nbIntervals1 * ( iy + 1 );
+			var d = ix + nbIntervals1 * ( iy + 1 );
 
-			this.vertices.push( new THREE.Vector3( x, y, 0 ) );
-
+                        var idx = (ix + iy*nbIntervals)*2*3;
+                        index.array[idx  ] = a;
+                        index.array[idx+1] = b;
+                        index.array[idx+2] = d;
+                        index.array[idx+3] = b;
+                        index.array[idx+4] = c;
+                        index.array[idx+5] = d;
 		}
 
 	}
-
-	for ( iy = 0; iy < gridX; iy ++ ) {
-
-		for ( ix = 0; ix < gridX; ix ++ ) {
-
-			var a = ix + gridX1 * iy;
-			var b = ix + 1 + gridX1 * iy;
-			var c = ix + 1 + gridX1 * ( iy + 1 );
-			var d = ix + gridX1 * ( iy + 1 );
-
-			var uva = new THREE.Vector2( ix / gridX, iy / gridX );
-			var uvb = new THREE.Vector2( ( ix + 1 ) / gridX, iy / gridX );
-			var uvc = new THREE.Vector2( ( ix + 1 ) / gridX, ( iy + 1 ) / gridX );
-			var uvd = new THREE.Vector2( ix / gridX, ( iy + 1 ) / gridX );
-
-			var face = new THREE.Face3( a, b, d );
-			face.normal.copy( normal );
-			face.vertexNormals.push( normal.clone(), normal.clone(), normal.clone() );
-
-			this.faces.push( face );
-			this.faceVertexUvs[ 0 ].push( [ uva, uvb, uvd ] );
-
-			face = new THREE.Face3( b, c, d );
-			face.normal.copy( normal );
-			face.vertexNormals.push( normal.clone(), normal.clone(), normal.clone() );
-
-			this.faces.push( face );
-			this.faceVertexUvs[ 0 ].push( [ uvb.clone(), uvc, uvd.clone() ] );
-
-		}
-
-	}
+        this.attributes.position = position;
+        this.attributes.index = index;
+        this.attributes.uv = uv;
+        this.offsets = [{start:0, count:nbIntervals*nbIntervals*2*3, index:0}];
 
 };
 
-PlaneGeometry.prototype = Object.create( THREE.Geometry.prototype );
+PlaneGeometry.prototype = Object.create( THREE.BufferGeometry.prototype );
 

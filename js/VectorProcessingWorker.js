@@ -32,6 +32,7 @@ Timer.prototype.get = function() {
 var Geom = function(indexed) {
     this.indexed = indexed || false;
     this.position=[];
+    this.color=[];
     if (this.indexed){
         this.index = [];
         this.offsets = [{start:0, count:0, index:0}];
@@ -63,10 +64,7 @@ Geom.prototype.merge = function( other ) {
     }
 
     Array.prototype.push.apply(this.position, other.position);
-    if (other.color) {
-        if (!this.color) this.color = [];
-        Array.prototype.push.apply(this.color, other.color);
-    }
+    Array.prototype.push.apply(this.color, other.color);
     if (other.uv) {
         if (!this.uv) this.uv = [];
         Array.prototype.push.apply(this.uv, other.uv);
@@ -83,7 +81,7 @@ Geom.prototype.bufferGeometry = function() {
         geom.attributes.index = {array:new Uint16Array( this.index ), itemSize:3};
     }
     geom.attributes.position = {array:new Float32Array( this.position ), itemSize:3};
-    if (this.color) geom.attributes.color = {array:new Float32Array( this.color ), itemSize:3};
+    geom.attributes.color = {array:new Float32Array( this.color ), itemSize:3};
     if (this.uv) geom.attributes.uv = {array:new Float32Array( this.uv ), itemSize:2};
 
     return geom;
@@ -303,12 +301,16 @@ function gridAltitude( x, y, tile ){
     if ( x < tile.bbox[0] || x > tile.bbox[2] || y < tile.bbox[1] || y > tile.bbox[3] ) {
        throw 'out of plane'+x+' '+y+' '+tile.bbox.join( ', ' );
     }
-    var vertices = tile.vertices;
+    var vertices = function(idx){
+        return {x:tile.vertices[idx*3], 
+                y:tile.vertices[idx*3+1],
+                z:tile.vertices[idx*3+2]};
+    };
 
     var gridX1 = tile.nbIntervals + 1;
     var gridX1sq = gridX1*gridX1;
 
-   var segment_width = vertices[1].x - vertices[0].x;
+   var segment_width = vertices(1).x - vertices(0).x;
 
    var dx = (x - tile.bbox[0]) / segment_width;
    var dy = (y - tile.bbox[1]) / segment_width;
@@ -316,36 +318,36 @@ function gridAltitude( x, y, tile ){
    var iy = Math.round( dy );
    var orig = gridX1 * Math.floor( dy ) + Math.floor( dx );
 
-   if ( Math.abs(ix - dx) < EPSILON && Math.abs(iy - dy) < EPSILON ) return vertices[orig].z;
+   if ( Math.abs(ix - dx) < EPSILON && Math.abs(iy - dy) < EPSILON ) return vertices(orig).z;
 
    var border = false;
       
    if ( iy == tile.nbIntervals ) { // on the top border
-       var a = vertices[orig]; 
-       var b = vertices[orig+1]; 
+       var a = vertices(orig); 
+       var b = vertices(orig+1); 
        var alpha = (x - a.x) / (b.x - a.x);
        return (1 - alpha) * a.z + alpha * b.z;
    }
    
    if ( ix == tile.nbIntervals ) { // on the right border
-       var a = vertices[orig]; 
-       var d = vertices[orig+gridX1]; 
+       var a = vertices(orig); 
+       var d = vertices(orig+gridX1); 
        var alpha = (y - a.y) / (d.y - a.y);
        return (1 - alpha) * a.z + alpha * d.z;
    }
 
 
    // TODO fix the interpolation
-   return vertices[orig].z; 
+   return vertices(orig).z; 
 
    //d---c
    //| \ |
    //a---b
    try {
    if ( ix < dx && iy < dy ){ // lower left triangle
-       var a = vertices[orig]; 
-       var b = vertices[orig+1]; 
-       var d = vertices[orig+gridX1]; 
+       var a = vertices(orig); 
+       var b = vertices(orig+1); 
+       var d = vertices(orig+gridX1); 
        var det = segment_width*segment_width;
        var lambda1 = ( (d.x - b.x) * (y - b.y)  - (d.y - b.y) * (x - b.x) ) / det ;
        if (lambda1 > 1 || lambda1 < 0 ) throw 'll lambda1'+lambda1;
@@ -355,9 +357,9 @@ function gridAltitude( x, y, tile ){
        return lambda1*a.z + lambda2*b.z + lambda3*d.z;
    }
    else { // upper right
-       var b = vertices[orig+1]; 
-       var c = vertices[orig+gridX1+1]; 
-       var d = vertices[orig+gridX1]; 
+       var b = vertices(orig+1); 
+       var c = vertices(orig+gridX1+1); 
+       var d = vertices(orig+gridX1); 
        var det = segment_width*segment_width;
        var lambda1 = ( (d.x - c.x) * (y - c.y)  - (d.y - c.y) * (x - c.x) ) / det ;
        if (lambda1 > 1 || lambda1 < 0 ) throw 'ur lambda1'+lambda1;
@@ -369,7 +371,7 @@ function gridAltitude( x, y, tile ){
    }
    catch (err) {
        console.log('error ', border, ix < dx && iy < dy, err);
-       return vertices[orig].z;
+       return vertices(orig).z;
    }
 }
 
@@ -600,7 +602,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
             res.errSpotGeometry = lines([points]);
             res.errGeometry = lines(contours);
         }
-        console.log('failed feature triangulation gid=',properties.gid, err);
+        //console.log('failed feature triangulation gid=',properties.gid, err);
     }
 
     // add lines if needed
@@ -663,18 +665,18 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
         eval( 'var f =' + symbology.polygon.colorFun);
         c = f(properties);
     }
-        res.geometry.color = [];
-        for (var i=0; i<res.geometry.position.length; i+=3){
-            res.geometry.color.push( c.r, c.g, c.b );
-        }
-        res.wallGeometry.color = [];
-        for (var i=0; i<res.wallGeometry.position.length; i+=3){
-            res.wallGeometry.color.push( c.r, c.g, c.b );
-        }
-        res.lineGeometry.color = [];
-        for (var i=0; i<res.lineGeometry.position.length; i+=3){
-            res.lineGeometry.color.push( c.r, c.g, c.b );
-        }
+    res.geometry.color = [];
+    for (var i=0; i<res.geometry.position.length; i+=3){
+        res.geometry.color.push( c.r, c.g, c.b );
+    }
+    res.wallGeometry.color = [];
+    for (var i=0; i<res.wallGeometry.position.length; i+=3){
+        res.wallGeometry.color.push( c.r, c.g, c.b );
+    }
+    res.lineGeometry.color = [];
+    for (var i=0; i<res.lineGeometry.position.length; i+=3){
+        res.lineGeometry.color.push( c.r, c.g, c.b );
+    }
     T['color'].stop();
 
     T['map'].start();
@@ -693,7 +695,6 @@ onmessage = function(o) {
     var data = o.data.data;
     var ctxt = o.data.ctxt;
     var tileId = o.data.tileId;
-    console.log('ctxt', ctxt);
     // timers
     var T = {
         global: new Timer(),
@@ -713,7 +714,6 @@ onmessage = function(o) {
     
     T['global'].start();
 
-    //console.log('it took ', (reqend-reqstart)/1000., 'sec to compled request');
     var res = new PolygonGeometries();
     var tile = new Tile( ctxt.center, ctxt.size, ctxt.nbIntervals, ctxt.gridVertices );
 
