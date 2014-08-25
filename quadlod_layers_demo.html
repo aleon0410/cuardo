@@ -85,13 +85,13 @@ function init() {
 
             var lod0_url = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:toitures_lod0";
             var lod0 = new WfsLayer(lod0_url, translation, 32, terrain,
-                                    {polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:2, opacity:0.5}}
+                                    {zOffsetPercent:1e-3, polygon:{color:0xaaaaaa, lineColor:0xffffff, lineWidth:2, opacity:0.9}}
                                     , [1000,9999] );
 
 
             var lod1_url = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:toitures";
             var lod1 = new WfsLayer(lod1_url, translation, 32, terrain,
-                                    {polygon:{color:0xaaaaaa, extrude:'hfacade', lineColor:0xffffff, lineWidth:2, opacity:0.8}}
+                                    {polygon:{color:0xaaaaaa, extrude:'hfacade', lineColor:0xffffff, lineWidth:2, opacity:0.9}}
                                     , [250, 999] );
 
             var urlTin = "http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON&typeName=tows:textured_citygml";
@@ -118,7 +118,7 @@ function init() {
 //                    cont(group);
                 };
             }
-            var size = 2500;
+            var size = 5000;
 
             var maxLOD = 4;
             quadtree = new QuadTree( size, maxLOD, tiler );

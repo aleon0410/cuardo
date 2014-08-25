@@ -150,10 +150,9 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
               ambient:this.symbology.polygon.color,
               opacity:this.symbology.polygon.opacity || 1.,
               transparent: (this.symbology.polygon.opacity || 1) < 1, 
-              vertexColors: THREE.FaceColors,
+              vertexColors: THREE.VertexColors,
               //vertexColors: (this.symbology.polygon.colorFun ? THREE.FaceColors : THREE.NoColors),
-              blending: THREE.NormalBlending,
-              wireframe:this.symbology.polygon.wireframe || false } );
+              blending: THREE.NormalBlending } );
 
     var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );

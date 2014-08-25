@@ -32,7 +32,6 @@ Timer.prototype.get = function() {
 var Geom = function(indexed) {
     this.indexed = indexed || false;
     this.position=[];
-    this.color=[];
     if (this.indexed){
         this.index = [];
         this.offsets = [];
@@ -41,28 +40,38 @@ var Geom = function(indexed) {
 };
 
 Geom.prototype.merge = function( other ) {
+    if (!other.position.length) return;
+    if (other.position.length/3 > 21845) throw 'too many vertices';
+
     if (other.indexed){
         if (!this.indexed) throw 'cannot merge indexed and unindexed geom';
-        this.offsets.push({start:this.index.length, count:other.index.length, index:this.position.length});
-        for (var i=0; i<other.index.length; i++) this.index.push( other.index[i] );
-        for (var i=0; i<other.gidMap.length; i++) this.gidMap.push( other.gidMap[i] );
-    }
-    for (var i=0; i<other.position.length; i++) this.position.push( other.position[i] );
-    for (var i=0; i<other.color.length; i++) this.color.push( other.color[i] );
-    if (other.uv) {
-        if (!this.uv) this.uv = [];
-        for (var i=0; i<other.uv.length; i++) this.uv.push( other.uv[i] );
+        this.offsets.push({start:this.index.length, count:other.index.length, index:this.position.length/3});
+        Array.prototype.push.apply(this.index, other.index);
+        Array.prototype.push.apply(this.gidMap, other.gidMap);
     }
 
+    Array.prototype.push.apply(this.position, other.position);
+    if (other.color) {
+        if (!this.color) this.color = [];
+        Array.prototype.push.apply(this.color, other.color);
+    }
+    if (other.uv) {
+        if (!this.uv) this.uv = [];
+        Array.prototype.push.apply(this.uv, other.uv);
+    }
 }
 
 Geom.prototype.bufferGeometry = function() {
     var geom = new THREE.BufferGeometry();
 
-    if (this.offsets) geom.offsets = this.offsets;
-    if (this.index) geom.attributes.index = {array:new Uint16Array( this.index ), itemSize:3};
+    if (this.indexed){ 
+        var object = this;
+        if (!this.offsets.length) this.offsets.push({start:0, count:this.index.length, index:0});
+        geom.offsets = this.offsets;
+        geom.attributes.index = {array:new Uint16Array( this.index ), itemSize:3};
+    }
     geom.attributes.position = {array:new Float32Array( this.position ), itemSize:3};
-    geom.attributes.color = {array:new Float32Array( this.color ), itemSize:3};
+    if (this.color) geom.attributes.color = {array:new Float32Array( this.color ), itemSize:3};
     if (this.uv) geom.attributes.uv = {array:new Float32Array( this.uv ), itemSize:2};
 
     return geom;
@@ -151,7 +160,6 @@ function p2tBbox( poly ) {
 
 function triangulate(paths, additionalPoints){
     var geom = new Geom(true);
-    geom.index = [];
     if (!paths.length || !paths[0].length) return geom;
 
     var swctx = new poly2tri.SweepContext(paths[0]);
@@ -166,7 +174,6 @@ function triangulate(paths, additionalPoints){
         ring.forEach( function(p){
             p.id = geom.position.length/3;
             geom.position.push(p.x, p.y, 0);
-
         });
     });
     additionalPoints.forEach( function(p){
@@ -374,7 +381,9 @@ function grid(poly, polyBbox, tile){
     var stepSize = tile.size/tile.nbIntervals;
     var bottomIdx = Math.ceil( (polyBbox[1]-y0) / stepSize); 
     var topIdx = Math.floor( (polyBbox[3]-y0) / stepSize ); 
-    if ( bottomIdx < 0 || topIdx > tile.nbIntervals ) throw 'bug';
+    if ( bottomIdx < 0 || topIdx > tile.nbIntervals ){
+        throw 'bug '+bottomIdx+' '+topIdx+' '+tile.nbIntervals;
+    }
     var points = [];
     //var iter = 100;
     var allInter = [];
@@ -637,19 +646,23 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
 
     T['color'].start();
     // color feature
+    var c = {r:1, g:1, b:1};
     if (symbology.polygon.colorFun){
         eval( 'var f =' + symbology.polygon.colorFun);
-        var c = f(properties);
+        c = f(properties);
+    }
+        res.geometry.color = [];
         for (var i=0; i<res.geometry.position.length; i+=3){
             res.geometry.color.push( c.r, c.g, c.b );
         }
+        res.wallGeometry.color = [];
         for (var i=0; i<res.wallGeometry.position.length; i+=3){
             res.wallGeometry.color.push( c.r, c.g, c.b );
         }
+        res.lineGeometry.color = [];
         for (var i=0; i<res.lineGeometry.position.length; i+=3){
             res.lineGeometry.color.push( c.r, c.g, c.b );
         }
-    }
     T['color'].stop();
 
     T['map'].start();
