@@ -191,6 +191,30 @@ function init() {
 
         }
 
+        // sky cube
+        {
+	    var urls  = [ "images/s_3.png",
+                          "images/s_1.png",
+                          "images/s_4.png",
+                          "images/s_2.png",
+                          "images/s_posZ.png",
+                          "images/s_negZ.png"];
+
+	    var skyGeometry = new THREE.BoxGeometry( 10000, 10000, 10000 );
+	
+	    var materialArray = [];
+	    for (var i = 0; i < 6; i++)
+		materialArray.push( new THREE.MeshBasicMaterial({
+		    map: THREE.ImageUtils.loadTexture( urls[i] ),
+		    side: THREE.BackSide
+		}));
+	    var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+	    var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+
+            // add it to the scene
+            scene.add( skyBox );
+        }
+
         // grid
         if (1)
         {
