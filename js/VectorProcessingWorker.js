@@ -34,7 +34,7 @@ var Geom = function(indexed) {
     this.position=[];
     if (this.indexed){
         this.index = [];
-        this.offsets = [];
+        this.offsets = [{start:0, count:0, index:0}];
         this.gidMap = [];
     }
 };
@@ -45,8 +45,20 @@ Geom.prototype.merge = function( other ) {
 
     if (other.indexed){
         if (!this.indexed) throw 'cannot merge indexed and unindexed geom';
-        this.offsets.push({start:this.index.length, count:other.index.length, index:this.position.length/3});
-        Array.prototype.push.apply(this.index, other.index);
+        var offset = 0;
+        if ( (this.position.length + other.position.length)/3 > 21845 ){
+            this.offsets.push({start:this.index.length, 
+                               count:other.index.length, 
+                               index:this.position.length/3});
+        } else {
+            var lastOffset = this.offsets.length-1;
+            offset = this.position.length/3 - this.offsets[lastOffset].index;
+            this.offsets[lastOffset].count += other.index.length;
+        }
+
+
+        var object = this;
+        other.index.forEach(function(idx){ object.index.push(idx + offset)});
         Array.prototype.push.apply(this.gidMap, other.gidMap);
     }
 
