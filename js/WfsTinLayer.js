@@ -1,7 +1,8 @@
 // deals only with triagulated 3D surfaces
 //
-WfsTinLayer = function (url, translation, nbIntervals, terrain, range) {
+WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, range) {
     this.url = url;
+    this.urlImageBase = urlImageBase;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
     this.extent = [];
@@ -80,7 +81,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                     tex = {url:texP[1],
                         uv:JSON.parse(texP[2].replace("{","[","g").replace("}","]","g"))};
                     material = new THREE.MeshLambertMaterial({
-                            map: THREE.ImageUtils.loadTexture(tex.url)
+                            map: THREE.ImageUtils.loadTexture(object.urlImageBase + tex.url)
                         });
                 }
                 else {
