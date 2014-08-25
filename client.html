@@ -96,7 +96,6 @@ function layerToggle(cb) {
             break;
 
     }
-    render();
 }
 
 function identifyToggle(cb) {
@@ -135,7 +134,7 @@ function init() {
         controls.keys = [ 65, 83, 68 ];
         // distance to the center
         controls.distance = 10000;
-        controls.addEventListener( 'change', render );
+        //controls.addEventListener( 'change', render );
     }
 
     // scene
@@ -349,8 +348,7 @@ function onDocumentMouseDown( event ) {
     event.preventDefault();
     // highlight
     restoreColors.forEach(function(obj){
-            obj.face.color = obj.color;
-            obj.geom.colorsNeedUpdate = true;
+            obj();
         });
     restoreColors = [];
     //render()
@@ -379,7 +377,7 @@ function onDocumentMouseDown( event ) {
         if ( !object.visible ) continue;
         var map = object.userData.faceGidMap;
         var gid = map[ intersects[ 0 ].faceIndex ];
-        console.log('intersection ',object.userData.name,' gid', map[ intersects[ 0 ].faceIndex ]);
+        console.log('intersection ',object.userData.name,' on face',intersects[ 0 ].faceIndex , ' gid', map[ intersects[ 0 ].faceIndex ]);
         document.getElementById('diplayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {
@@ -387,8 +385,10 @@ function onDocumentMouseDown( event ) {
             if ( obj.userData && obj.userData.faceGidMap && obj.userData.url == object.userData.url) {
                 for (var i=0; i<obj.geometry.faces.length; i++){
                     if ( obj.userData.faceGidMap[i] == gid ){
-                       restoreColors.push( {geom:obj.geometry, face:obj.geometry.faces[i], color:obj.geometry.faces[i].color});
-                       obj.geometry.faces[i].color = c;
+                        restoreColors.push( function(){} );
+                           
+                           //{geom:obj.geometry, face:obj.geometry.faces[i], color:obj.geometry.faces[i].color});
+                       //obj.geometry.faces[i].color = c;
                     }
                 }
                 obj.geometry.colorsNeedUpdate = true;
