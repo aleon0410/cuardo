@@ -15,7 +15,6 @@ WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, ra
     // TODO select only the opropriate layer
     var object = this;
     var baseUrl = this.url.split('?')[0];
-    console.log(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities');
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
             $(data).find('FeatureType').each(function() { 

@@ -376,7 +376,6 @@ function gridAltitude( x, y, tile ){
 }
 
 function computeTileUv(geom, tile) {
-    if (!geom) return;
     geom.uv = [];
     // uv coord are relative to the tile
     for (var i=0; i<geom.position.length; i+=3){

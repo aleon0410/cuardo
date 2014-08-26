@@ -29,7 +29,6 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     this.levels = levels;*/
     this.range = range || [0,1000000];
 
-    console.log(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities');
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
         success: function(data, textStatus, jqXHR) {
             $(data).find('FeatureType').each(function() { 

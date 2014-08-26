@@ -3,7 +3,6 @@
 //| \ |
 //a---b
 PlaneGeometry = function ( center, width, nbIntervals ) {
-    console.log('nbIntervals', nbIntervals);
 
 	THREE.BufferGeometry.call( this );
 
