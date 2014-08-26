@@ -40,17 +40,7 @@ TileLoader.prototype.load = function( renderFunction )
                     var obj = new Tile( layers, Tile.State.LOADED );
                     p.quadtree.root.setObject( obj, pp.x, pp.y, pp.level );
                     if ( renderFunction !== undefined ) {
-                        // only ask for a refresh when the last refresh was asked
-                        // not too much recently
-                        var now = performance.now();
-                        if ( (now - lastRender) > 50 ) { // milliseconds
-                            setTimeout(renderFunction,0);
-                            lastRender = now;
-                        }
-                        remaining--;
-                        if (!remaining) {
-                            setTimeout(renderFunction,0);
-                        }
+                        renderFunction();
                     }
                 }
             };
