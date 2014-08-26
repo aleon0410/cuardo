@@ -86,7 +86,7 @@ function init() {
                 tiler.layers = [0];
                 tiler.tile = function( center, size, cont ) {
                     if ( size < 10 ) return;
-                    var ret = [];
+                    var ret = {};
                     var group = new THREE.Object3D();
                     var grid = new THREE.GridHelper( size/2, size/8 );
                     var color = Math.random()*0xffffff;
@@ -94,7 +94,7 @@ function init() {
                     grid.rotation.x = -Math.PI/2;
                     grid.position = center;
                     group.add(grid);
-                    ret.push(group);
+                    ret[0] = group;
 
                     var f = function() { cont(ret); }
                     setTimeout( f, Math.random()*1000+700 );

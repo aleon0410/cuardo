@@ -22,7 +22,7 @@ QuadTree = function( size, lod, tiler, maxCachedTiles ) {
     // all layers are visible at construction
     this.visibleLayers = [];
     for ( var lid = 0; lid < this.tiler.layers.length; lid++ ) {
-        this.visibleLayers.push(lid);
+        this.visibleLayers.push(lid.toString());
     }
 }
 

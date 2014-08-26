@@ -22,8 +22,7 @@ Tiler = function( layers, translation, nbIntervals) {
 };
 
 Tiler.prototype.tile = function( center, size, callback ) {
-    var group = [];
-    for ( var lid = 0 ; lid < this.layers.length; lid++ ) group.push( new THREE.Object3D() );
+    var group = {};
     this.currentTileId++;
 
     // add basic grid for debug
@@ -33,31 +32,33 @@ Tiler.prototype.tile = function( center, size, callback ) {
         mesh.position = center;
         mesh.scale.x = size;
         mesh.scale.y = size;
-        group[0].add(mesh);
+        group['debug'] = new THREE.Object3D();
+        group['debug'].add(mesh);
     }
     var remaining = this.layers.length;
     var object = this;
 
 
     var tileId = object.currentTileId;
-    //console.log('starting tile ', tileId);
     this.layers[0].tile( center, size, tileId,
             function( terrainmesh ){
-                group[0].add(terrainmesh);
+                group[0] = terrainmesh;
                 //console.log('added terrain ', tileId);
 //                callback(group);
                 remaining--;
                 for ( var lid = 1 ; lid < object.layers.length; lid++ ) {
                     object.layers[lid].tile( center, size, tileId,
-                        (function(g) {
+                        (function(l) {
                             return function(mesh) {
-                                    g.add(mesh);
-                                    remaining--;
-                                    if (!remaining) {
-                                        callback(group);
-                                    }
+                                if (mesh !== undefined ) {
+                                    group[l] = mesh;
+                                }
+                                remaining--;
+                                if (!remaining) {
+                                    callback(group);
+                                }
                             };
-                        })(group[lid])
+                        })(lid)
                         );
                 }
             });

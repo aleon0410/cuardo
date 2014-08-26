@@ -26,3 +26,12 @@ Tile.prototype.isLoading = function() {
 Tile.prototype.isLoaded = function() {
     return this.state === Tile.State.LOADED;
 }
+
+Tile.prototype.changeVisibility = function( vis )
+{
+    for ( var lid in this.layers ) {
+        this.layers[lid].traverse( function(obj) {
+            obj.visible = vis;
+        });
+    }
+}
