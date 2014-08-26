@@ -179,7 +179,7 @@ function triangulate(paths, additionalPoints){
     additionalPoints.forEach(function(p){ swctx.addPoint(p); });
     swctx.triangulate();
     var triangles = swctx.getTriangles();
-
+    
     paths.forEach( function(ring){
         ring.forEach( function(p){
             p.id = geom.position.length/3;
@@ -194,6 +194,16 @@ function triangulate(paths, additionalPoints){
     triangles.forEach(function(t) {
         geom.index.push( t.getPoint(0).id, t.getPoint(1).id, t.getPoint(2).id );
     });
+
+// Recipe for triangle soup
+//    var i = 0;
+//    triangles.forEach(function(t) {
+//        for (var v=0; v<3; v++)
+//            geom.position.push(t.getPoint(v).x, t.getPoint(v).y, t.getPoint(v).z);
+//        geom.index.push( i, i+1, i+2 );
+//        i+=3;
+//    });
+
     return geom;
 }
 
@@ -307,21 +317,26 @@ function gridAltitude( x, y, tile ){
                 z:tile.vertices[idx*3+2]};
     };
 
-    var gridX1 = tile.nbIntervals + 1;
-    var gridX1sq = gridX1*gridX1;
+    var cross = function(u, v){
+        return u.x*v.y - u.y*v.x;
+    };
 
-   var segment_width = vertices(1).x - vertices(0).x;
+    var sub = function(u, v){
+        return {x:u.x-v.x, y:u.y-v.y};
+    }
+
+    var nbIntervals1 = tile.nbIntervals + 1;
+
+   var segment_width = (tile.bbox[2]-tile.bbox[0])/tile.nbIntervals;
 
    var dx = (x - tile.bbox[0]) / segment_width;
    var dy = (y - tile.bbox[1]) / segment_width;
    var ix = Math.round( dx );
    var iy = Math.round( dy );
-   var orig = gridX1 * Math.floor( dy ) + Math.floor( dx );
+   var orig = nbIntervals1 * Math.floor( dy ) + Math.floor( dx );
 
    if ( Math.abs(ix - dx) < EPSILON && Math.abs(iy - dy) < EPSILON ) return vertices(orig).z;
 
-   var border = false;
-      
    if ( iy == tile.nbIntervals ) { // on the top border
        var a = vertices(orig); 
        var b = vertices(orig+1); 
@@ -331,15 +346,15 @@ function gridAltitude( x, y, tile ){
    
    if ( ix == tile.nbIntervals ) { // on the right border
        var a = vertices(orig); 
-       var d = vertices(orig+gridX1); 
+       var d = vertices(orig+nbIntervals1); 
        var alpha = (y - a.y) / (d.y - a.y);
        return (1 - alpha) * a.z + alpha * d.z;
    }
 
 
    // TODO fix the interpolation
-   return vertices(orig).z; 
 
+   var p = {x:x, y:y};
    //d---c
    //| \ |
    //a---b
@@ -347,30 +362,30 @@ function gridAltitude( x, y, tile ){
    if ( ix < dx && iy < dy ){ // lower left triangle
        var a = vertices(orig); 
        var b = vertices(orig+1); 
-       var d = vertices(orig+gridX1); 
+       var d = vertices(orig+nbIntervals1); 
        var det = segment_width*segment_width;
-       var lambda1 = ( (d.x - b.x) * (y - b.y)  - (d.y - b.y) * (x - b.x) ) / det ;
+       var lambda1 = cross(sub(d,b),sub(p,b)) / det ;
        if (lambda1 > 1 || lambda1 < 0 ) throw 'll lambda1'+lambda1;
-       var lambda3 = ( (b.x - a.x) * (y - a.y)  - (b.y - a.y) * (x - a.x) ) / det ;
+       var lambda3 = cross(sub(b,a),sub(p,a)) / det ;
        if (lambda3 > 1 || lambda3 < 0 ) throw 'll lambda3'+lambda3;
        var lambda2 = 1 - lambda1 - lambda3 ;
        return lambda1*a.z + lambda2*b.z + lambda3*d.z;
    }
    else { // upper right
        var b = vertices(orig+1); 
-       var c = vertices(orig+gridX1+1); 
-       var d = vertices(orig+gridX1); 
+       var c = vertices(orig+nbIntervals1+1); 
+       var d = vertices(orig+nbIntervals1); 
        var det = segment_width*segment_width;
-       var lambda1 = ( (d.x - c.x) * (y - c.y)  - (d.y - c.y) * (x - c.x) ) / det ;
+       var lambda1 = cross(sub(d,c),sub(p,c)) / det ;
        if (lambda1 > 1 || lambda1 < 0 ) throw 'ur lambda1'+lambda1;
-       var lambda3 = ( (c.x - b.x) * (y - b.y)  - (c.y - b.y) * (x - b.x) ) / det ;
+       var lambda3 = cross(sub(c,b),sub(p,b)) / det ;
        if (lambda3 > 1 || lambda3 < 0 ) throw 'ur lambda3'+lambda3;
        var lambda2 = 1 - lambda1 - lambda3 ;
        return lambda1*b.z + lambda2*c.z + lambda3*d.z;
    }
    }
    catch (err) {
-       console.log('error ', border, ix < dx && iy < dy, err);
+       console.log('error ', ix < dx && iy < dy, err);
        return vertices(orig).z;
    }
 }
@@ -597,11 +612,11 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
         // show error spots for debug
         if (err.points) {
             var points = [];
-            err.points.forEach(function(p){ points.push({X:p.x, Y:p.y}); });
-            res.errSpotGeometry = lines([points]);
+            res.errSpotGeometry = lines(err.points);
             res.errGeometry = lines(contours);
         }
-        //console.log('failed feature triangulation gid=',properties.gid, err);
+        console.log('failed feature triangulation gid=',properties.gid, err);
+        return res;
     }
 
     // add lines if needed
@@ -762,7 +777,7 @@ onmessage = function(o) {
     }
     console.log('Timing ' + s );
     postMessage( { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: tileId, sendDate: new Date().getTime() }, 
-            [
+            trGeom.attributes.position.array.length ? [
             trGeom.attributes.position.array.buffer, 
             trGeom.attributes.index.array.buffer,
             trGeom.attributes.color.array.buffer,
@@ -771,5 +786,5 @@ onmessage = function(o) {
             trGidMap.buffer,
             trGidMapWall.buffer,
             trLineGeom.attributes.position.array.buffer, 
-            ] );
+            ] : []);
 }
