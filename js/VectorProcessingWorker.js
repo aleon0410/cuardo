@@ -465,7 +465,7 @@ function grid(poly, polyBbox, tile){
                 }
             }
             //console.log ('ring ', r, 'hit ', hit);
-            if ( hit%2 ) throw 'bug';
+            //if ( hit%2 ) throw 'bug';
         }
 
         allInter.push.apply(allInter, intersections);
