@@ -56,9 +56,8 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
             //geom.computeTangents();
             var material = new THREE.MeshLambertMaterial( 
                     { color: 0xfffffff,
-                      map : textureTex,
+                      map : textureTex || null,
                       reflectivity: 0,
-                      //wireframe:true
                     } );
             mesh = new THREE.Mesh(geom, material);
             object.geom[tileId] = geom;
@@ -71,6 +70,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
                extendCenter.x + size*.5,
                extendCenter.y + size*.5];
     textureDem = THREE.ImageUtils.loadTexture(this.urlDem + '&BBOX='+ext.join(','), null, loaded);
-    textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
+    if (this.urlTex) textureTex = THREE.ImageUtils.loadTexture(this.urlTex + '&BBOX='+ext.join(','), null, loaded);
+    else loaded();
 
 }
