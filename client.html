@@ -190,6 +190,7 @@ function init() {
             var maxLOD = 3;
             quadtree = new QuadTree( size, maxLOD, tiler );
             quadtree.maxCachedTiles = 128;
+            quadtree.visibleLayers.push( 'debug' );
             scene.add( quadtree );
 
         }
