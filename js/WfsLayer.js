@@ -61,7 +61,7 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
 
 
 WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
-    if ( (size < this.range[0]) || (size > this.range[1]) ) {
+    if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible
         callback();
         return;

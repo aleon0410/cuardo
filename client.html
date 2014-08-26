@@ -172,23 +172,24 @@ function init() {
             var lod0_url = baseUrl+"&typeName=tows:toitures";
             var lod0 = new WfsLayer(lod0_url, translation, nbDiv, terrain,
                                     { zOffsetPercent:2e-3, zOffset:10, polygon:{color:0xaaaaaa}}
-                                    , [1000,5999] );
+                                    , [1000,6000] );
 
 
             var lod1_url = baseUrl+"&typeName=tows:toitures";
             var lod1 = new WfsLayer(lod1_url, translation, nbDiv, terrain,
                     {polygon:{color:0xffffff, extrude:'hfacade', colorFun:'function(properties){if (properties.gid%2) return {r:0,g:0,b:1};else return {r:1,g:0,b:0};}'}}
-                                    , [250, 999] );
+                                    , [250, 1000] );
 
             var urlTin = baseUrl+"&typeName=tows:textured_citygml";
-            var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0,249] );
+            var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0,250] );
 
             var tiler = new Tiler([terrain, arrond, lod0, lod1, tin], translation, 1);
 
-            var size = 15000;
+            var size = 2000;
 
-            var maxLOD = 8;
+            var maxLOD = 3;
             quadtree = new QuadTree( size, maxLOD, tiler );
+            quadtree.maxCachedTiles = 128;
             scene.add( quadtree );
 
         }

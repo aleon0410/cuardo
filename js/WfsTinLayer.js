@@ -40,7 +40,7 @@ var EPSILON = 1e-6;
 
 
 WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
-    if ( (size < this.range[0]) || (size > this.range[1]) ) {
+    if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible
         callback();
         return;
