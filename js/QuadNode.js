@@ -151,7 +151,7 @@ QuadNode.prototype.update = function( camera, lastLoaded ) {
     var d = v1.distanceTo( v2 );
 
     // distance to see LOD0 (the whole quadtree)
-    var md = this.quadtree.size / Math.tan( camera.fov/2 * Math.PI / 180 );
+    var md = this.quadtree.size / Math.tan( camera.fov/2.0 * Math.PI / 180.0 );
     // requested lod
     var lod = (Math.log(md / d) / Math.log(2)) | 0;
     if ( lod < 0 ) lod = 0;
