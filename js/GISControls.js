@@ -26,7 +26,9 @@ THREE.GISControls = function ( object, domElement ) {
 
     // angles on the dome
     this.theta = 0; // on the XY plane, in degrees
-    this.phi = 45; // in degrees
+    this.phi = 0; // in degrees
+    // distance of the camera to the center
+    this.distance = 5000; 
 
     // angle limits
     this.minPhi = -20;
@@ -40,8 +42,6 @@ THREE.GISControls = function ( object, domElement ) {
 
     ////////////
     // internals
-    var distance = 5000;
-
     var pan = new THREE.Vector3();
 
     var scope = this;
@@ -86,7 +86,7 @@ THREE.GISControls = function ( object, domElement ) {
 
 	}
 
-	distance /= dollyScale;
+	scope.distance /= dollyScale;
 
     };
 
@@ -98,20 +98,20 @@ THREE.GISControls = function ( object, domElement ) {
 
 	}
 
-	distance *= dollyScale;
+	scope.distance *= dollyScale;
 
     };
 
     // pass in distance in world space to move left
     this.panLeft = function ( distance ) {
-        pan.x += distance * Math.sin( scope.theta * Math.PI / 180 );
-        pan.y -= distance * Math.cos( scope.theta * Math.PI / 180 );
+        pan.x += scope.distance * Math.sin( scope.theta * Math.PI / 180 );
+        pan.y -= scope.distance * Math.cos( scope.theta * Math.PI / 180 );
     };
 
     // pass in distance in world space to move up
     this.panUp = function ( distance ) {
-        pan.x -= distance * Math.cos( scope.theta * Math.PI / 180 );
-        pan.y -= distance * Math.sin( scope.theta * Math.PI / 180 );
+        pan.x -= scope.distance * Math.cos( scope.theta * Math.PI / 180 );
+        pan.y -= scope.distance * Math.sin( scope.theta * Math.PI / 180 );
     };
 
     this.pan = function ( deltaX, deltaY ) {
@@ -123,7 +123,7 @@ THREE.GISControls = function ( object, domElement ) {
 	    // perspective
 	    var position = scope.object.position;
 
-            var targetDistance = distance;
+            var targetDistance = scope.distance;
 	    // half of the fov is center to top of screen
 	    targetDistance *= Math.tan( ( scope.object.fov / 2 ) * Math.PI / 180.0 );
 
@@ -149,9 +149,9 @@ THREE.GISControls = function ( object, domElement ) {
         // place the camera on a dome around the scene
         this.phi = Math.min( this.maxPhi, Math.max( this.minPhi, this.phi ) );
 
-        this.object.position.x = distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
-        this.object.position.y = distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
-        this.object.position.z = distance * Math.cos( this.phi * Math.PI / 180 );
+        this.object.position.x = scope.distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
+        this.object.position.y = scope.distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
+        this.object.position.z = scope.distance * Math.cos( this.phi * Math.PI / 180 );
 
         this.object.up.x = 0;
         this.object.up.y = 0;

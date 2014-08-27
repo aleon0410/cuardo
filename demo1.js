@@ -38,6 +38,7 @@ function getConfig()
                                    opacity:.2
                                }
                               }
+                            , [500,4000]  // <- visibility range
                              );
 
     //
@@ -91,11 +92,16 @@ function getConfig()
                   {name:'Bati', levels:[lod0,lod1,tin]}];
 
     // scene size 
-    var sceneSize = 2000;
+    var sceneSize = 16000;
 
     // max depth of the quad tree
-    var maxLOD = 4;
+    var maxLOD = 7;
 
-    return {layers:layers, translation:translation, sceneSize:sceneSize, maxLOD:maxLOD};
+    return {
+        layers:layers,
+        translation:translation,
+        sceneSize:sceneSize,
+        maxLOD:maxLOD
+    };
 }
 

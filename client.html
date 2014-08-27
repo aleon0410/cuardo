@@ -150,10 +150,7 @@ function init() {
 
     // camera
     {
-        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 100000 );
-        camera.position.z = 500;
-        camera.position.y = -3000;
-        camera.lookAt( new THREE.Vector3(0, 0, 200) );
+        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1000000 );
     }
 
     // trackball
@@ -164,8 +161,6 @@ function init() {
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
         controls.keys = [ 65, 83, 68 ];
-        // distance to the center
-        controls.distance = 10000;
         controls.addEventListener( 'change', function() { requestAnimationFrame(render); } );
     }
 
@@ -180,6 +175,11 @@ function init() {
         {
             var config = getConfig();
             var layers = config.layers;
+
+            var d = (config.sceneSize/2.0) / Math.tan(camera.fov/2.0*Math.PI/180.0);
+            controls.distance = d;
+            camera.position.z = controls.distance;
+            camera.lookAt( new THREE.Vector3(0, 0, 0) );
 
             //
             // Add HTML visibility controls for each layer
@@ -218,7 +218,7 @@ function init() {
                           "images/s_posZ.png",
                           "images/s_negZ.png"];
 
-	    var skyGeometry = new THREE.BoxGeometry( 20000, 20000, 20000 );
+	    var skyGeometry = new THREE.BoxGeometry( 100000, 100000, 100000 );
 	
 	    var materialArray = [];
 	    for (var i = 0; i < 6; i++)
@@ -246,7 +246,7 @@ function init() {
         {
             //light = new THREE.PointLight( 0xdddddd );
             light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
-            light.position.set( 5000, 5000, 5000 );
+            light.position.set( 50000, 50000, 50000 );
 
             light.castShadow = true;
             light.shadowCameraVisible = true;
@@ -258,7 +258,7 @@ function init() {
             light.shadowMapHeight = 512;
 
             scene.add( light );
-            scene.add( new THREE.SpotLightHelper( light, 5 ) );
+//            scene.add( new THREE.SpotLightHelper( light, 5 ) );
 
             alight = new THREE.AmbientLight( 0xeeeeee );
             scene.add( alight );
