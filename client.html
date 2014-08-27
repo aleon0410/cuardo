@@ -167,17 +167,40 @@ function init() {
                     '} ' +
                     'return 0xaaaaaa; '+ 
                 '}';
+
+            var colFun = 'function(prop){ return { r:prop.gid/10.0, g:.5, b:.5 }; }';
             var arrond = new WfsLayer(urlArrond, translation, nbDiv, terrain, {zOffsetPercent:1e-3, zOffset:3, draping:true, polygon:{color:0xffffff, lineColor:0xff0000, lineWidth:2, colorFun:colFun, opacity:.2}});
+
+            var buildingClass = function (prop) {
+                var categories = [{min: 2.0,  max: 2.74, color:0xffffff},
+                                  {min: 2.74, max: 4.27, color:0xafd1e7},
+                                  {min: 4.27, max: 20.74, color:0x3d8dc3},
+                                  {min: 20.74, max: 200,  color:0x08306b}];
+                for ( var i = 0; i < categories.length; i++ ) {
+                    var klass = categories[i];
+                    if ( (prop.hfacade >= klass.min) && (prop.hfacade < klass.max) ) {
+                        return {r:(klass.color>>16)/256.0, g:((klass.color>>8)&0xff)/256.0, b:(klass.color&0xff)/256.0};
+                    }
+                }
+                return {r:0, g:0, b:0};
+            }
 
             var lod0_url = baseUrl+"&typeName=tows:toitures";
             var lod0 = new WfsLayer(lod0_url, translation, nbDiv, terrain,
-                                    { zOffsetPercent:2e-3, zOffset:10, polygon:{color:0xaaaaaa}}
+                                    { zOffsetPercent:2e-3, zOffset:10, polygon:{color:0xaaaaaa,
+                                                                                colorFun:buildingClass.toString()}}
                                     , [1200,6000] );
 
 
             var lod1_url = baseUrl+"&typeName=tows:toitures";
             var lod1 = new WfsLayer(lod1_url, translation, nbDiv, terrain,
-                    {polygon:{color:0xffffff, extrude:'hfacade', colorFun:'function(properties){if (properties.gid%2) return {r:0,g:0,b:1};else return {r:1,g:0,b:0};}'}}
+                    {polygon:{
+                        color:0xffffff,
+                        extrude:'hfacade',
+                        color:0xaaaaaa,
+                        colorFun:buildingClass.toString()
+                    }
+                    }
                                     , [250, 1200] );
 
             var urlTin = baseUrl+"&typeName=tows:textured_citygml";
