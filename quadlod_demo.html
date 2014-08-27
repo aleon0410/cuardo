@@ -37,6 +37,31 @@
 <script>
 inRender = false;
 
+MyLayer = function( color, range, z )
+{
+    this.color = color;
+    this.range = range;
+    this.z = z;
+    this.extent = [0,0,1000,1000];
+};
+
+MyLayer.prototype.tile = function( center, size, tileId, callback )
+{
+    if ( (size < this.range[0]) || (size >= this.range[1]) ) {
+        callback();
+        return;
+    }
+    var group = new THREE.Object3D();
+    var grid = new THREE.GridHelper( size/2, size/8 );
+    var color = this.color;
+    grid.setColors( color, color );
+    grid.rotation.x = -Math.PI/2;
+    grid.position = center;
+    grid.position.z = this.z;
+    group.add(grid);
+    callback( group );
+};
+
 init();
 animate();
 
@@ -82,28 +107,14 @@ function init() {
                 tiler = new Tiler([terrain], translation, 1);
             }
             else {
-                tiler = function() {};
-                tiler.layers = [0];
-                tiler.tile = function( center, size, cont ) {
-                    if ( size < 10 ) return;
-                    var ret = {};
-                    var group = new THREE.Object3D();
-                    var grid = new THREE.GridHelper( size/2, size/8 );
-                    var color = Math.random()*0xffffff;
-                    grid.setColors( color, color );
-                    grid.rotation.x = -Math.PI/2;
-                    grid.position = center;
-                    group.add(grid);
-                    ret[0] = group;
-
-                    var f = function() { cont(ret); }
-                    setTimeout( f, Math.random()*1000+700 );
-                };
+                var l1 = new MyLayer( 0xff0000, [250,1000], 20 );
+                var l2 = new MyLayer( 0x00ff00, [0, 250], 20 );
+                tiler = new Tiler([l1, l2], translation, 1);
             }
 
             var size = 1000;
 
-            var maxLOD = 3;
+            var maxLOD = 4;
             var quadtree = new QuadTree( size, maxLOD, tiler );
             scene.add( quadtree );
 
@@ -111,6 +122,7 @@ function init() {
             quadtree.position.y = 0;
             quadtree.updateMatrix();
             quadtree.matrixAutoUpdate = false;
+            quadtree.maxCachedTiles = 128;
 
         }
         

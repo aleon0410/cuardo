@@ -40,27 +40,47 @@ Tiler.prototype.tile = function( center, size, callback ) {
 
 
     var tileId = object.currentTileId;
-    this.layers[0].tile( center, size, tileId,
-            function( terrainmesh ){
-                group[0] = terrainmesh;
-                //console.log('added terrain ', tileId);
-//                callback(group);
-                remaining--;
-                for ( var lid = 1 ; lid < object.layers.length; lid++ ) {
-                    object.layers[lid].tile( center, size, tileId,
-                        (function(l) {
-                            return function(mesh) {
-                                if (mesh !== undefined ) {
-                                    group[l] = mesh;
-                                }
-                                remaining--;
-                                if (!remaining) {
-                                    callback(group);
-                                }
-                            };
-                        })(lid)
-                        );
-                }
-            });
+    if ( this.layers[0] instanceof Terrain ) {
+        this.layers[0].tile( center, size, tileId,
+                             function( terrainmesh ){
+                                 group[0] = terrainmesh;
+                                 remaining--;
+                                 if (!remaining) {
+                                     callback(group);
+                                 }
+                                 for ( var lid = 1 ; lid < object.layers.length; lid++ ) {
+                                     object.layers[lid].tile( center, size, tileId,
+                                                              (function(l) {
+                                                                  return function(mesh) {
+                                                                      if (mesh !== undefined ) {
+                                                                          group[l] = mesh;
+                                                                      }
+                                                                      remaining--;
+                                                                      if (!remaining) {
+                                                                          callback(group);
+                                                                      }
+                                                                  };
+                                                              })(lid)
+                                                            );
+                                 }
+                             });
+    }
+    else {
+        for ( var lid = 0 ; lid < object.layers.length; lid++ ) {
+            object.layers[lid].tile( center, size, tileId,
+                                     (function(l) {
+                                         return function(mesh) {
+                                             if (mesh !== undefined ) {
+                                                 group[l] = mesh;
+                                             }
+                                             remaining--;
+                                             if (!remaining) {
+                                                 callback(group);
+                                             }
+                                         };
+                                     })(lid)
+                                   );
+        }
+    }
 };
 
