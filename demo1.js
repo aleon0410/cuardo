@@ -66,7 +66,7 @@ function getConfig()
                                   colorFun:buildingClass.toString()
                               }
                             }
-                            , [1200,6000]  // <- visibility range
+                            , [1000,2000]  // <- visibility range
                            );
 
 
@@ -79,10 +79,10 @@ function getConfig()
                                 colorFun:buildingClass.toString()
                             }
                             }
-                            , [250, 1200] );
+                            , [500, 1000] );
 
     var urlTin = baseUrl+"&typeName=tows:textured_citygml";
-    var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0,250] );
+    var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0,500] );
 
     //
     // List of layers with tilers
@@ -94,7 +94,7 @@ function getConfig()
     var sceneSize = 2000;
 
     // max depth of the quad tree
-    var maxLOD = 3;
+    var maxLOD = 4;
 
     return {layers:layers, translation:translation, sceneSize:sceneSize, maxLOD:maxLOD};
 }

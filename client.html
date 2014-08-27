@@ -28,12 +28,13 @@ font-family: "Arial";
 
 <p></p>
 
-<div id="displayInfo">
+<div id="progressInfo">
 <p>Tiles loaded: <span id="loadingProgressTxt"></span><img id="loadingImg" src="images/loading.gif" style="visibility:hidden"/></p>
 </span><progress value="0" max="0" id="loadingProgressElt" style="display:inline-block;height:8px;" ></progress><br/>
 </span><progress value="0" max="0" id="tilerProgressElt" style="display:inline-block;height:8px;" ></progress>
 </div>
 
+<div id="displayInfo"></div>
 </div>
 <div id="container"></div>
 
@@ -96,7 +97,6 @@ function progressTileLoading( nLoaded, nTotal )
 
 function tilerProgress( nLoaded, nTotal )
 {
-    console.log(nLoaded, nTotal );
     var d = document.getElementById('tilerProgressElt');
     d.value = nLoaded;
     d.max = nTotal;
@@ -123,12 +123,11 @@ d.onerror = onerror;
 d.src = configSrc;
 
 function layerToggle(cb) {
-    console.log('switch',  +cb.value);
     for ( var i = 0; i < layerLodList.length; i++ ) {
         var lodList = layerLodList[i];
-        if ( +cb.value == i ) {
+        if ( +cb.value === i ) {
             lodList.forEach(function(l){
-                quadtree.setLayerVisibility( l, cb.checked );
+                quadtree.setLayerVisibility( l.toString(), cb.checked);
             });
         }
     }
@@ -146,6 +145,8 @@ function identifyToggle(cb) {
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );
+
+    document.getElementById('checkIdentify').checked = false;
 
     // camera
     {
@@ -194,9 +195,7 @@ function init() {
                     idx++;
                 });
                 d.innerHTML += '<div><input type="checkbox" id="checkbox' + lid + '" name="layer" value="' + lid
-                    + '" onclick="layerToggle(this);" checked >' + l.name + '</input></div>';
-                var b = document.getElementById('checkbox'+lid);
-                b.checked = true;
+                    + '" onclick="layerToggle(this);" checked="true">' + l.name + '</input></div>';
                 lid++;
                 layerLodList.push( idxList );
             });
@@ -402,14 +401,14 @@ function onDocumentMouseDown( event ) {
 
     var intersects = raycaster.intersectObjects( objects );
 
-    document.getElementById('diplayInfo').innerHTML="";
+    document.getElementById('displayInfo').innerHTML="";
     for (var idx = 0; idx < intersects.length; idx++ ) {
         var object = intersects[ idx ].object;
         if ( !object.visible ) continue;
         var map = object.userData.vertexGidMap;
         var gid = map[ intersects[ idx ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
-        document.getElementById('diplayInfo').innerHTML="GID = " +gid;
+        document.getElementById('displayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);
