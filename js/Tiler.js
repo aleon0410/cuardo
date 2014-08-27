@@ -21,7 +21,7 @@ Tiler = function( layers, translation, nbIntervals) {
     });
 };
 
-Tiler.prototype.tile = function( center, size, callback ) {
+Tiler.prototype.tile = function( center, size, progressCallback, callback ) {
     var group = {};
     this.currentTileId++;
 
@@ -36,6 +36,8 @@ Tiler.prototype.tile = function( center, size, callback ) {
         group['debug'].add(mesh);
     }
     var remaining = this.layers.length;
+    var nTotal = remaining;
+    progressCallback( 0, nTotal );
     var object = this;
 
 
@@ -45,6 +47,7 @@ Tiler.prototype.tile = function( center, size, callback ) {
                              function( terrainmesh ){
                                  group[0] = terrainmesh;
                                  remaining--;
+                                 progressCallback( nTotal - remaining, nTotal );
                                  if (!remaining) {
                                      callback(group);
                                  }
@@ -56,6 +59,7 @@ Tiler.prototype.tile = function( center, size, callback ) {
                                                                           group[l] = mesh;
                                                                       }
                                                                       remaining--;
+                                                                      progressCallback( nTotal - remaining, nTotal );
                                                                       if (!remaining) {
                                                                           callback(group);
                                                                       }
@@ -74,6 +78,7 @@ Tiler.prototype.tile = function( center, size, callback ) {
                                                  group[l] = mesh;
                                              }
                                              remaining--;
+                                             progressCallback( nTotal - remaining, nTotal );
                                              if (!remaining) {
                                                  callback(group);
                                              }

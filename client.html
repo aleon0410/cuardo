@@ -28,7 +28,11 @@ font-family: "Arial";
 
 <p></p>
 
-<div id="diplayInfo"></div>
+<div id="displayInfo">
+<p>Tiles loaded: <span id="loadingProgressTxt"></span><img id="loadingImg" src="images/loading.gif" style="visibility:hidden"/></p>
+</span><progress value="0" max="0" id="loadingProgressElt" style="display:inline-block;height:8px;" ></progress><br/>
+</span><progress value="0" max="0" id="tilerProgressElt" style="display:inline-block;height:8px;" ></progress>
+</div>
 
 </div>
 <div id="container"></div>
@@ -78,6 +82,28 @@ var quadtree;
 var restoreColors = [];
 
 var layerLodList = [];
+
+function progressTileLoading( nLoaded, nTotal )
+{
+    var img = document.getElementById('loadingImg');
+    var d = document.getElementById('loadingProgressElt');
+    var t = document.getElementById('loadingProgressTxt');
+    img.style.visibility = (nLoaded != nTotal ) ? 'visible' : 'hidden';
+    d.value = nLoaded;
+    d.max = nTotal;
+    t.innerHTML = ' ' + nLoaded + '/' + nTotal;
+}
+
+function tilerProgress( nLoaded, nTotal )
+{
+    console.log(nLoaded, nTotal );
+    var d = document.getElementById('tilerProgressElt');
+    d.value = nLoaded;
+    d.max = nTotal;
+}
+
+TileLoader.instance().setProgressCallback( progressTileLoading );
+TileLoader.instance().setTilerProgressCallback( tilerProgress );
 
 function run()
 {
