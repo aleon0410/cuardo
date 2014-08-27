@@ -104,14 +104,14 @@ THREE.GISControls = function ( object, domElement ) {
 
     // pass in distance in world space to move left
     this.panLeft = function ( distance ) {
-        pan.x += scope.distance * Math.sin( scope.theta * Math.PI / 180 );
-        pan.y -= scope.distance * Math.cos( scope.theta * Math.PI / 180 );
+        pan.x += distance * Math.sin( scope.theta * Math.PI / 180 );
+        pan.y -= distance * Math.cos( scope.theta * Math.PI / 180 );
     };
 
     // pass in distance in world space to move up
     this.panUp = function ( distance ) {
-        pan.x -= scope.distance * Math.cos( scope.theta * Math.PI / 180 );
-        pan.y -= scope.distance * Math.sin( scope.theta * Math.PI / 180 );
+        pan.x -= distance * Math.cos( scope.theta * Math.PI / 180 );
+        pan.y -= distance * Math.sin( scope.theta * Math.PI / 180 );
     };
 
     this.pan = function ( deltaX, deltaY ) {
