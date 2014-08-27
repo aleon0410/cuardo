@@ -8,6 +8,11 @@
       <symlink_blank/>
    </cache>
 
+   <format name="jpeg" type="JPEG">
+     <quality>70</quality>
+     <photometric>ycbcr</photometric>
+   </format>
+
    <grid name="testgrid">
      <metadata>
          <title>test grid for grandlyon </title>
@@ -23,7 +28,7 @@
    <source name="grandlyon_mnt" type="wms">
       <getmap>
          <params>
-            <FORMAT>image/png</FORMAT>
+            <FORMAT>image/jpeg</FORMAT>
             <LAYERS>MNT2009_Altitude_10m_CC46</LAYERS>
          </params>
       </getmap>
@@ -34,7 +39,7 @@
    <source name="grandlyon_ortho" type="wms">
       <getmap>
          <params>
-            <FORMAT>image/png</FORMAT>
+            <FORMAT>image/jpeg</FORMAT>
             <LAYERS>Ortho2009_vue_ensemble_16cm_CC46</LAYERS>
          </params>
       </getmap>
@@ -48,7 +53,7 @@
       <cache>disk</cache>
       <grid>testgrid</grid>
       <grid>g</grid>
-      <format>PNG</format>
+      <format>jpeg</format>
       <metatile>5 5</metatile>
       <metabuffer>10</metabuffer>
       <expires>3600</expires>
@@ -60,18 +65,18 @@
       <cache>disk</cache>
       <grid>testgrid</grid>
       <grid>g</grid>
-      <format>PNG</format>
+      <format>jpeg</format>
       <metatile>5 5</metatile>
       <metabuffer>10</metabuffer>
       <expires>3600</expires>
    </tileset>
 
-   <default_format>PNG</default_format>
+   <default_format>jpeg</default_format>
 
    <service type="wms" enabled="true">
       <full_wms>assemble</full_wms>
       <resample_mode>bilinear</resample_mode>
-      <format>PNG</format>
+      <format>jpeg</format>
       <maxsize>4096</maxsize>
    </service>
    <service type="wmts" enabled="true"/>
