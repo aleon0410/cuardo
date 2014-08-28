@@ -84,6 +84,11 @@ var restoreColors = [];
 
 var layerLodList = [];
 
+// rendering mode
+// either @ 60 fps (true)
+// or on demand  (false)
+var renderInLoop = false;
+
 function progressTileLoading( nLoaded, nTotal )
 {
     var img = document.getElementById('loadingImg');
@@ -109,7 +114,16 @@ function run()
 {
     init();
     render();
+    if ( renderInLoop ) {
+        animate();
+    }
 };
+
+function animate()
+{
+    requestAnimationFrame(animate);
+    render();
+}
 
 function onerror()
 {
@@ -131,7 +145,9 @@ function layerToggle(cb) {
             });
         }
     }
-    requestAnimationFrame( render );
+    if (!renderInLoop) {
+        requestAnimationFrame( render );
+    }
 }
 
 function identifyToggle(cb) {
@@ -161,7 +177,9 @@ function init() {
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
         controls.keys = [ 65, 83, 68 ];
-        controls.addEventListener( 'change', function() { requestAnimationFrame(render); } );
+        if ( !renderInLoop ) {
+            controls.addEventListener( 'change', function() { requestAnimationFrame(render); } );
+        }
     }
 
     // scene
@@ -341,12 +359,14 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
     controls.handleResize();
-    requestAnimationFrame( render );
+    if (!renderInLoop) {
+        requestAnimationFrame( render );
+    }
 }
 
 var lastRender = null;
 
-function render() {
+function render(t) {
     if (inRender) {
         // callback here, but a render is already in progress
         return;
@@ -368,7 +388,12 @@ function render() {
     stats.update();
 
     // load missing tiles
-    TileLoader.instance().load( function(){ requestAnimationFrame(render); } );
+    if ( renderInLoop ) {
+        TileLoader.instance().load();
+    }
+    else {
+        TileLoader.instance().load( function(){ requestAnimationFrame(render); } );
+    }
     inRender = false;
 }
 
@@ -438,7 +463,9 @@ function onDocumentMouseDown( event ) {
         break;
     }
 
-    requestAnimationFrame( render );
+    if ( !renderInLoop ) {
+        requestAnimationFrame( render );
+    }
 }
 </script> 
 </body> 
