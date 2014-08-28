@@ -784,8 +784,11 @@ function processPoint( point, properties, tile, translation, symbology ) {
     var c = ee(symbology.polygon.color);
 
     res.geometry.color = [];
+    res.geometry.gidMap = [];
+
     for (var i=0; i<res.geometry.position.length; i+=3){
         res.geometry.color.push( ((c>>16)&0xff)/255.0, ((c>>8)&0xff)/255.0, (c&0xff)/255.0 );
+        res.geometry.gidMap.push(+properties.gid);
     }
 
     return res;
