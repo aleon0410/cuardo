@@ -35,6 +35,11 @@ Couche de polygones pour bâti
     wget "http://smartdata.grandlyon.com/smartdata/wp-content/plugins/wp-smartdata/proxy.php?format=shape&name=fpc_fond_plan_communaut.fpctoit.zip&commune=undefined&href=https%3A%2F%2Fdownload.data.grandlyon.com%2Ffiles%2Fgrandlyon%2Flocalisation%2Ffpc_fond_plan_communaut.fpctoit.zip" -O out.zip && unzip out.zip
     shp2pgsql -W LATIN1 -I -s 3946  fpc_fond_plan_communaut_fpctoit.shp toitures | psql lyon
 
+Point layer (Velo'V)
+      wget -O velov.zip "http://smartdata.grandlyon.com/smartdata/wp-content/plugins/wp-smartdata/proxy.php?format=Shape-zip&name=jcd_jcdecaux.jcdvelov&commune=&href=https%3A%2F%2Fdownload.data.grandlyon.com%2Fwfs%2Fsmartdata%3FSERVICE%3DWFS%26REQUEST%3DGetFeature%26typename%3Djcd_jcdecaux.jcdvelov%26outputformat%3DSHAPEZIP%26VERSION%3D2.0.0%26SRSNAME%3DEPSG%3A3946" 
+      unzip velov.zip
+      shp2pgsql -W LATIN1 -s 3946 jcd_jcdecaux.jcdvelov.shp velov | psql lyon
+
 Couche de polygones 3d texturés 
 
 * unzip the archive LYON_CityGML.zip
@@ -204,6 +209,13 @@ Fichier /etc/tinyows.xml:
 	 ns_uri="http://www.tinyows.org/"
          name="textured_geometry"
          title="textured_geometry" />
+
+  <layer retrievable="1"
+	 writable="1"
+	 ns_prefix="tows"
+	 ns_uri="http://www.tinyows.org/"
+         name="velov"
+         title="velov" />
 </tinyows>
 </pre>
 

@@ -8,6 +8,23 @@ importScripts('../thirdparty/clipper.js');
 importScripts('../thirdparty/poly2tri.js');
 importScripts('../thirdparty/three.js/build/three.js');
 
+// symbology expression evaluation
+function evalExpression( e, properties )
+{
+    if ( e.property ) {
+        // access to a property
+        var c = properties[e.property]
+        return c;
+    }
+    else if ( e.expression ) {
+        // function string
+        eval('var f = ' + e.expression);
+        return f(properties);
+    }
+    // constant
+    return e;
+}
+
 var EPSILON = 1e-6;
 
 var Timer = function() {
@@ -34,6 +51,7 @@ var Geom = function(indexed) {
     this.position=[];
     this.color=[];
     this.gidMap = [];
+    this.uv = [];
     if (this.indexed){
         this.index = [];
         this.offsets = [{start:0, count:0, index:0}];
@@ -705,6 +723,75 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     return res;
 }
 
+function processPoint( point, properties, tile, translation, symbology ) {
+    var res = new PolygonGeometries();
+    var ee = function(e) {
+        return evalExpression(e, properties);
+    }
+    var s = ee(symbology.size) / 2.0;
+    var tx = translation.x;
+    var ty = translation.y;
+    var tz = 0.0;
+    if (point.length >= 3) {
+        tz += point[2] + translation.z;
+    }
+    if ( symbology.draping ) {
+        var zOffset = (ee(symbology.zOffsetPercent) * tile.size || 0)
+            + (ee(symbology.zOffset) || 0);
+        tz = gridAltitude( point[0] + tx, point[1] + ty, tile ) + zOffset + s;
+    }
+
+    var shape = ee(symbology.shape);
+    if ( shape === 'cube' ) {
+        res.geometry.position = [ point[0] + tx - s, point[1] + ty - s, tz -s,
+                                  point[0] + tx + s, point[1] + ty - s, tz -s,
+                                  point[0] + tx + s, point[1] + ty + s, tz -s,
+                                  point[0] + tx - s, point[1] + ty + s, tz -s,
+                                  point[0] + tx - s, point[1] + ty - s, tz +s,
+                                  point[0] + tx + s, point[1] + ty - s, tz +s,
+                                  point[0] + tx + s, point[1] + ty + s, tz +s,
+                                  point[0] + tx - s, point[1] + ty + s, tz +s ];
+    }
+    else if ( shape === 'bar' ) {
+        var h = ee(symbology.height)|0;
+        res.geometry.position = [ point[0] + tx - s, point[1] + ty - s, tz,
+                                  point[0] + tx + s, point[1] + ty - s, tz,
+                                  point[0] + tx + s, point[1] + ty + s, tz,
+                                  point[0] + tx - s, point[1] + ty + s, tz,
+                                  point[0] + tx - s, point[1] + ty - s, tz + h,
+                                  point[0] + tx + s, point[1] + ty - s, tz + h,
+                                  point[0] + tx + s, point[1] + ty + s, tz + h,
+                                  point[0] + tx - s, point[1] + ty + s, tz + h ];
+    }
+    else {
+        throw "Unrecognized shape for point " + shape;
+    }
+
+    // triangles
+    res.geometry.index = [ 0, 2, 1, // front
+                           0, 3, 2,
+                           1, 2, 5, // right
+                           2, 6, 5,
+                           0, 1, 4, // top
+                           4, 1, 5,
+                           5, 7, 4, // back
+                           5, 6, 7,
+                           0, 4, 7, // left
+                           0, 7, 3,
+                           3, 6, 2, // bottom
+                           3, 7, 6
+                         ];
+    var c = ee(symbology.polygon.color);
+
+    res.geometry.color = [];
+    for (var i=0; i<res.geometry.position.length; i+=3){
+        res.geometry.color.push( ((c>>16)&0xff)/255.0, ((c>>8)&0xff)/255.0, (c&0xff)/255.0 );
+    }
+
+    return res;
+}
+
+
 onmessage = function(o) {
     var data = o.data.data;
     var ctxt = o.data.ctxt;
@@ -733,6 +820,11 @@ onmessage = function(o) {
 
     data.features.forEach( function(feat) {
         switch ( feat.geometry.type ) {
+            case "Point": {
+                var r = processPoint( feat.geometry.coordinates, feat.properties, tile, ctxt.translation, ctxt.symbology );
+                res.merge(r);
+            }
+            break;
             case "MultiPolygon": {
                 feat.geometry.coordinates.forEach( function(poly){
                     var r = processPolygon(poly, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T);
