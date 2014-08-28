@@ -12,6 +12,30 @@ left: 20px;
 width: 170px;
 font-family: "Arial";
 }
+
+.popin{
+	display: none;
+	background: #fff;
+	padding: 20px;
+	border: 20px solid #ddd;
+	float: left;
+	font-size: 1.2em;
+	position: fixed;
+	top: 50%; left: 50%;
+	z-index: 99999;
+
+	-webkit-box-shadow: 0px 0px 20px #000;
+	-moz-box-shadow: 0px 0px 20px #000;
+	box-shadow: 0px 0px 20px #000;
+
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+}
+img.btn_close {
+	float: right;
+	margin: -42px -42px 0 0;
+}
 </style>
 
 </head> 
@@ -36,6 +60,7 @@ font-family: "Arial";
 
 <div id="displayInfo"></div>
 </div>
+<div id="popin_window" class="popin"></div>
 <div id="container"></div>
 
 <script src="thirdparty/three.js/build/three.js"></script> 
@@ -383,8 +408,14 @@ function render(t) {
     TileLoader.instance().load( requestRender );
 }
 
+function closePopIn()
+{
+    var elt = document.getElementById('popin_window');
+    elt.style.display = 'none';
+}
+
 function onIdentifyFeature( layerUrl, gid ) {
-    var elt = document.getElementById('displayInfo');
+    var elt = document.getElementById('popin_window');
     var html = '';
 
     var layerName = /typeName=([^&]+)/.exec(layerUrl);
@@ -393,12 +424,14 @@ function onIdentifyFeature( layerUrl, gid ) {
     jQuery.ajax(q, {
         success: function(data, textStatus, jqXHR) {
             var props = data.features[0].properties;
+            html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
             html += '<table>';
             for ( var k in props ) {
                 html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
             }
             html += '</table>';
             elt.innerHTML = html;
+            elt.style.display = 'block';
         },
         async:   true,
         dataType: 'json',
