@@ -49,6 +49,7 @@ img.btn_close {
 
 <p>Tools</p>
 <div><input type="checkbox" id="checkIdentify" onclick='identifyToggle(this);'>Identify feature</input></div>
+<div><input type="checkbox" id="checkAction" onclick='actionToggle(this);'>User action</input></div>
 
 <p></p>
 
@@ -109,6 +110,10 @@ var restoreColors = [];
 var layerLodList = [];
 
 var renderAsked = true;
+
+// identify actions
+var identifyActions = []
+var currentTool = [];
 
 function progressTileLoading( nLoaded, nTotal )
 {
@@ -177,17 +182,29 @@ function layerToggle(cb) {
 
 function identifyToggle(cb) {
     if (cb.checked){
-        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        currentTool.push('identify');
     }
     else {
-        document.removeEventListener( 'mousedown', onDocumentMouseDown, false );
+        currentTool.splice(currentTool.indexOf('identify'),1);
+    }
+}
+
+function actionToggle(cb) {
+    if (cb.checked){
+        currentTool.push('action');
+    }
+    else {
+        currentTool.splice(currentTool.indexOf('action'),1);
     }
 }
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );
 
+    document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+
     document.getElementById('checkIdentify').checked = false;
+    document.getElementById('checkAction').checked = false;
 
     // camera
     {
@@ -216,6 +233,7 @@ function init() {
         {
             var config = getConfig();
             var layers = config.layers;
+            identifyActions = config.actions;
 
             var d = (config.sceneSize/2.0) / Math.tan(camera.fov/2.0*Math.PI/180.0);
             controls.distance = d;
@@ -414,24 +432,34 @@ function closePopIn()
     elt.style.display = 'none';
 }
 
-function onIdentifyFeature( layerUrl, gid ) {
-    var elt = document.getElementById('popin_window');
-    var html = '';
-
+function onIdentifyFeature( layerUrl, gid, type ) {
     var layerName = /typeName=([^&]+)/.exec(layerUrl);
 
     var q = layerUrl+'&featureId='+layerName[1]+'.'+gid;
     jQuery.ajax(q, {
         success: function(data, textStatus, jqXHR) {
             var props = data.features[0].properties;
-            html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
-            html += '<table>';
-            for ( var k in props ) {
-                html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
+
+            var elt = document.getElementById('popin_window');
+            var html = '';
+            if (type === 'identify') {
+                html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
+                html += '<table>';
+                for ( var k in props ) {
+                    html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
+                }
+                html += '</table>';
+                elt.innerHTML = html;
+                elt.style.display = 'block';
             }
-            html += '</table>';
-            elt.innerHTML = html;
-            elt.style.display = 'block';
+            else if (type === 'action') {
+                for ( var i = 0; i < identifyActions.length; i++ ) {
+                    var action = identifyActions[i];
+                    if ( action.url === layerUrl ) {
+                        action.action(props);
+                    }
+                }
+            }
         },
         async:   true,
         dataType: 'json',
@@ -443,6 +471,9 @@ function onIdentifyFeature( layerUrl, gid ) {
 
 function onDocumentMouseDown( event ) {
     event.preventDefault();
+    if ( !currentTool.length ) {
+        return;
+    }
     // highlight
     restoreColors.forEach(function(r){
             r.obj.geometry.attributes.color.array[r.idx] = r.color.r;
@@ -453,6 +484,7 @@ function onDocumentMouseDown( event ) {
     restoreColors = [];
 
     var objects = [];
+
     scene.traverse( function(obj) {
         if ( obj.userData && obj.userData.vertexGidMap ) {
             objects.push( obj );
@@ -477,7 +509,9 @@ function onDocumentMouseDown( event ) {
         var map = object.userData.vertexGidMap;
         var gid = map[ intersects[ idx ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
-        onIdentifyFeature( object.userData.url, gid );
+
+        onIdentifyFeature( object.userData.url, gid, currentTool[0] );
+
 //        document.getElementById('displayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {

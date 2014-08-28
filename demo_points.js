@@ -76,6 +76,22 @@ function getConfig()
                   {name:'Arrondissements', levels:[arrond]},
                   {name:"Dispo Velo'V", levels:[velov, velov2]}];
 
+    //
+    // Actions on identify
+    var actions = [
+        {url: urlArrond, name: "Article Wikipedia", action: function(props) {
+            var art;
+            if (props.gid == 1) {
+                art = '1er_arrondissement_de_Lyon';
+            }
+            else {
+                art = props.gid + 'e_arrondissement_de_Lyon';
+            }
+            window.open("http://fr.wikipedia.org/wiki/" + art);
+            }
+         }
+        ];
+
     // scene size 
     var sceneSize = 16000;
 
@@ -86,7 +102,8 @@ function getConfig()
         layers:layers,
         translation:translation,
         sceneSize:sceneSize,
-        maxLOD:maxLOD
+        maxLOD:maxLOD,
+        actions:actions
     };
 }
 
