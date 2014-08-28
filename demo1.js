@@ -16,26 +16,27 @@ function getConfig()
     var terrain = new Terrain(urlDem, urlTex, translation, nbDiv);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
-    var colFun = 
-        'function(properties){ '+
-        'switch( +properties.gid ){ '+
-        'case 7: return {r:.2, g:.2, b:1}; '+
-        'case 9: return {r:1, g:.2, b:.2}; '+
-        '} ' +
-        'return 0xaaaaaa; '+ 
-        '}';
+    var colFun = function(properties){
+        switch( +properties.gid ){
+        case 1: return {r:.2, g:.9, b:1};
+        case 2: return {r:3, g:.2, b:.8};
+        case 3: return {r:0, g:.5, b:.8};
+        case 7: return {r:.2, g:.2, b:1};
+        case 9: return {r:1, g:.2, b:.2};
+        }
+        return {r:1, g:1, b:1};
+    };
 
-    var colFun = 'function(prop){ return { r:prop.gid/10.0, g:.5, b:.5 }; }';
     var arrond = new WfsLayer(urlArrond, translation, nbDiv, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
                                polygon:{
                                    color:0xffffff,
-                                   lineColor:0xff0000,
-                                   lineWidth:2,
-                                   colorFun:colFun,
-                                   opacity:.2
+                                   lineColor:0x3B0B2E,
+                                   lineWidth:10,
+                                   colorFun:colFun.toString(),
+                                   opacity:.3
                                }
                               }
                             , [500,4000]  // <- visibility range
