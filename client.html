@@ -75,7 +75,6 @@ font-family: "Arial";
 <script id="configJS"></script>
 <script> 
 
-inRender = false;
 var container, stats;
 var camera, controls, scene, renderer;
 var depthMaterial, depthTarget;
@@ -84,10 +83,7 @@ var restoreColors = [];
 
 var layerLodList = [];
 
-// rendering mode
-// either @ 60 fps (true)
-// or on demand  (false)
-var renderInLoop = false;
+var renderAsked = true;
 
 function progressTileLoading( nLoaded, nTotal )
 {
@@ -113,16 +109,22 @@ TileLoader.instance().setTilerProgressCallback( tilerProgress );
 function run()
 {
     init();
-    render();
-    if ( renderInLoop ) {
-        animate();
-    }
+    animate();
 };
 
 function animate()
 {
+    if ( renderAsked ) {
+        render();
+        renderAsked = false;
+    }
+    // call animate @ 60 fps
     requestAnimationFrame(animate);
-    render();
+}
+
+function requestRender()
+{
+    renderAsked = true;
 }
 
 function onerror()
@@ -145,9 +147,7 @@ function layerToggle(cb) {
             });
         }
     }
-    if (!renderInLoop) {
-        requestAnimationFrame( render );
-    }
+    requestRender();
 }
 
 function identifyToggle(cb) {
@@ -177,9 +177,7 @@ function init() {
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
         controls.keys = [ 65, 83, 68 ];
-        if ( !renderInLoop ) {
-            controls.addEventListener( 'change', function() { requestAnimationFrame(render); } );
-        }
+        controls.addEventListener( 'change', requestRender );
     }
 
     // scene
@@ -239,9 +237,11 @@ function init() {
 	    var skyGeometry = new THREE.BoxGeometry( 100000, 100000, 100000 );
 	
 	    var materialArray = [];
+            var stillToLoad = 6;
 	    for (var i = 0; i < 6; i++)
 		materialArray.push( new THREE.MeshBasicMaterial({
-		    map: THREE.ImageUtils.loadTexture( urls[i] ),
+		    map: THREE.ImageUtils.loadTexture( urls[i], null, function() {
+                        if (!--stillToLoad) { requestRender(); } }),
 		    side: THREE.BackSide
 		}));
 	    var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
@@ -359,20 +359,12 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
     controls.handleResize();
-    if (!renderInLoop) {
-        requestAnimationFrame( render );
-    }
+    requestRender();
 }
 
 var lastRender = null;
 
 function render(t) {
-    if (inRender) {
-        // callback here, but a render is already in progress
-        return;
-    }
-    inRender = true;
-
     scene.updateMatrixWorld();
 
     scene.traverse( function ( object ) {
@@ -388,13 +380,7 @@ function render(t) {
     stats.update();
 
     // load missing tiles
-    if ( renderInLoop ) {
-        TileLoader.instance().load();
-    }
-    else {
-        TileLoader.instance().load( function(){ requestAnimationFrame(render); } );
-    }
-    inRender = false;
+    TileLoader.instance().load( requestRender );
 }
 
 function onDocumentMouseDown( event ) {
@@ -463,9 +449,7 @@ function onDocumentMouseDown( event ) {
         break;
     }
 
-    if ( !renderInLoop ) {
-        requestAnimationFrame( render );
-    }
+    requestRender();
 }
 </script> 
 </body> 
