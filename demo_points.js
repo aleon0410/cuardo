@@ -52,8 +52,8 @@ function getConfig()
                                 size: { property: 'bike_stand' },
                                 height: { expression: 'function(p){return p.available_ * 10.0;}' },
                                 polygon:{
-                                    color: 0xaaaaff,
-                                    opacity: 1
+                                    color: 0x0000ff,
+                                    opacity: 0.5
                                 }
                             });
     var velov2 = new WfsLayer(velov_url, translation, nbDiv, terrain,
@@ -65,8 +65,8 @@ function getConfig()
                                   size: { property: 'bike_stand' },
                                   height: { expression: 'function(p){return (p.bike_stand-p.available_) * 10.0;}' },
                                   polygon:{
-                                      color: 0xffaaaa,
-                                      opacity: 1
+                                      color: 0xff0000,
+                                      opacity: 0.5
                                   }
                               });
 
