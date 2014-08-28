@@ -383,6 +383,31 @@ function render(t) {
     TileLoader.instance().load( requestRender );
 }
 
+function onIdentifyFeature( layerUrl, gid ) {
+    var elt = document.getElementById('displayInfo');
+    var html = '';
+
+    var layerName = /typeName=([^&]+)/.exec(layerUrl);
+
+    var q = layerUrl+'&featureId='+layerName[1]+'.'+gid;
+    jQuery.ajax(q, {
+        success: function(data, textStatus, jqXHR) {
+            var props = data.features[0].properties;
+            html += '<table>';
+            for ( var k in props ) {
+                html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
+            }
+            html += '</table>';
+            elt.innerHTML = html;
+        },
+        async:   true,
+        dataType: 'json',
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log(jqXHR + textStatus+' :'+errorThrown);
+        }
+    });
+}
+
 function onDocumentMouseDown( event ) {
     event.preventDefault();
     // highlight
@@ -412,14 +437,15 @@ function onDocumentMouseDown( event ) {
 
     var intersects = raycaster.intersectObjects( objects );
 
-    document.getElementById('displayInfo').innerHTML="";
+//    document.getElementById('displayInfo').innerHTML="";
     for (var idx = 0; idx < intersects.length; idx++ ) {
         var object = intersects[ idx ].object;
         if ( !object.visible ) continue;
         var map = object.userData.vertexGidMap;
         var gid = map[ intersects[ idx ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
-        document.getElementById('displayInfo').innerHTML="GID = " +gid;
+        onIdentifyFeature( object.userData.url, gid );
+//        document.getElementById('displayInfo').innerHTML="GID = " +gid;
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);
