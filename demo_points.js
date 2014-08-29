@@ -79,7 +79,7 @@ function getConfig()
     //
     // Actions on identify
     var actions = [
-        {url: urlArrond, name: "Article Wikipedia", action: function(props) {
+        {url: urlArrond, name: "Infos arrondissement", action: function(props) {
             var art;
             if (props.gid == 1) {
                 art = '1er_arrondissement_de_Lyon';

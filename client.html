@@ -3,14 +3,14 @@
 <title>FOSS4G demo</title>
 
 <style>
-#layerSelection {
+#uiMenu {
 border-radius:5px;
 background-color:#cccccc;
 padding: 10px;
 position:absolute;
 left: 20px;
-width: 170px;
 font-family: "Arial";
+z-index: 99999;
 }
 
 .popin{
@@ -40,27 +40,32 @@ img.btn_close {
 
 </head> 
 <body> 
-<div id="layerSelection">
-<p>Layers</p>
-<div id="layerList">
+
+<div id="uiMenu">
+    <p>Layers</p>
+    <div id="layerList">
+    </div>
+
+    <p></p>
+
+    <p>Tools</p>
+    <div id="userActions">
+    <input type="checkbox" id="checkAction" onclick='actionToggle(this);'></input>
+    <select id="actionlist">
+    <option value="0" selected>Identify</option>
+    </select> 
+    </div>
+
+    <p></p>
+    <div id="progressInfo">
+    <p>Tiles loaded: <span id="loadingProgressTxt"></span><img id="loadingImg" src="images/loading.gif" style="visibility:hidden"/></p>
+    </span><progress value="0" max="0" id="loadingProgressElt" style="display:inline-block;height:8px;" ></progress><br/>
+    </span><progress value="0" max="0" id="tilerProgressElt" style="display:inline-block;height:8px;" ></progress>
+    </div>
+
+    <div id="displayInfo"></div>
 </div>
 
-<p></p>
-
-<p>Tools</p>
-<div><input type="checkbox" id="checkIdentify" onclick='identifyToggle(this);'>Identify feature</input></div>
-<div><input type="checkbox" id="checkAction" onclick='actionToggle(this);'>User action</input></div>
-
-<p></p>
-
-<div id="progressInfo">
-<p>Tiles loaded: <span id="loadingProgressTxt"></span><img id="loadingImg" src="images/loading.gif" style="visibility:hidden"/></p>
-</span><progress value="0" max="0" id="loadingProgressElt" style="display:inline-block;height:8px;" ></progress><br/>
-</span><progress value="0" max="0" id="tilerProgressElt" style="display:inline-block;height:8px;" ></progress>
-</div>
-
-<div id="displayInfo"></div>
-</div>
 <div id="popin_window" class="popin"></div>
 <div id="container"></div>
 
@@ -113,7 +118,7 @@ var renderAsked = true;
 
 // identify actions
 var identifyActions = []
-var currentTool = [];
+var currentTool = -1;
 
 function progressTileLoading( nLoaded, nTotal )
 {
@@ -180,30 +185,20 @@ function layerToggle(cb) {
     requestRender();
 }
 
-function identifyToggle(cb) {
-    if (cb.checked){
-        currentTool.push('identify');
-    }
-    else {
-        currentTool.splice(currentTool.indexOf('identify'),1);
-    }
-}
-
 function actionToggle(cb) {
     if (cb.checked){
-        currentTool.push('action');
+        currentTool = document.getElementById('actionlist').selectedIndex;
     }
     else {
-        currentTool.splice(currentTool.indexOf('action'),1);
+        currentTool = -1;
     }
 }
 
 function init() {
     window.addEventListener( 'resize', onWindowResize, false );
 
-    document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+    document.getElementById('container').addEventListener( 'mousedown', onDocumentMouseDown, false );
 
-    document.getElementById('checkIdentify').checked = false;
     document.getElementById('checkAction').checked = false;
 
     // camera
@@ -214,7 +209,7 @@ function init() {
     // trackball
     {
         //controls = new THREE.TrackballControls( camera );
-        controls = new THREE.GISControls( camera );
+        controls = new THREE.GISControls( camera, document.getElementById('container') );
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
@@ -229,11 +224,23 @@ function init() {
         //mesh.castShadow = true;
         //mesh.receiveShadow = true;
 
+        var config = getConfig();
+
+        // add controls for each action
+        identifyActions = config.actions;
+        for ( var i = 0; i < config.actions.length; i++ ) {
+            var action = config.actions[i];
+            var elt = document.getElementById('actionlist');
+            var n = document.createElement('option');
+            n.value = i+1;
+            n.text = action.name;
+            elt.add(n);
+            console.log('elt', elt.innerHTML);
+        }
+        
         // layers
         {
-            var config = getConfig();
             var layers = config.layers;
-            identifyActions = config.actions;
 
             var d = (config.sceneSize/2.0) / Math.tan(camera.fov/2.0*Math.PI/180.0);
             controls.distance = d;
@@ -432,7 +439,7 @@ function closePopIn()
     elt.style.display = 'none';
 }
 
-function onIdentifyFeature( layerUrl, gid, type ) {
+function onAction( layerUrl, gid, actionIdx ) {
     var layerName = /typeName=([^&]+)/.exec(layerUrl);
 
     var q = layerUrl+'&featureId='+layerName[1]+'.'+gid;
@@ -442,7 +449,7 @@ function onIdentifyFeature( layerUrl, gid, type ) {
 
             var elt = document.getElementById('popin_window');
             var html = '';
-            if (type === 'identify') {
+            if (actionIdx === 0 ) {
                 html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
                 html += '<table>';
                 for ( var k in props ) {
@@ -452,12 +459,10 @@ function onIdentifyFeature( layerUrl, gid, type ) {
                 elt.innerHTML = html;
                 elt.style.display = 'block';
             }
-            else if (type === 'action') {
-                for ( var i = 0; i < identifyActions.length; i++ ) {
-                    var action = identifyActions[i];
-                    if ( action.url === layerUrl ) {
-                        action.action(props);
-                    }
+            else {
+                var action = identifyActions[actionIdx-1];
+                if ( action.url === layerUrl ) {
+                    action.action(props);
                 }
             }
         },
@@ -471,9 +476,11 @@ function onIdentifyFeature( layerUrl, gid, type ) {
 
 function onDocumentMouseDown( event ) {
     event.preventDefault();
-    if ( !currentTool.length ) {
+    if ( currentTool == -1 ) {
         return;
     }
+    currentTool = document.getElementById('actionlist').selectedIndex;
+
     // highlight
     restoreColors.forEach(function(r){
             r.obj.geometry.attributes.color.array[r.idx] = r.color.r;
@@ -502,7 +509,6 @@ function onDocumentMouseDown( event ) {
 
     var intersects = raycaster.intersectObjects( objects );
 
-//    document.getElementById('displayInfo').innerHTML="";
     for (var idx = 0; idx < intersects.length; idx++ ) {
         var object = intersects[ idx ].object;
         if ( !object.visible ) continue;
@@ -510,9 +516,7 @@ function onDocumentMouseDown( event ) {
         var gid = map[ intersects[ idx ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
 
-        onIdentifyFeature( object.userData.url, gid, currentTool[0] );
-
-//        document.getElementById('displayInfo').innerHTML="GID = " +gid;
+        onAction( object.userData.url, gid, currentTool );
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);
