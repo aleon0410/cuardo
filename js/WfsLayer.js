@@ -57,6 +57,8 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
         this.workers[i].onmessage = function(o) { return that.onVectorProcessed(o); };
     }
     this.currentWorker = 0;
+
+    this.loaded = [];
 };
 
 
@@ -105,9 +107,32 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     this.continuations[tileId] = callback;
 
+    var loadedData = null;
+    for (var i=0; i<this.loaded.length; i++){
+        if ( Math.abs(this.loaded[i].center.x - center.x) < this.loaded[i].size &&
+             Math.abs(this.loaded[i].center.y - center.y) < this.loaded[i].size ){
+                 loadedData = this.loaded[i].data;
+                 break;
+         }
+    }
+
+    if (loadedData){
+        var reqend = new Date().getTime();
+        // call the worker to process these features
+
+        var worker = object.workers[object.currentWorker];
+        console.log('GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
+        worker.postMessage( {data:loadedData, ctxt:ctxt, tileId:tileId} );
+        object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
+        return;
+    }
+
     //console.log(this.url + '&BBOX='+ext.join(',') + '&typeName=' + level.layer);
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
+
+            object.loaded.push({center:center, size:size, data:data, tileId:tileId });
+
             var reqend = new Date().getTime();
             // call the worker to process these features
 
