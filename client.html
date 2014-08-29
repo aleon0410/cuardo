@@ -228,14 +228,16 @@ function init() {
 
         // add controls for each action
         identifyActions = config.actions;
-        for ( var i = 0; i < config.actions.length; i++ ) {
-            var action = config.actions[i];
-            var elt = document.getElementById('actionlist');
-            var n = document.createElement('option');
-            n.value = i+1;
-            n.text = action.name;
-            elt.add(n);
-            console.log('elt', elt.innerHTML);
+        if (identifyActions) {
+            for ( var i = 0; i < config.actions.length; i++ ) {
+                var action = config.actions[i];
+                var elt = document.getElementById('actionlist');
+                var n = document.createElement('option');
+                n.value = i+1;
+                n.text = action.name;
+                elt.add(n);
+                console.log('elt', elt.innerHTML);
+            }
         }
         
         // layers
