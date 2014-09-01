@@ -142,7 +142,7 @@ Then install texture so that it can be served by apache:
 Test (in browser) that you can access http://localhost/textures/building-texture1.jpg
 
 
-Configure tinows
+Configure tinyows
 ----------------
 
 Compile and install tinyows http://mapserver.org/fr/tinyows/serverinstallation.html
@@ -152,72 +152,7 @@ Configure apache for fastcgi:
     sudo apt-get install libapache2-mod-fcgid
     sudo a2enmod fcgid
 
-Fichier /etc/tinyows.xml:
-
-<pre>
-<tinyows online_resource="http://127.0.0.1/cgi-bin/tinyows"
-	 schema_dir="/usr/local/share/tinyows/schema/" estimated_extent="1">
-
-  <pg host="127.0.0.1" user="postgres" password="postgres" dbname="lyon" port="5432"/>
-
-  <metadata name="TinyOWS Server"
-	    title="TinyOWS Server - Demo Service" />
-
-  <layer retrievable="1"
-	 writable="0"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         include_items="hfacade,geom"
-         name="toitures"
-         title="toitures"
-         />
-
-  <layer retrievable="1"
-	 writable="0"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         include_items="hfacade,lod0"
-         name="toitures_lod0"
-         title="toitures_lod0"
-         table="toitures"
-         />
-
-  <layer retrievable="1"
-	 writable="1"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         name="arrondissements"
-         title="arrondissements" />
-
-  <layer retrievable="1"
-	 writable="1"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         name="rues"
-         title="rues" />
-
-  <layer retrievable="1"
-	 writable="1"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         name="toilettes_publiques"
-         title="toilettes_publiques" />
-
-  <layer retrievable="1"
-	 writable="1"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         name="textured_geometry"
-         title="textured_geometry" />
-
-  <layer retrievable="1"
-	 writable="1"
-	 ns_prefix="tows"
-	 ns_uri="http://www.tinyows.org/"
-         name="velov"
-         title="velov" />
-</tinyows>
-</pre>
+Copy conf/tinyows.xml into /etc/tinyows.xml:
 
 Restart apache:
 
