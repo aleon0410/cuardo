@@ -216,6 +216,8 @@ function init() {
 
         var config = getConfig();
 
+        controls.maxDistance = config.sceneSize * 10;
+
         // add controls for each action
         identifyActions = config.actions;
         if (identifyActions) {
@@ -272,7 +274,8 @@ function init() {
                           "images/s_posZ.png",
                           "images/s_negZ.png"];
 
-	    var skyGeometry = new THREE.BoxGeometry( 100000, 100000, 100000 );
+            var l = config.sceneSize * 10;
+	    var skyGeometry = new THREE.BoxGeometry( l, l, l );
 	
 	    var materialArray = [];
             var stillToLoad = 6;
