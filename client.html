@@ -203,6 +203,8 @@ function init() {
 
     document.getElementById('checkAction').checked = false;
 
+    var config = getConfig();
+    
     // camera
     {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1000000 );
@@ -214,10 +216,6 @@ function init() {
 
         //mesh.castShadow = true;
         //mesh.receiveShadow = true;
-
-        var config = getConfig();
-
-        controls.maxDistance = config.sceneSize * 10;
 
         // add controls for each action
         identifyActions = config.actions;
@@ -330,7 +328,7 @@ function init() {
     {
         //controls = new THREE.TrackballControls( camera, scene );
         controls = new THREE.GISControls( camera, null, document.getElementById('container') );
-        controls.maxDistance = 10000;
+        controls.maxDistance = config.sceneSize * 10;
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;
