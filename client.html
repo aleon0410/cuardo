@@ -210,6 +210,7 @@ function init() {
     {
         //controls = new THREE.TrackballControls( camera );
         controls = new THREE.GISControls( camera, document.getElementById('container') );
+        controls.maxDistance = 10000;
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
         controls.panSpeed = 1.8;

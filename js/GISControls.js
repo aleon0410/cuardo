@@ -18,7 +18,7 @@ THREE.GISControls = function ( object, domElement ) {
 
     // Limits to how far you can dolly in and out
     this.minDistance = 0;
-    this.maxDistance = Infinity;
+    this.maxDistance = 10000;
 
     this.rotateSpeed = 1.0;
 
@@ -148,6 +148,7 @@ THREE.GISControls = function ( object, domElement ) {
     this.update = function () {
         // place the camera on a dome around the scene
         this.phi = Math.min( this.maxPhi, Math.max( this.minPhi, this.phi ) );
+        scope.distance = Math.min( scope.distance, this.maxDistance );
 
         this.object.position.x = scope.distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
         this.object.position.y = scope.distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
