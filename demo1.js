@@ -18,28 +18,30 @@ function getConfig()
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
         switch( +properties.gid ){
-        case 1: return {r:.2, g:.9, b:1};
-        case 2: return {r:3, g:.2, b:.8};
-        case 3: return {r:0, g:.5, b:.8};
-        case 7: return {r:.2, g:.2, b:1};
-        case 9: return {r:1, g:.2, b:.2};
+        case 1: return rgbToInt({r:.2, g:.9, b:1});
+        case 2: return rgbToInt({r:3, g:.2, b:.8});
+        case 3: return rgbToInt({r:0, g:.5, b:.8});
+        case 7: return rgbToInt({r:.2, g:.2, b:1});
+        case 9: return rgbToInt({r:1, g:.2, b:.2});
         }
-        return {r:1, g:1, b:1};
+        return 0xffffff;
     };
+
+    // tile size of the most detailed tile
+    var MT = 700;
 
     var arrond = new WfsLayer(urlArrond, translation, nbDiv, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
                                polygon:{
-                                   color:0xffffff,
                                    lineColor:0x3B0B2E,
                                    lineWidth:10,
-                                   colorFun:colFun.toString(),
+                                   color: {expression: colFun.toString() },
                                    opacity:.3
                                }
                               }
-                            , [500,4000]  // <- visibility range
+                            , [MT<<2,MT<<8]  // <- visibility range
                              );
 
     //
@@ -52,51 +54,86 @@ function getConfig()
         for ( var i = 0; i < categories.length; i++ ) {
             var klass = categories[i];
             if ( (prop.hfacade >= klass.min) && (prop.hfacade < klass.max) ) {
-                return {r:(klass.color>>16)/256.0, g:((klass.color>>8)&0xff)/256.0, b:(klass.color&0xff)/256.0};
+                return klass.color;
             }
         }
-        return {r:0, g:0, b:0};
+        return 0x000000;
     }
 
-    var lod0_url = baseUrl+"&typeName=tows:toitures";
+    var lod0_url = baseUrl+"&typeName=tows:toitures_lod0";
     var lod0 = new WfsLayer(lod0_url, translation, nbDiv, terrain,
+                            { zOffsetPercent:2e-3,
+                              zOffset:10,
+                              polygon:{ color: 0x888888, opacity: 1.0 }
+                            }
+                            ,[MT<<5,MT<<6]
+                           );
+
+    var lod1_url = baseUrl+"&typeName=tows:toitures_lod1";
+    var lod1 = new WfsLayer(lod1_url, translation, nbDiv, terrain,
+                            { zOffsetPercent:2e-3,
+                              zOffset:10,
+                              polygon:{ color: 0x888888, opacity: 1.0 }
+                            }
+                            , [MT<<4,MT<<5]
+                           );
+
+    var lod2_url = baseUrl+"&typeName=tows:toitures_lod2";
+    var lod2 = new WfsLayer(lod2_url, translation, nbDiv, terrain,
+                            { zOffsetPercent:2e-3,
+                              zOffset:10,
+                              polygon:{ color: 0x888888, opacity: 1.0 }
+                            }
+                            , [MT<<3,MT<<4]
+                           );
+
+/*    var lod3_url = baseUrl+"&typeName=tows:toitures_lod3";
+    var lod3 = new WfsLayer(lod3_url, translation, nbDiv, terrain,
+                            { zOffsetPercent:2e-3,
+                              zOffset:10,
+                              polygon:{ color: 0xffffff }
+                            }
+                            , [MT<<3,MT<<4]
+                           );*/
+
+    var lod4_url = baseUrl+"&typeName=tows:toitures";
+    var lod4 = new WfsLayer(lod4_url, translation, nbDiv, terrain,
                             { zOffsetPercent:2e-3,
                               zOffset:10,
                               polygon:
                               {
-                                  color:0xaaaaaa,
-                                  colorFun:buildingClass.toString()
+                                  color: {expression: buildingClass.toString() }
                               }
                             }
-                            , [1000,2000]  // <- visibility range
+                            , [MT<<2,MT<<3]  // <- visibility range
                            );
 
 
-    var lod1_url = baseUrl+"&typeName=tows:toitures";
-    var lod1 = new WfsLayer(lod1_url, translation, nbDiv, terrain,
+    var lod5_url = baseUrl+"&typeName=tows:toitures";
+    var lod5 = new WfsLayer(lod5_url, translation, nbDiv, terrain,
                             {polygon:{
-                                color:0xffffff,
-                                extrude:'hfacade',
-                                color:0xaaaaaa,
-                                colorFun:buildingClass.toString()
+                                extrude: {property: 'hfacade'}, 
+                                color: {expression: buildingClass.toString() }
                             }
                             }
-                            , [500, 1000] );
+                            , [MT, MT<<2]
+                           );
 
     var urlTin = baseUrl+"&typeName=tows:textured_citygml";
-    var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0,500] );
+    var tin = new WfsTinLayer( urlTin, urlImageBase, translation, 32, terrain, [0, MT<<1] );
 
     //
     // List of layers with tilers
     var layers = [{name:'Terrain', levels:[terrain]},
                   {name:'Arrondissements', levels:[arrond]},
-                  {name:'Bati', levels:[lod0,lod1,tin]}];
+                  {name:'Bati', levels:[lod0,lod1,lod2,lod4,lod5, tin]}
+];
 
     // scene size 
-    var sceneSize = 16000;
+    var sceneSize = MT<<4;
 
     // max depth of the quad tree
-    var maxLOD = 7;
+    var maxLOD = 6;
 
     return {
         layers:layers,

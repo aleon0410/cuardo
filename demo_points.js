@@ -18,13 +18,13 @@ function getConfig()
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
         switch( +properties.gid ){
-        case 1: return {r:.2, g:.9, b:1};
-        case 2: return {r:3, g:.2, b:.8};
-        case 3: return {r:0, g:.5, b:.8};
-        case 7: return {r:.2, g:.2, b:1};
-        case 9: return {r:1, g:.2, b:.2};
+        case 1: return rgbToInt({r:.2, g:.9, b:1});
+        case 2: return rgbToInt({r:3, g:.2, b:.8});
+        case 3: return rgbToInt({r:0, g:.5, b:.8});
+        case 7: return rgbToInt({r:.2, g:.2, b:1});
+        case 9: return rgbToInt({r:1, g:.2, b:.2});
         }
-        return {r:1, g:1, b:1};
+        return 0xffffff;
     };
 
     var arrond = new WfsLayer(urlArrond, translation, nbDiv, terrain,
@@ -32,15 +32,13 @@ function getConfig()
                                zOffset:3,
                                draping:true,
                                polygon:{
-                                   color:0xffffff,
                                    lineColor:0x3B0B2E,
                                    lineWidth:10,
-                                   colorFun:colFun.toString(),
+                                   color: {expression: colFun.toString()},
                                    opacity:.3
                                }
                               }
                              );
-
 
     var velov_url = baseUrl+"&typeName=tows:velov";
     var velov = new WfsLayer(velov_url, translation, nbDiv, terrain,
@@ -74,7 +72,8 @@ function getConfig()
     // List of layers with tilers
     var layers = [{name:'Terrain', levels:[terrain]},
                   {name:'Arrondissements', levels:[arrond]},
-                  {name:"Dispo Velo'V", levels:[velov, velov2]}];
+                  {name:"Dispo Velo'V", levels:[velov, velov2]}
+                 ];
 
     //
     // Actions on identify

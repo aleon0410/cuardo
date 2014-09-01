@@ -7,23 +7,7 @@ function alert(msg)
 importScripts('../thirdparty/clipper.js');
 importScripts('../thirdparty/poly2tri.js');
 importScripts('../thirdparty/three.js/build/three.js');
-
-// symbology expression evaluation
-function evalExpression( e, properties )
-{
-    if ( e.property ) {
-        // access to a property
-        var c = properties[e.property]
-        return c;
-    }
-    else if ( e.expression ) {
-        // function string
-        eval('var f = ' + e.expression);
-        return f(properties);
-    }
-    // constant
-    return e;
-}
+importScripts('Symbology.js');
 
 var EPSILON = 1e-6;
 
@@ -645,10 +629,13 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     }
 
     // extrude walls if needed
+    var extrudedHeight;
+    if ( symbology.polygon.extrude ){ 
+        extrudedHeight = +evalExpression( symbology.polygon.extrude, properties );
+    }
     if ( symbology.polygon.extrude ){ 
         T['extrusion'].start();
-        var heigth = +properties[ symbology.polygon.extrude ];
-        res.wallGeometry = trianglesFromExtrusion(contours, heigth);
+        res.wallGeometry = trianglesFromExtrusion(contours, extrudedHeight);
         T['extrusion'].stop();
     }
 
@@ -681,7 +668,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
             pos[i+2] += zOffset;
         }
         if (symbology.polygon.extrude){
-            zOffset += +properties[ symbology.polygon.extrude ];
+            zOffset += extrudedHeight;
         }
         for (var i=0, pos=res.geometry.position; i<pos.length; i+=3){
             pos[i+2] += zOffset;
@@ -693,10 +680,10 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     T['color'].start();
     // color feature
     var c = {r:1, g:1, b:1};
-    if (symbology.polygon.colorFun){
-        eval( 'var f =' + symbology.polygon.colorFun);
-        c = f(properties);
+    if ( symbology.polygon.color ) {
+        c = toRGB(evalExpression( symbology.polygon.color, properties ));
     }
+
     res.geometry.color = [];
     for (var i=0; i<res.geometry.position.length; i+=3){
         res.geometry.color.push( c.r, c.g, c.b );
@@ -781,13 +768,13 @@ function processPoint( point, properties, tile, translation, symbology ) {
                            3, 6, 2, // bottom
                            3, 7, 6
                          ];
-    var c = ee(symbology.polygon.color);
+    var c = toRGB(ee(symbology.polygon.color));
 
     res.geometry.color = [];
     res.geometry.gidMap = [];
 
     for (var i=0; i<res.geometry.position.length; i+=3){
-        res.geometry.color.push( ((c>>16)&0xff)/255.0, ((c>>8)&0xff)/255.0, (c&0xff)/255.0 );
+        res.geometry.color.push( c.r, c.g, c.b );
         res.geometry.gidMap.push(+properties.gid);
     }
 

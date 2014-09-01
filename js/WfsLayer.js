@@ -170,8 +170,8 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     var errSpotGeom = cloneFakeGeometry( r.errSpotGeom );
     var wallGeom = cloneFakeGeometry( r.wallGeom );
     var material =  new THREE.MeshLambertMaterial( 
-            { color:this.symbology.polygon.color,
-              ambient:this.symbology.polygon.color,
+            { color: 0xffffff,//this.symbology.polygon.color,
+              ambient: 0xffffff,//this.symbology.polygon.color,
               opacity:this.symbology.polygon.opacity || 1.,
               transparent: (this.symbology.polygon.opacity || 1) < 1, 
               vertexColors: THREE.VertexColors,
