@@ -1,0 +1,57 @@
+drop table if exists toitures_%lod%;
+create table toitures_%lod%(gid int primary key, merged_gid integer[]);
+select addgeometrycolumn('toitures_%lod%', 'geom', 3946, 'polygon', 2);
+
+drop sequence if exists tid;
+create sequence tid;
+
+do $$
+begin
+raise notice 'Snap to grid';
+end$$;
+
+-- snap to grid
+drop table if exists snapped;
+create temporary table snapped as
+select gid, st_buffer(st_snaptogrid(geom,%snapdist%),0) as geom from toitures
+;
+create index snapped_gidx on snapped using gist(geom);
+
+do $$
+begin
+raise notice 'Merge';
+end$$;
+
+-- merge
+drop table if exists merged;
+create temporary table merged as
+with collected(geom) as (
+select st_union(geom) from snapped
+)
+select nextval('tid') as gid, (st_dump(geom)).geom as geom from collected;
+create index merged_gidx on merged using gist(geom);
+
+do $$
+begin
+raise notice 'Get back ID';
+end$$;
+
+-- get back merged gids
+with merged_gids(gid, arr) as (
+select t.gid, array_agg(s.gid)
+from
+  merged as t,
+  snapped as s
+where
+  t.geom && s.geom and
+  st_covers(t.geom, s.geom)
+group by
+  t.gid
+  )
+ insert into toitures_%lod%
+ select t.gid, arr, geom from merged_gids as m, merged as t where t.gid = m.gid;
+  ;
+
+create index toitures_%lod%_gidx on toitures_%lod% using gist(geom);
+  
+  
