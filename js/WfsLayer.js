@@ -79,17 +79,6 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var reqstart = new Date().getTime();
 
-/*
-    // look for the correct level
-    var level = undefined;
-    for ( var i = 0, l = this.levels.length; i < l; i++ ) {
-        if ( this.levels[i].size > size ) {
-            break;
-        }
-        level = this.levels[i];
-    }
-*/
-
     var ctxt = {
         translation: this.translation,
         symbology: object.symbology,
@@ -121,7 +110,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         // call the worker to process these features
 
         var worker = object.workers[object.currentWorker];
-        console.log('GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
+        console.log('(Cache) GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
         worker.postMessage( {data:loadedData, ctxt:ctxt, tileId:tileId} );
         object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
         return;
