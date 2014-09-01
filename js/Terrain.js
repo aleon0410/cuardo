@@ -60,6 +60,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
                       reflectivity: 0,
                     } );
             mesh = new THREE.Mesh(geom, material);
+            mesh.userData = {type:'terrain'};
             object.geom[tileId] = geom;
             callback(mesh);
         }

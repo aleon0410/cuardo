@@ -1,7 +1,7 @@
 //
 // Simple control where the camera is placed on a dome around a center of interest
 
-THREE.GISControls = function ( object, domElement ) {
+THREE.GISControls = function ( object, scene, domElement) {
 
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
@@ -9,12 +9,16 @@ THREE.GISControls = function ( object, domElement ) {
     // Set to false to disable this control
     this.enabled = true;
 
+    this.scene = scene;
+
     // "target" sets the location of focus, where the control orbits around
     // and where it pans with respect to.
     // (0,0,0) by default
     this.target = new THREE.Vector3();
 
     this.zoomSpeed = 1.0;
+
+    this.altitude = 0;
 
     // Limits to how far you can dolly in and out
     this.minDistance = 0;
@@ -146,18 +150,40 @@ THREE.GISControls = function ( object, domElement ) {
     };
 
     this.update = function () {
+
+        // compute altitude of terrain at the center of the scene
+        if (this.scene)
+        {
+            var objects = [];
+            this.scene.traverse( function(obj) {
+                if ( obj.userData && obj.userData.type == 'terrain'   ) {
+                    objects.push( obj );
+                }
+            });
+            var vector = new THREE.Vector3(0.5, 0.5, 0.5);
+            var projector = new THREE.Projector();
+            vector = projector.unprojectVector( vector, camera );
+
+            var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+            var intersects = raycaster.intersectObjects( objects );
+            if  (intersects.length) this.altitude = intersects[0].point.z;
+        }
+
+
+
         // place the camera on a dome around the scene
         this.phi = Math.min( this.maxPhi, Math.max( this.minPhi, this.phi ) );
         scope.distance = Math.min( scope.distance, this.maxDistance );
 
         this.object.position.x = scope.distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
         this.object.position.y = scope.distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
-        this.object.position.z = scope.distance * Math.cos( this.phi * Math.PI / 180 );
+        this.object.position.z = scope.distance * Math.cos( this.phi * Math.PI / 180 ) + this.altitude;
 
         this.object.up.x = 0;
         this.object.up.y = 0;
         this.object.up.z = this.phi >= 0 ? 1 : -1;
-        this.object.lookAt( pan );
+        this.object.lookAt( new THREE.Vector3(pan.x, pan.y, this.altitude) );
 
 	if ( lastPosition.distanceToSquared( this.object.position ) > EPS ) {
 	    this.dispatchEvent( changeEvent );

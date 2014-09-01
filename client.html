@@ -206,18 +206,6 @@ function init() {
         camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1000000 );
     }
 
-    // trackball
-    {
-        //controls = new THREE.TrackballControls( camera );
-        controls = new THREE.GISControls( camera, document.getElementById('container') );
-        controls.maxDistance = 10000;
-        controls.rotateSpeed = 2.0;
-        controls.zoomSpeed = 1.5;
-        controls.panSpeed = 1.8;
-        controls.keys = [ 65, 83, 68 ];
-        controls.addEventListener( 'change', requestRender );
-    }
-
     // scene
     {
         scene = new THREE.Scene();
@@ -245,10 +233,6 @@ function init() {
         {
             var layers = config.layers;
 
-            var d = (config.sceneSize/2.0) / Math.tan(camera.fov/2.0*Math.PI/180.0);
-            controls.distance = d;
-            camera.position.z = controls.distance;
-            camera.lookAt( new THREE.Vector3(0, 0, 0) );
 
             //
             // Add HTML visibility controls for each layer
@@ -336,6 +320,24 @@ function init() {
 
         }
     }
+
+    // trackball
+    {
+        //controls = new THREE.TrackballControls( camera, scene );
+        controls = new THREE.GISControls( camera, scene, document.getElementById('container') );
+        controls.maxDistance = 10000;
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 1.5;
+        controls.panSpeed = 1.8;
+        controls.keys = [ 65, 83, 68 ];
+        controls.addEventListener( 'change', requestRender );
+
+        var d = (config.sceneSize/2.0) / Math.tan(camera.fov/2.0*Math.PI/180.0);
+        controls.distance = d;
+        camera.position.z = controls.distance;
+        camera.lookAt( new THREE.Vector3(0, 0, 0) );
+    }
+
 
     // renderer
     {
