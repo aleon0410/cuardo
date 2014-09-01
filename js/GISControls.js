@@ -18,7 +18,7 @@ THREE.GISControls = function ( object, scene, domElement) {
 
     this.zoomSpeed = 1.0;
 
-    this.altitude = 0;
+    this.altitude = 200;
 
     // Limits to how far you can dolly in and out
     this.minDistance = 0;
@@ -152,6 +152,7 @@ THREE.GISControls = function ( object, scene, domElement) {
     this.update = function () {
 
         // compute altitude of terrain at the center of the scene
+        var vector;
         if (this.scene)
         {
             var objects = [];
@@ -160,14 +161,17 @@ THREE.GISControls = function ( object, scene, domElement) {
                     objects.push( obj );
                 }
             });
-            var vector = new THREE.Vector3(0.5, 0.5, 0.5);
+            var vector = new THREE.Vector3(0, 0, 0);
             var projector = new THREE.Projector();
             vector = projector.unprojectVector( vector, camera );
 
             var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 
             var intersects = raycaster.intersectObjects( objects );
-            if  (intersects.length) this.altitude = intersects[0].point.z;
+            if  (intersects.length){
+                if ( Math.abs(this.altitude - intersects[0].point.z) > 1 )
+                    this.altitude += (intersects[0].point.z-this.altitude)*.1; // smooth update
+            }
         }
 
 

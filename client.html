@@ -195,6 +195,7 @@ function actionToggle(cb) {
 }
 
 function init() {
+
     window.addEventListener( 'resize', onWindowResize, false );
 
     document.getElementById('container').addEventListener( 'mousedown', onDocumentMouseDown, false );
@@ -324,7 +325,7 @@ function init() {
     // trackball
     {
         //controls = new THREE.TrackballControls( camera, scene );
-        controls = new THREE.GISControls( camera, scene, document.getElementById('container') );
+        controls = new THREE.GISControls( camera, null, document.getElementById('container') );
         controls.maxDistance = 10000;
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
