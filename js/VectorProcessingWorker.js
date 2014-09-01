@@ -825,7 +825,8 @@ onmessage = function(o) {
             }
             break;
             case "Polygon": {
-                res = processPolygon( feat.geometry.coordinates, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T );
+                var r = processPolygon( feat.geometry.coordinates, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T );
+                res.merge(r);
             }
             break;
             default:
