@@ -448,7 +448,7 @@ function closePopIn()
     elt.style.display = 'none';
 }
 
-function onAction( layerUrl, gid, actionIdx ) {
+function onAction( layerUrl, gid, actionIdx, position ) {
     var layerName = /typeName=([^&]+)/.exec(layerUrl);
 
     var q = layerUrl+'&featureId='+layerName[1]+'.'+gid;
@@ -457,6 +457,13 @@ function onAction( layerUrl, gid, actionIdx ) {
             var props = data.features[0].properties;
 
             var elt = document.getElementById('popin_window');
+
+            if (position){
+            console.log('position', position);
+                elt.style.top = position.y+'px';
+                elt.style.left = position.x+'px';
+            }
+
             var html = '';
             if (actionIdx === 0 ) {
                 html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
@@ -525,7 +532,7 @@ function onDocumentMouseDown( event ) {
         var gid = map[ intersects[ idx ].indices[0] ];
         console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
 
-        onAction( object.userData.url, gid, currentTool );
+        onAction( object.userData.url, gid, currentTool, {x:event.clientX, y:event.clientY} );
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);
