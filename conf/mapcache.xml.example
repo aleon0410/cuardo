@@ -4,7 +4,7 @@
 
 <mapcache>
    <cache name="disk" type="disk">
-      <base>/home/mapcache</base>
+      <base>/tmp</base>
       <symlink_blank/>
    </cache>
 
@@ -88,6 +88,6 @@
    <service type="demo" enabled="true"/>
 
    <errors>report</errors>
-   <lock_dir>/home/mapcache</lock_dir>
+   <lock_dir>/tmp</lock_dir>
 
 </mapcache>
