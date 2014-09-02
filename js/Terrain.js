@@ -87,6 +87,7 @@ var fragmentShader = [
         "#ifdef MAX_MAPS",
 
         "       uniform sampler2D maps[MAX_MAPS];",
+        "       uniform int visibleMaps[MAX_MAPS];",
         
         "#endif",
 
@@ -100,21 +101,23 @@ var fragmentShader = [
 
         "void main() {",
 
-        "        gl_FragColor = vec4( vec3( 1.0 ), opacity );",
+        //"        gl_FragColor = vec4( vec3( 1.0 ), opacity );",
+        "        gl_FragColor = vec4(1);",
 
                 THREE.ShaderChunk[ "logdepthbuf_fragment" ],
                 THREE.ShaderChunk[ "map_fragment" ],
 
                 "#ifdef MAX_MAPS",
 
+
                 "        vec4 texelColor = vec4(1);",
 
                 "        for (int i=0; i<MAX_MAPS; i++)",
-                "               texelColor*=texture2D( maps[i], vUv );",
+                "               texelColor *= (visibleMaps[i] == 1 ? texture2D( maps[i], vUv ) : vec4(1));",
 
                 "        #ifdef GAMMA_INPUT",
 
-                "                texelColor.xyz *= texelColor.xyz;",
+                //"                texelColor.xyz *= texelColor.xyz;",
 
                 "        #endif",
 
@@ -157,7 +160,11 @@ var fragmentShader = [
 
 Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
     this.urlDem = urlDem;
+
     this.urlTex = urlTex ? (urlTex instanceof Array ? urlTex : [urlTex] ) : [];
+    this.visibleTex = [];
+    for (var i=0; i< this.urlTex.length; i++) this.visibleTex.push(1);
+
     this.translation = translation;
     this.srid = 3946;
     this.extent = [1780810,5111630,1905820,5242220];
@@ -211,8 +218,6 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
             }
             geom.computeVertexNormals();
             //geom.computeTangents();
-            console.log('getImageData', object.getImageData( textureTex[1].image ));
-            console.log('textureTex',  textureTex[1]);
             var material = new THREE.MeshLambertMaterial( 
                     { color: 0xfffffff,
                       map : textureTex[0] || null,
@@ -220,13 +225,12 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
                     } );
             var lambertShader = THREE.ShaderLib['lambert'];
             var uniforms = THREE.UniformsUtils.clone(lambertShader.uniforms);
-            uniforms['maps'] = { type: "tv", value: [] };
-            uniforms['maps'].value = textureTex;
+            uniforms['visibleMaps'] = { type: "iv1", value: object.visibleTex };
+            uniforms['maps'] = { type: "tv", value: textureTex };
             //uniforms['map'].value = textureTex[0];
             uniforms['diffuse'].value.setHex(0xffffff);
-            uniforms['ambient'].value.setHex(0xffffff);
-            uniforms['reflectivity'].value = 1;
-            //console.log(lambertShader.fragmentShader);
+            uniforms['ambient'].value.setHex(0x555555);
+            uniforms['reflectivity'].value = 0;
             var newmaterial = new THREE.ShaderMaterial(
                     {
                         uniforms: uniforms,
