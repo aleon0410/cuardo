@@ -211,8 +211,8 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
             }
             geom.computeVertexNormals();
             //geom.computeTangents();
-            console.log('getImageData', object.getImageData( textureTex[1].image ));
-            console.log('textureTex',  textureTex[1]);
+//            console.log('getImageData', object.getImageData( textureTex[1].image ));
+//            console.log('textureTex',  textureTex[1]);
             var material = new THREE.MeshLambertMaterial( 
                     { color: 0xfffffff,
                       map : textureTex[0] || null,
