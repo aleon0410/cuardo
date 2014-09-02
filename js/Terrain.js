@@ -6,11 +6,17 @@ var vertexShader= [
 
         "#ifdef DOUBLE_SIDED",
 
-        "	varying vec3 vLightBack;",
+        "        varying vec3 vLightBack;",
 
         "#endif",
 
-        THREE.ShaderChunk[ "map_pars_vertex" ],
+        "#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( MAX_MAPS )",
+
+        "	varying vec2 vUv;",
+        "	uniform vec4 offsetRepeat;",
+
+        "#endif",
+
         THREE.ShaderChunk[ "lightmap_pars_vertex" ],
         THREE.ShaderChunk[ "envmap_pars_vertex" ],
         THREE.ShaderChunk[ "lights_lambert_pars_vertex" ],
@@ -22,7 +28,12 @@ var vertexShader= [
 
         "void main() {",
 
-                THREE.ShaderChunk[ "map_vertex" ],
+		"#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( MAX_MAPS )",
+
+		"	vUv = uv * offsetRepeat.zw + offsetRepeat.xy;",
+
+		"#endif",
+
                 THREE.ShaderChunk[ "lightmap_vertex" ],
                 THREE.ShaderChunk[ "color_vertex" ],
 
@@ -40,7 +51,7 @@ var vertexShader= [
                 THREE.ShaderChunk[ "envmap_vertex" ],
                 THREE.ShaderChunk[ "lights_lambert_vertex" ],
                 THREE.ShaderChunk[ "shadowmap_vertex" ],
-                "vLightFront = vec3(1);",
+                //"vLightFront = vec3(1);",
 
         "}"
 
@@ -54,12 +65,32 @@ var fragmentShader = [
 
         "#ifdef DOUBLE_SIDED",
 
-        "	varying vec3 vLightBack;",
+        "        varying vec3 vLightBack;",
 
         "#endif",
 
         THREE.ShaderChunk[ "color_pars_fragment" ],
-        THREE.ShaderChunk[ "map_pars_fragment" ],
+
+
+        "#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( MAX_MAPS )",
+
+        "	varying vec2 vUv;",
+
+        "#endif",
+
+        "#ifdef USE_MAP",
+
+        "	uniform sampler2D map;",
+
+        "#endif",
+
+        "#ifdef MAX_MAPS",
+
+        "       uniform sampler2D maps[MAX_MAPS];",
+        
+        "#endif",
+
+
         THREE.ShaderChunk[ "lightmap_pars_fragment" ],
         THREE.ShaderChunk[ "envmap_pars_fragment" ],
         THREE.ShaderChunk[ "fog_pars_fragment" ],
@@ -69,28 +100,47 @@ var fragmentShader = [
 
         "void main() {",
 
-        "	gl_FragColor = vec4( vec3( 1.0 ), opacity );",
+        "        gl_FragColor = vec4( vec3( 1.0 ), opacity );",
 
                 THREE.ShaderChunk[ "logdepthbuf_fragment" ],
                 THREE.ShaderChunk[ "map_fragment" ],
+
+                "#ifdef MAX_MAPS",
+
+                "        vec4 texelColor = vec4(1);",
+
+                "        for (int i=0; i<MAX_MAPS; i++)",
+                "               texelColor*=texture2D( maps[i], vUv );",
+
+                "        #ifdef GAMMA_INPUT",
+
+                "                texelColor.xyz *= texelColor.xyz;",
+
+                "        #endif",
+
+                "        gl_FragColor = gl_FragColor * texelColor;",
+
+                "#endif",
+                
                 THREE.ShaderChunk[ "alphatest_fragment" ],
                 THREE.ShaderChunk[ "specularmap_fragment" ],
 
-        "	#ifdef DOUBLE_SIDED",
+
+        "        #ifdef DOUBLE_SIDED",
 
                         //"float isFront = float( gl_FrontFacing );",
                         //"gl_FragColor.xyz *= isFront * vLightFront + ( 1.0 - isFront ) * vLightBack;",
 
-        "		if ( gl_FrontFacing )",
-        "			gl_FragColor.xyz *= vLightFront;",
-        "		else",
-        "			gl_FragColor.xyz *= vLightBack;",
+        "                if ( gl_FrontFacing )",
+        "                        gl_FragColor.xyz *= vLightFront;",
+        "                else",
+        "                        gl_FragColor.xyz *= vLightBack;",
 
-        "	#else",
+        "        #else",
 
-        "		gl_FragColor.xyz *= vLightFront;",
+        "                gl_FragColor.xyz *= vLightFront;",
 
-        "	#endif",
+        "        #endif",
 
                 THREE.ShaderChunk[ "lightmap_fragment" ],
                 THREE.ShaderChunk[ "color_fragment" ],
@@ -170,18 +220,20 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
                     } );
             var lambertShader = THREE.ShaderLib['lambert'];
             var uniforms = THREE.UniformsUtils.clone(lambertShader.uniforms);
-            uniforms['map'].texture = textureTex[0];
+            uniforms['maps'] = { type: "tv", value: [] };
+            uniforms['maps'].value = textureTex;
+            //uniforms['map'].value = textureTex[0];
             uniforms['diffuse'].value.setHex(0xffffff);
             uniforms['ambient'].value.setHex(0xffffff);
-            uniforms['reflectivity'].value = 0;
+            uniforms['reflectivity'].value = 1;
             //console.log(lambertShader.fragmentShader);
             var newmaterial = new THREE.ShaderMaterial(
                     {
                         uniforms: uniforms,
                         vertexShader: vertexShader,
                         fragmentShader: fragmentShader,
-                        defines : {'USE_MAP' : '1', 'USE_COLOR':'1', 'WRAP_AROUND':'0'},
-                        maxPointLights : 1
+                        defines : {'MAX_MAPS' : object.urlTex.length, 'USE_COLOR':'1', 'WRAP_AROUND':'0'},
+                        lights: true
                     }
                     );
             mesh = new THREE.Mesh(geom, newmaterial);
@@ -199,19 +251,11 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
 
     if (this.urlTex.length ) {
         for (var i=0; i<this.urlTex.length; i++){
-            if (i==0)
             textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i] + '&BBOX='+ext.join(','), 
                     null, 
                     function(){
                         loaded();
                     })
-            else
-            textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i], 
-                    null, 
-                    function(){
-                        loaded();
-                    })
-
         }
     }
 
