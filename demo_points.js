@@ -13,7 +13,7 @@ function getConfig()
     var baseUrl = "http://" + domain + "/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     var translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-    var terrain = new Terrain(urlDem, urlTex, translation, nbDiv);
+    var terrain = new Terrain(urlDem, [urlTex], translation, nbDiv);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
