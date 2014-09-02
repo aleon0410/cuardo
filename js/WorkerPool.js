@@ -14,7 +14,6 @@ WorkerPool = function( nWorkers, workerFile )
 
 WorkerPool.prototype.enqueueJob = function( msg, callback )
 {
-    console.log(this.freeWorkers);
     if ( this.freeWorkers.length > 0 ) {
         var wi = this.freeWorkers.shift();
         console.log('[WorkerPool] Using worker #' + wi, this.freeWorkers.length );
