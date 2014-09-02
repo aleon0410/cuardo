@@ -715,17 +715,23 @@ function processPoint( point, properties, tile, translation, symbology ) {
     var ee = function(e) {
         return evalExpression(e, properties);
     }
-    var s = ee(symbology.size) / 2.0;
     var tx = translation.x;
     var ty = translation.y;
     var tz = 0.0;
     if (point.length >= 3) {
         tz += point[2] + translation.z;
     }
+    var xx = point[0] + tx;
+    var yy = point[1] + ty;
+    if ( xx < tile.bbox[0] || xx > tile.bbox[2] || yy < tile.bbox[1] || yy > tile.bbox[3] ) {
+        return res;
+    }
+    var s = ee(symbology.size) / 2.0;   
+
     if ( symbology.draping ) {
         var zOffset = (ee(symbology.zOffsetPercent) * tile.size || 0)
             + (ee(symbology.zOffset) || 0);
-        tz = gridAltitude( point[0] + tx, point[1] + ty, tile ) + zOffset + s;
+        tz = gridAltitude( xx, yy, tile ) + zOffset + s;
     }
 
     var shape = ee(symbology.shape);
@@ -786,6 +792,8 @@ onmessage = function(o) {
     var data = o.data.data;
     var ctxt = o.data.ctxt;
     var tileId = o.data.tileId;
+    var workerId = o.data.workerId;
+
     // timers
     var T = {
         global: new Timer(),
@@ -808,13 +816,14 @@ onmessage = function(o) {
     var res = new PolygonGeometries();
     var tile = new Tile( ctxt.center, ctxt.size, ctxt.nbIntervals, ctxt.gridVertices );
 
-    data.features.forEach( function(feat) {
-        switch ( feat.geometry.type ) {
+    try {
+        data.features.forEach( function(feat) {
+            switch ( feat.geometry.type ) {
             case "Point": {
                 var r = processPoint( feat.geometry.coordinates, feat.properties, tile, ctxt.translation, ctxt.symbology );
                 res.merge(r);
             }
-            break;
+                break;
             case "MultiPolygon": {
                 feat.geometry.coordinates.forEach( function(poly){
                     var r = processPolygon(poly, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T);
@@ -823,16 +832,22 @@ onmessage = function(o) {
                     T['merge'].stop();
                 });
             }
-            break;
+                break;
             case "Polygon": {
                 var r = processPolygon( feat.geometry.coordinates, feat.geometry.bbox, feat.properties, tile, ctxt.translation, ctxt.symbology, T );
                 res.merge(r);
             }
-            break;
+                break;
             default:
-            throw "Unsupported geometry type " + feat.geometry.type;
-        }
-    });
+                throw "Unsupported geometry type " + feat.geometry.type;
+            }
+        });
+    }
+    catch (err)
+    {
+        postMessage({error:err, workerId:workerId, tileId:tileId});
+        return;
+    }
 
     T['convert'].start();
     var trGeom = res.geometry.bufferGeometry();
@@ -859,7 +874,7 @@ onmessage = function(o) {
         s += ' ' + t + ': ' + T[t].get();
     }
     console.log('Timing ' + s );
-    postMessage( { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: tileId, sendDate: new Date().getTime() }, 
+    postMessage( { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: tileId, sendDate: new Date().getTime(), workerId: workerId }, 
             trGeom.attributes.position.array.length ? [
             trGeom.attributes.position.array.buffer, 
             trGeom.attributes.index.array.buffer,

@@ -13,20 +13,6 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     var split = this.url.split('?');
     var baseUrl = split[0];
 
-/*    // Level of details
-    // Sorted array of pairs (size,layer_name)
-    // The layer_name will be used for every tile size bigger or equal to size
-    // If layer_name is empty, nothing will be returned for these sizes
-    if ( levels === undefined ) {
-        var l = /typeName=([^&]+)/.exec(split[1]);
-        if (l) {
-            levels = [{size:0, layer:l[l.length-1]}]
-        }
-        else {
-            throw 'You must specify at least one level of detail';
-        }
-    }
-    this.levels = levels;*/
     this.range = range || [0,1000000];
 
     jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
@@ -49,18 +35,15 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     // map of tileId -> callbacks
     this.continuations = {};
     var that = this;
-    this.workers = [];
-    this.maxWorkers = 4;
-    for ( var i = 0; i < this.maxWorkers; i++ ) {
-        this.workers[i] = new Worker('js/VectorProcessingWorker.js');
-        // mesh building after features have been processed
-        this.workers[i].onmessage = function(o) { return that.onVectorProcessed(o); };
+
+    // worker pool shared by all instances
+    var nWorkers = 4;
+    if ( WfsLayer.workerPool === undefined ) {
+        WfsLayer.workerPool = new WorkerPool( nWorkers, 'js/VectorProcessingWorker.js' );
     }
-    this.currentWorker = 0;
 
     this.loaded = [];
 };
-
 
 WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
@@ -109,10 +92,14 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         var reqend = new Date().getTime();
         // call the worker to process these features
 
-        var worker = object.workers[object.currentWorker];
-        console.log('(Cache) GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
-        worker.postMessage( {data:loadedData, ctxt:ctxt, tileId:tileId} );
-        object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
+        console.log('(Cache) GET time ' + (reqend-reqstart));
+        WfsLayer.workerPool.enqueueJob( {data: loadedData, ctxt:ctxt, tileId:tileId},
+                                        (function( obj ) {
+                                            return function( o ) {
+                                                obj.onVectorProcessed( o );
+                                            }
+                                        }) ( object )
+                                      );
         return;
     }
 
@@ -125,10 +112,14 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             var reqend = new Date().getTime();
             // call the worker to process these features
 
-            var worker = object.workers[object.currentWorker];
-            console.log('GET time ' + (reqend-reqstart) + " using worker #" + object.currentWorker);
-            worker.postMessage( {data:data, ctxt:ctxt, tileId:tileId} );
-            object.currentWorker = (object.currentWorker + 1) % object.maxWorkers;
+            console.log('GET time ' + (reqend-reqstart));
+            WfsLayer.workerPool.enqueueJob( {data:data, ctxt:ctxt, tileId:tileId}, 
+                                            (function( obj ) {
+                                                return function( o ) {
+                                                    obj.onVectorProcessed( o );
+                                                }
+                                            }) ( object )
+                                          );
         },
         async:   true,
         dataType: 'json',
@@ -142,6 +133,14 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 WfsLayer.prototype.onVectorProcessed = function( o ) {
     // function called after worker has been executed
     var r = o.data;
+    WfsLayer.workerPool.releaseWorker( r.workerId );
+
+    var group = new THREE.Object3D();
+    if ( r.error !== undefined ) {
+        console.log("*** Worker error *** : " + r.error );
+        this.continuations[r.tileId](group);
+        return;
+    }
 
     var timing = new Date().getTime() - r.sendDate;
     console.log('Copy from worker ' + timing);
@@ -167,7 +166,6 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
               //vertexColors: (this.symbology.polygon.colorFun ? THREE.FaceColors : THREE.NoColors),
               blending: THREE.NormalBlending } );
 
-    var group = new THREE.Object3D();
     var mesh = new THREE.Mesh( geom, material );
     mesh.userData = {name:'mesh', url:this.url, vertexGidMap:r.gidMap};
     group.add(mesh);
