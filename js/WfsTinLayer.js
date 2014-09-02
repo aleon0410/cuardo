@@ -33,6 +33,9 @@ WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, ra
 
     //this.symbology = {polygon:{extrude:'hfacade'}};
     this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};
+
+    // map of texture url -> material for already loaded textures
+    this.textures = {};
 };
 
 var EPSILON = 1e-6;
@@ -58,9 +61,13 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     var object = this;
 
+
     console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
+            var remainingTextures = 0;
+            var asyncCallback = false;
+
             var nbPoly = 0;
             var group = new THREE.Object3D();
             data.features.forEach( function(feat) {
@@ -105,9 +112,25 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
 
                     tex = {url:texP[1],
                         uv:JSON.parse(texP[2].replace("{","[","g").replace("}","]","g"))};
-                    material = new THREE.MeshLambertMaterial({
-                            map: THREE.ImageUtils.loadTexture(object.urlImageBase + tex.url)
+                    var texUrl = object.urlImageBase + tex.url;
+                    var mat = object.textures[texUrl];
+                    if ( mat ) {
+                        // texture already loaded
+                        material = mat;
+                    }
+                    else {
+                        asyncCallback = true;
+                        remainingTextures++;
+                        material = new THREE.MeshLambertMaterial({
+                            map: THREE.ImageUtils.loadTexture(texUrl, undefined,
+                                                              function(){
+                                                                  if (!--remainingTextures) {
+                                                                      callback(group);
+                                                                  }
+                                                              })
                         });
+                        object.textures[texUrl] = material;
+                    }
                 }
                 else {
                     material =  new THREE.MeshLambertMaterial( 
@@ -140,8 +163,9 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                 group.add(new THREE.Mesh( geom, material ));
             });
 
-            
-            callback(group);
+            if (!asyncCallback) {
+                callback(group);
+            }
         },
         async:   true,
         dataType: 'json',
