@@ -1,6 +1,6 @@
 WorkerPool = function( nWorkers, workerFile )
 {
-    this.nWorkers = nWorkers || 4;
+    this.nWorkers = nWorkers;
     this.workers = [];
     // list of free workers
     this.freeWorkers = []

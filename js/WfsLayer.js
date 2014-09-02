@@ -37,7 +37,7 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     var that = this;
 
     // worker pool shared by all instances
-    var nWorkers = 4;
+    var nWorkers = localStorage.nWorkers || 8;
     if ( WfsLayer.workerPool === undefined ) {
         WfsLayer.workerPool = new WorkerPool( nWorkers, 'js/VectorProcessingWorker.js' );
     }
