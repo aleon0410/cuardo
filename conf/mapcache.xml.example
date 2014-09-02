@@ -47,6 +47,29 @@
          <url>https://download.data.grandlyon.com/wms/grandlyon</url>
       </http>
    </source>
+
+    <source name="grandlyon_plan" type="wms">
+       <getmap>
+          <params>
+             <FORMAT>image/jpeg</FORMAT>
+             <LAYERS>PlanGuide_VueEnsemble_625cm_CC46</LAYERS>
+          </params>
+       </getmap>
+       <http>
+          <url>https://download.data.grandlyon.com/wms/grandlyon</url>
+       </http>
+    </source>
+
+    <tileset name="plan">
+       <source>grandlyon_plan</source>
+       <cache>disk</cache>
+       <grid>testgrid</grid>
+       <grid>g</grid>
+       <format>jpeg</format>
+       <metatile>5 5</metatile>
+       <metabuffer>10</metabuffer>
+       <expires>3600</expires>
+    </tileset>
    
    <tileset name="mnt">
       <source>grandlyon_mnt</source>
