@@ -6,6 +6,7 @@ function alert(msg)
 
 importScripts('../thirdparty/clipper.js');
 //importScripts('../thirdparty/poly2tri.js');
+importScripts('https://raw.githubusercontent.com/r3mi/poly2tri.js/master/dist/poly2tri.min.js');
 importScripts('//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js');
 importScripts('//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js'); 
 importScripts('Symbology.js');
