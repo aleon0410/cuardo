@@ -79,12 +79,13 @@ function getConfig()
     // Actions on identify
     var actions = [
         {url: urlArrond, name: "Infos arrondissement", action: function(props) {
+            var n = props.nomreduit.substring(5);
             var art;
-            if (props.gid == 1) {
+            if (n == 1) {
                 art = '1er_arrondissement_de_Lyon';
             }
             else {
-                art = props.gid + 'e_arrondissement_de_Lyon';
+                art = n + 'e_arrondissement_de_Lyon';
             }
             window.open("http://fr.wikipedia.org/wiki/" + art);
             }
