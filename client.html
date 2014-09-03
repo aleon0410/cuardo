@@ -184,8 +184,8 @@ function onReplay()
             var kj = keyframes[i];
             var n = (kj.dt - ki.dt) / time_per_frame;
             for (var j = 0; j <= n; j++ ) {
-                // interpolate
-                var alpha = j/n;
+                // cosine interpolation
+                var alpha = (1-Math.cos(j/n*Math.PI))/2.0;
                 var p = [];
                 for ( var k = 0; k < ki.p.length; k++ ) {
                     p.push( kj.p[k] * alpha + ki.p[k] * (1-alpha) );
