@@ -163,7 +163,13 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
 
     this.urlTex = urlTex ? (urlTex instanceof Array ? urlTex : [urlTex] ) : [];
     this.visibleTex = [];
-    for (var i=0; i< this.urlTex.length; i++) this.visibleTex.push(1);
+    for (var i=0; i< this.urlTex.length; i++) {
+        if (this.urlTex[i].url === undefined ) {
+            var url = this.urlTex[i];
+            this.urlTex[i] = {url:url, name:'Texture #' + i};
+        }
+        this.visibleTex.push(1);
+    }
 
     this.translation = translation;
     this.srid = 3946;
@@ -255,7 +261,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
 
     if (this.urlTex.length ) {
         for (var i=0; i<this.urlTex.length; i++){
-            textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i] + '&BBOX='+ext.join(','), 
+            textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i].url + '&BBOX='+ext.join(','), 
                     null, 
                     function(){
                         loaded();

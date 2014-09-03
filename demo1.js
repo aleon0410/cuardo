@@ -14,7 +14,7 @@ function getConfig()
     var baseUrl = "http://" + domain + "/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     var translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-    var terrain = new Terrain(urlDem, [urlTex, urlPlan ], translation, nbDiv);
+    var terrain = new Terrain(urlDem, [{url:urlTex,name:'Ortho photo'}, {url:urlPlan,name:'Plan'} ], translation, nbDiv);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
@@ -127,7 +127,7 @@ function getConfig()
     // List of layers with tilers
     var layers = [{name:'Terrain', levels:[terrain]},
                   {name:'Arrondissements', levels:[arrond]},
-                  {name:'Bati', levels:[lod0,lod1,lod2,lod4,lod5, tin]}
+                  {name:'Bati', levels:[lod4,lod5, tin]}
 ];
 
     // scene size 

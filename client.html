@@ -365,8 +365,8 @@ function init() {
                     d.innerHTML += '<div><input type="checkbox" name="layer" value="' + lid
                     + '" onclick="layerToggle(this);" checked="true">' + l.name + '</input>';
                     for (var i=0; i<l.levels[0].visibleTex.length; i++){
-                        d.innerHTML += '<input type="checkbox" name="layer" value="' + i
-                        + '" onclick="terrainToggle(this);" checked="true"></input>';
+                        d.innerHTML += '&nbsp;&nbsp;<input type="checkbox" name="layer" value="' + i
+                        + '" onclick="terrainToggle(this);" checked="true">' + l.levels[0].urlTex[i].name + '</input><br/>';
                     }
                     d.innerHTML += '</div>';
                     
