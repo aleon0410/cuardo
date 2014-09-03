@@ -154,33 +154,35 @@ function notification( text )
 var keyframes = [];
 function onRecord()
 {
-    keyframes.push( controls.getPosition() );
+    var p = controls.getPosition();
+    var last = 0;
+    if ( keyframes.length ) {
+        last = keyframes[keyframes.length-1].dt;
+    }
+    var dt = prompt("Date (in seconds):", last.toString());
+    dt = +(dt);
+    keyframes.push( {dt:dt, p:p.p, cam:p.cam} );
     notification('Record added (total:' + keyframes.length + ')');
 }
 
 function onReplay()
 {
-    // constant speed interpolation
-    var dist_per_frame = 50;
+    var fps = 10.0;
+    var time_per_frame = 1/fps;
+
     var positions = [];
     if ( keyframes.length == 0 ) {
         return;
     }
     if ( keyframes.length == 1 ) {
         var p = [keyframes[0]];
-        positions.push( p );
+        positions.push( {dt:0, p:keyframes[0].p} );
     }
     else {
         for (var i = 1; i < keyframes.length; i++ ) {
             var ki = keyframes[i-1];
             var kj = keyframes[i];
-            var pi = new THREE.Vector3(ki.cam[0], ki.cam[1], ki.cam[2]);
-            var pj = new THREE.Vector3(kj.cam[0], kj.cam[1], kj.cam[2]);
-            var d = pi.distanceTo(pj);
-            var n = 1;
-            if ( d > 0.1 ) {
-                var n = Math.ceil(d / dist_per_frame) | 0;
-            }
+            var n = (kj.dt - ki.dt) / time_per_frame;
             for (var j = 0; j <= n; j++ ) {
                 // interpolate
                 var alpha = j/n;
@@ -188,12 +190,12 @@ function onReplay()
                 for ( var k = 0; k < ki.p.length; k++ ) {
                     p.push( kj.p[k] * alpha + ki.p[k] * (1-alpha) );
                 }
-                positions.push( {p:p} );
+                positions.push( {p:p, dt:time_per_frame} );
             }
         }
     }
 
-    controls.animate( positions, 30 );
+    controls.animate( positions );
 }
 
 function onSaveAs()

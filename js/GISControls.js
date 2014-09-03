@@ -218,14 +218,14 @@ THREE.GISControls = function ( object, scene, domElement) {
 	this.dispatchEvent( changeEvent );
     }
 
-    this.animate = function( positions, fps )
+    this.animate = function( positions )
     {
         var that = this;
         var foo = function( pos ) {
             if ( pos.length ) {
                 var p = pos.shift();
                 that.setPosition( p );
-                setTimeout( function(){foo(pos);}, 1000/fps );
+                setTimeout( function(){foo(pos);}, p.dt );
             }
         }
         foo( positions.slice(0) );
