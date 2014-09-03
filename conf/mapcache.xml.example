@@ -60,6 +60,18 @@
        </http>
     </source>
 
+    <source name="grandlyon_no2" type="wms">
+       <getmap>
+          <params>
+             <FORMAT>image/jpeg</FORMAT>
+             <LAYERS>Carte_agglo_Lyon_NO2_2012</LAYERS>
+          </params>
+       </getmap>
+       <http>
+          <url>https://download.data.grandlyon.com/wms/smartdata</url>
+       </http>
+    </source>
+
     <tileset name="plan">
        <source>grandlyon_plan</source>
        <cache>disk</cache>
@@ -71,6 +83,17 @@
        <expires>3600</expires>
     </tileset>
    
+    <tileset name="no2">
+       <source>grandlyon_no2</source>
+       <cache>disk</cache>
+       <grid>testgrid</grid>
+       <grid>g</grid>
+       <format>jpeg</format>
+       <metatile>5 5</metatile>
+       <metabuffer>10</metabuffer>
+       <expires>3600</expires>
+    </tileset>
+
    <tileset name="mnt">
       <source>grandlyon_mnt</source>
       <cache>disk</cache>
