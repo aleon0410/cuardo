@@ -26,7 +26,7 @@ WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, ra
         async:   false,
         dataType: 'xml',
         error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus+' :'+errorThrown);
+            console.warn(textStatus+' :'+errorThrown);
             throw errorThrown;
         }
     });
@@ -62,7 +62,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
     var object = this;
 
 
-    console.log(this.url + '&BBOX='+ext.join(','));
+    //console.log(this.url + '&BBOX='+ext.join(','));
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
             var remainingTextures = 0;
@@ -170,7 +170,7 @@ WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
         async:   true,
         dataType: 'json',
         error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus+' :'+errorThrown);
+            console.warn(textStatus+' :'+errorThrown);
             throw errorThrown;
         }
     });

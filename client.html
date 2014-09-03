@@ -69,27 +69,31 @@ img.btn_close {
 <div id="popin_window" class="popin"></div>
 <div id="container"></div>
 
-<script src="thirdparty/three.js/build/three.js"></script> 
-<script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script>
-<script src="thirdparty/three.js/examples/js/Detector.js"></script>
-<script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script>
-<script src="thirdparty/three.js/examples/js/shaders/CopyShader.js"></script>
-<script src="thirdparty/three.js/examples/js/shaders/SSAOShader.js"></script>
-<script src="thirdparty/three.js/examples/js/shaders/BokehShader.js"></script>
-<script src="thirdparty/three.js/examples/js/shaders/FXAAShader.js"></script>
-<script src="thirdparty/three.js/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="thirdparty/three.js/examples/js/postprocessing/MaskPass.js"></script>
-<script src="thirdparty/three.js/examples/js/postprocessing/RenderPass.js"></script>
-<script src="thirdparty/three.js/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="thirdparty/three.js/examples/js/postprocessing/BokehPass.js"></script>
-<script src="thirdparty/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>
-<script src="thirdparty/three.js/src/extras/GeometryUtils.js"></script>
-<script src="thirdparty/three.js/examples/js/ShaderTerrain.js"></script>
-<script src="thirdparty/proj4-src.js"></script>
-<script src="thirdparty/proj4-srs.js"></script>
-<script src="thirdparty/jquery-2.1.1.js"></script>
-<script src="thirdparty/poly2tri.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js"></script> 
+<script src="//cdnjs.cloudflare.com/ajax/libs/proj4js/2.2.2/proj4.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js"></script>
+<!--script src="thirdparty/three.js/build/three.js"></script--> 
+<!--script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script-->
+<!--script src="thirdparty/three.js/examples/js/Detector.js"></script-->
+<!--script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script-->
+<script src="js/shaders/CopyShader.js"></script>
+<script src="js/shaders/SSAOShader.js"></script>
+<script src="js/shaders/BokehShader.js"></script>
+<script src="js/shaders/FXAAShader.js"></script>
+<script src="js/postprocessing/EffectComposer.js"></script>
+<script src="js/postprocessing/MaskPass.js"></script>
+<script src="js/postprocessing/RenderPass.js"></script>
+<script src="js/postprocessing/ShaderPass.js"></script>
+<script src="js/postprocessing/BokehPass.js"></script>
+<!--script src="thirdparty/three.js/examples/fonts/helvetiker_regular.typeface.js"></script-->
+<!--script src="thirdparty/three.js/src/extras/GeometryUtils.js"></script-->
+<!--script src="thirdparty/three.js/examples/js/ShaderTerrain.js"></script-->
 
+<!--script src="thirdparty/proj4-src.js"></script-->
+<!--script src="thirdparty/jquery-2.1.1.js"></script-->
+
+<script src="js/proj4-srs.js"></script>
 <script src="js/Terrain.js"></script>
 <script src="js/WfsLayer.js"></script>
 <script src="js/Tiler.js"></script>
@@ -315,7 +319,7 @@ function init() {
         }
 
         // grid
-        if (1)
+        if (0)
         {
             var helper = new THREE.GridHelper( 10000, 1000 );
             helper.setColors( 0x0000ff, 0xf0f0f0 );
@@ -394,6 +398,16 @@ function init() {
             effect.uniforms[ 'lumInfluence' ].value = .01;
             effect.uniforms[ 'aoClamp' ].value = .8;
             composer.addPass( effect );
+
+
+            var fxaa = new THREE.ShaderPass( THREE.FXAAShader );
+            var dpr = 1;
+            if (window.devicePixelRatio !== undefined) {
+                dpr = window.devicePixelRatio;
+            }
+            fxaa.uniforms['resolution'].value.set(1 / (window.innerWidth * dpr), 1 / (window.innerHeight * dpr));
+            //fxaa.renderToScreen = true;
+            composer.addPass(fxaa);
             
             // depth of field
             var bokehPass = new THREE.BokehPass( scene, camera, {
@@ -406,14 +420,6 @@ function init() {
             bokehPass.renderToScreen = true;
             composer.addPass( bokehPass );
 
-            var fxaa = new THREE.ShaderPass( THREE.FXAAShader );
-            var dpr = 1;
-            if (window.devicePixelRatio !== undefined) {
-                dpr = window.devicePixelRatio;
-            }
-            fxaa.uniforms['resolution'].value.set(1 / (window.innerWidth * dpr), 1 / (window.innerHeight * dpr));
-            fxaa.renderToScreen = true;
-            composer.addPass(fxaa);
             }
         }
     }

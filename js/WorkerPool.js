@@ -16,7 +16,7 @@ WorkerPool.prototype.enqueueJob = function( msg, callback )
 {
     if ( this.freeWorkers.length > 0 ) {
         var wi = this.freeWorkers.shift();
-        console.log('[WorkerPool] Using worker #' + wi, this.freeWorkers.length );
+        //console.log('[WorkerPool] Using worker #' + wi, this.freeWorkers.length );
         var worker = this.workers[wi];
         msg.workerId = wi;
         worker.onmessage = callback;
@@ -24,7 +24,7 @@ WorkerPool.prototype.enqueueJob = function( msg, callback )
     }
     else {
         // else, all workers are busy
-        console.log('[WorkerPool] All workers busy, enqueing ...');
+        //console.log('[WorkerPool] All workers busy, enqueing ...');
         this.jobqueue.push( [msg, callback] );
     }
 }

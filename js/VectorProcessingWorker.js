@@ -5,8 +5,9 @@ function alert(msg)
 }
 
 importScripts('../thirdparty/clipper.js');
-importScripts('../thirdparty/poly2tri.js');
-importScripts('../thirdparty/three.js/build/three.js');
+//importScripts('../thirdparty/poly2tri.js');
+importScripts('//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js');
+importScripts('//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js'); 
 importScripts('Symbology.js');
 
 var EPSILON = 1e-6;
@@ -617,7 +618,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
             res.errSpotGeometry = lines(err.points);
             res.errGeometry = lines(contours);
         }
-        console.log('failed feature triangulation gid=',properties.gid, err);
+        //console.log('failed feature triangulation gid=',properties.gid, err);
         return res;
     }
 
@@ -873,7 +874,7 @@ onmessage = function(o) {
     for ( var t in T ) {
         s += ' ' + t + ': ' + T[t].get();
     }
-    console.log('Timing ' + s );
+    //console.log('Timing ' + s );
     postMessage( { geom:trGeom, lineGeom:trLineGeom, errGeom:trErrGeom, errSpotGeom:trErrSpotGeom, wallGeom:trWallGeom, gidMap:trGidMap, gidMapWall:trGidMapWall, tileId: tileId, sendDate: new Date().getTime(), workerId: workerId }, 
             trGeom.attributes.position.array.length ? [
             trGeom.attributes.position.array.buffer, 

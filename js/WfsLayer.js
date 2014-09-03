@@ -26,9 +26,9 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
         async:   false,
         dataType: 'xml',
         error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus+' :'+errorThrown);
+            console.warn(textStatus+' :'+errorThrown);
             throw errorThrown;
-        }
+        },
     });
 
 
@@ -92,7 +92,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         var reqend = new Date().getTime();
         // call the worker to process these features
 
-        console.log('(Cache) GET time ' + (reqend-reqstart));
+        //console.log('(Cache) GET time ' + (reqend-reqstart));
         WfsLayer.workerPool.enqueueJob( {data: loadedData, ctxt:ctxt, tileId:tileId},
                                         (function( obj ) {
                                             return function( o ) {
@@ -112,7 +112,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             var reqend = new Date().getTime();
             // call the worker to process these features
 
-            console.log('GET time ' + (reqend-reqstart));
+            //console.log('GET time ' + (reqend-reqstart));
             WfsLayer.workerPool.enqueueJob( {data:data, ctxt:ctxt, tileId:tileId}, 
                                             (function( obj ) {
                                                 return function( o ) {
@@ -137,13 +137,13 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
 
     var group = new THREE.Object3D();
     if ( r.error !== undefined ) {
-        console.log("*** Worker error *** : " + r.error );
+        console.warn("*** Worker error *** : " + r.error );
         this.continuations[r.tileId](group);
         return;
     }
 
     var timing = new Date().getTime() - r.sendDate;
-    console.log('Copy from worker ' + timing);
+    //console.log('Copy from worker ' + timing);
     var cloneFakeGeometry = function( g ) {
         // classes are not copied, only data
         // so we rebuild full objects here

@@ -94,7 +94,7 @@ QuadTree.prototype.setVisibleLayers = function( layers )
 QuadTree.prototype.addToCache = function( node )
 {
     // delete old tiles
-    console.log('nb nodes ' + this.cache.length + ' max ' + this.maxCachedTiles);
+    //console.log('nb nodes ' + this.cache.length + ' max ' + this.maxCachedTiles);
     if ( this.cache.length >= this.maxCachedTiles ) {
         var nb = this.cache.length - this.maxCachedTiles + 1;
         for ( var i = 0; i < nb; i++ ) {
