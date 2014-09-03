@@ -182,7 +182,6 @@ d.src = configSrc;
 function terrainToggle(cb) {
     scene.traverse( function ( object ) {
         if ( object.userData && object.userData.type == 'terrain' ) {
-            console.log(object);
             object.material.uniforms['visibleMaps'].value[+cb.value] = cb.checked;
         }
     } );
@@ -241,7 +240,6 @@ function init() {
                 n.value = i+1;
                 n.text = action.name;
                 elt.add(n);
-                console.log('elt', elt.innerHTML);
             }
         }
         
@@ -487,7 +485,6 @@ function onAction( layerUrl, gid, actionIdx, position ) {
             var elt = document.getElementById('popin_window');
 
             if (position){
-            console.log('position', position);
                 elt.style.top = position.y+'px';
                 elt.style.left = position.x+'px';
             }
@@ -513,7 +510,7 @@ function onAction( layerUrl, gid, actionIdx, position ) {
         async:   true,
         dataType: 'json',
         error: function(jqXHR, textStatus, errorThrown) {
-            console.log(jqXHR + textStatus+' :'+errorThrown);
+            console.warn(jqXHR + textStatus+' :'+errorThrown);
         }
     });
 }
@@ -558,7 +555,6 @@ function onDocumentMouseDown( event ) {
         if ( !object.visible ) continue;
         var map = object.userData.vertexGidMap;
         var gid = map[ intersects[ idx ].indices[0] ];
-        console.log('intersection ',object.userData.name,' on face',intersects[ idx ].faceIndex , ' gid', map[ intersects[ idx ].faceIndex ]);
 
         onAction( object.userData.url, gid, currentTool, {x:event.clientX, y:event.clientY} );
 
