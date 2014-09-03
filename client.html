@@ -230,10 +230,8 @@ function onKeyDown(e)
         break;
         case 76: // L
         {
-            var popin = document.getElementById('popin_window');
-            html = '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn()"/></a>';
-            popin.innerHTML = html + '<input type="file" id="inputFile"></input><br/><input type="button" value="Load" onClick="onLoad();closePopIn();"/>';
-            popin.style.display = 'block';
+            var html = '<input type="file" id="inputFile"></input><br/><input type="button" value="Load" onClick="onLoad();closePopIn();"/>';
+            openPopIn( html );
             break;
         }
         default:
@@ -565,6 +563,18 @@ function render(t) {
     TileLoader.instance().load( requestRender );
 }
 
+function openPopIn( html, px, py )
+{
+    var popin = document.getElementById('popin_window');
+    var h = '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn()"/></a>';
+    popin.innerHTML = h + html;
+    if ((px !== undefined) && (py !== undefined)) {
+        popin.style.top = py+'px';
+        popin.style.left = px+'px';
+    }
+    popin.style.display = 'block';
+}
+
 function closePopIn()
 {
     var elt = document.getElementById('popin_window');
@@ -579,23 +589,13 @@ function onAction( layerUrl, gid, actionIdx, position ) {
         success: function(data, textStatus, jqXHR) {
             var props = data.features[0].properties;
 
-            var elt = document.getElementById('popin_window');
-
-            if (position){
-                elt.style.top = position.y+'px';
-                elt.style.left = position.x+'px';
-            }
-
-            var html = '';
             if (actionIdx === 0 ) {
-                html += '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn"/></a>';
-                html += '<table>';
+                var html = '<table>';
                 for ( var k in props ) {
                     html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
                 }
                 html += '</table>';
-                elt.innerHTML = html;
-                elt.style.display = 'block';
+                openPopIn( html, position ? position.x : undefined, position ? position.y : undefined );
             }
             else {
                 var action = identifyActions[actionIdx-1];
