@@ -125,6 +125,7 @@ var renderAsked = true;
 // identify actions
 var identifyActions = []
 var currentTool = -1;
+var resetPosition;
 
 function progressTileLoading( nLoaded, nTotal )
 {
@@ -238,6 +239,9 @@ function onKeyDown(e)
             openPopIn( html );
             break;
         }
+        case 96: // 0
+        controls.setPosition(resetPosition);
+        break;
         default:
         break;
     }
@@ -536,6 +540,8 @@ function init() {
         stats.domElement.style.zIndex = 100;
         container.appendChild( stats.domElement );
     }
+
+    resetPosition = controls.getPosition();
 }
 
 function onWindowResize() {
