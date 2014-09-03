@@ -149,6 +149,21 @@ THREE.GISControls = function ( object, scene, domElement) {
 	}
     };
 
+    this.computeCameraPosition = function() {
+        // place the camera on a dome around the scene
+        this.phi = Math.min( this.maxPhi, Math.max( this.minPhi, this.phi ) );
+        this.distance = Math.min( this.distance, this.maxDistance );
+
+        this.object.position.x = this.distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
+        this.object.position.y = this.distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
+        this.object.position.z = this.distance * Math.cos( this.phi * Math.PI / 180 ) + this.altitude;
+
+        this.object.up.x = 0;
+        this.object.up.y = 0;
+        this.object.up.z = this.phi >= 0 ? 1 : -1;
+        this.object.lookAt( new THREE.Vector3(pan.x, pan.y, this.altitude) );
+    };
+
     this.update = function () {
 
         // compute altitude of terrain at the center of the scene
@@ -174,20 +189,7 @@ THREE.GISControls = function ( object, scene, domElement) {
             }
         }
 
-
-
-        // place the camera on a dome around the scene
-        this.phi = Math.min( this.maxPhi, Math.max( this.minPhi, this.phi ) );
-        scope.distance = Math.min( scope.distance, this.maxDistance );
-
-        this.object.position.x = scope.distance * Math.cos( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.x;
-        this.object.position.y = scope.distance * Math.sin( this.theta * Math.PI / 180 ) * Math.sin( this.phi * Math.PI / 180 ) + pan.y;
-        this.object.position.z = scope.distance * Math.cos( this.phi * Math.PI / 180 ) + this.altitude;
-
-        this.object.up.x = 0;
-        this.object.up.y = 0;
-        this.object.up.z = this.phi >= 0 ? 1 : -1;
-        this.object.lookAt( new THREE.Vector3(pan.x, pan.y, this.altitude) );
+        this.computeCameraPosition();
 
 	if ( lastPosition.distanceToSquared( this.object.position ) > EPS ) {
 	    this.dispatchEvent( changeEvent );
@@ -195,6 +197,39 @@ THREE.GISControls = function ( object, scene, domElement) {
 	}
     };
 
+    this.getPosition = function()
+    {
+        return { p : [this.theta, this.phi, this.distance, this.altitude, pan.x, pan.y],
+                 // not directly used for setting the position, but for distance computation
+                 cam: [this.object.position.x, this.object.position.y, this.object.position.z ]
+               };
+    }
+
+    this.setPosition = function( params )
+    {
+        
+        this.theta = params.p[0];
+        this.phi = params.p[1];
+        this.distance = params.p[2];
+        this.altitude = params.p[3];
+        pan.x = params.p[4];
+        pan.y = params.p[5];
+        this.computeCameraPosition();
+	this.dispatchEvent( changeEvent );
+    }
+
+    this.animate = function( positions, fps )
+    {
+        var that = this;
+        var foo = function( pos ) {
+            if ( pos.length ) {
+                var p = pos.shift();
+                that.setPosition( p );
+                setTimeout( function(){foo(pos);}, 1000/fps );
+            }
+        }
+        foo( positions.slice(0) );
+    };
 
     this.handleResize = function () {
     };

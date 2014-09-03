@@ -144,6 +144,103 @@ function tilerProgress( nLoaded, nTotal )
     d.max = nTotal;
 }
 
+function notification( text )
+{
+    var d = document.getElementById('displayInfo');
+    d.innerHTML = '<b>' + text + '</b>';
+    setTimeout(function(){ d.innerHTML = ''; }, 1000);
+}
+
+var keyframes = [];
+function onRecord()
+{
+    keyframes.push( controls.getPosition() );
+    notification('Record added (total:' + keyframes.length + ')');
+}
+
+function onReplay()
+{
+    // constant speed interpolation
+    var dist_per_frame = 50;
+    var positions = [];
+    if ( keyframes.length == 0 ) {
+        return;
+    }
+    if ( keyframes.length == 1 ) {
+        var p = [keyframes[0]];
+        positions.push( p );
+    }
+    else {
+        for (var i = 1; i < keyframes.length; i++ ) {
+            var ki = keyframes[i-1];
+            var kj = keyframes[i];
+            var pi = new THREE.Vector3(ki.cam[0], ki.cam[1], ki.cam[2]);
+            var pj = new THREE.Vector3(kj.cam[0], kj.cam[1], kj.cam[2]);
+            var d = pi.distanceTo(pj);
+            var n = 1;
+            if ( d > 0.1 ) {
+                var n = Math.ceil(d / dist_per_frame) | 0;
+            }
+            for (var j = 0; j <= n; j++ ) {
+                // interpolate
+                var alpha = j/n;
+                var p = [];
+                for ( var k = 0; k < ki.p.length; k++ ) {
+                    p.push( kj.p[k] * alpha + ki.p[k] * (1-alpha) );
+                }
+                positions.push( {p:p} );
+            }
+        }
+    }
+
+    controls.animate( positions, 30 );
+}
+
+function onSaveAs()
+{
+    urlContent = "data:application/octet-stream," + encodeURIComponent(JSON.stringify(keyframes));
+    window.open(urlContent, 'Records');
+}
+
+function onLoad()
+{
+    var file = document.getElementById('inputFile').files[0];
+    if ( file ) {
+        console.log(file);
+    }
+    var f = new FileReader();
+    f.onload = function(e) {
+        keyframes = JSON.parse( e.target.result );
+        notification('Loaded ' + keyframes.length + ' records');
+    };
+    f.readAsText(file);
+}
+
+function onKeyDown(e)
+{
+    switch ( e.keyCode ) {
+        case 82: // R
+        this.onRecord();
+        break;
+        case 80: // P
+        this.onReplay();
+        break;
+        case 83: // S
+        this.onSaveAs();
+        break;
+        case 76: // L
+        {
+            var popin = document.getElementById('popin_window');
+            html = '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn()"/></a>';
+            popin.innerHTML = html + '<input type="file" id="inputFile"></input><br/><input type="button" value="Load" onClick="onLoad();closePopIn();"/>';
+            popin.style.display = 'block';
+            break;
+        }
+        default:
+        break;
+    }
+}
+
 TileLoader.instance().setProgressCallback( progressTileLoading );
 TileLoader.instance().setTilerProgressCallback( tilerProgress );
 
@@ -211,6 +308,7 @@ function actionToggle(cb) {
 function init() {
 
     window.addEventListener( 'resize', onWindowResize, false );
+    window.addEventListener( 'keydown', onKeyDown, false );
 
     document.getElementById('container').addEventListener( 'mousedown', onDocumentMouseDown, false );
 
@@ -351,7 +449,6 @@ function init() {
 
     // trackball
     {
-        //controls = new THREE.TrackballControls( camera, scene );
         controls = new THREE.GISControls( camera, null, document.getElementById('container') );
         controls.maxDistance = config.sceneSize * 10;
         controls.rotateSpeed = 2.0;
