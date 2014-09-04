@@ -43,68 +43,6 @@ function getConfig()
 
     // base url of the WFS server
     var baseUrl = "/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
-    var roofsUrl = baseUrl+"&typeName=tows:toitures";
-
-    // filling color based on a function
-    var buildingClass = function (prop) {
-        var categories = [{min: 2.0,  max: 2.74, color:0xffffff},
-                          {min: 2.74, max: 4.27, color:0xafd1e7},
-                          {min: 4.27, max: 20.74, color:0x3d8dc3},
-                          {min: 20.74, max: 200,  color:0x08306b}];
-        for ( var i = 0; i < categories.length; i++ ) {
-            var klass = categories[i];
-            if ( (prop.hfacade >= klass.min) && (prop.hfacade < klass.max) ) {
-                return klass.color;
-            }
-        }
-        return 0x000000;
-    }
-
-    var roofs = new WfsLayer(
-        roofsUrl,
-        translation,
-        nbDiv,
-        terrain,
-        {
-            zOffsetPercent:2e-3,
-            zOffset:10,
-            polygon:
-            {
-                color: { expression: buildingClass.toString() },
-                lineColor: 0x000000,
-                lineWidth: 3
-            }
-        },
-        [sceneSize/2+1,10000] // <- visibility range
-    );
-
-
-    // use the "hfacade" property as height to extrude polygons
-    var symbologyExtruded = {
-        zOffsetPercent:2e-3,
-        zOffset:10,
-        polygon:
-        {
-            extrude: { property: "hfacade" },
-            color: { expression: buildingClass.toString() }
-        }
-    };
-    var extruded = new WfsLayer(
-        roofsUrl,
-        translation,
-        nbDiv,
-        terrain,
-        {
-            zOffsetPercent:2e-3,
-            zOffset:10,
-            polygon:
-            {
-                extrude: { property: "hfacade" },
-                color: { expression: buildingClass.toString() }
-            }
-        },
-        [sceneSize/4+1,sceneSize/2+1] // <- visibility range
-    );
 
     //
     // textured TIN layer
@@ -117,10 +55,8 @@ function getConfig()
         urlImageBase,
         translation,
         nbDiv,
-        terrain,
-        [0, sceneSize/4+1]
+        terrain
     );
-
     
     //
     // List of layers for the UI
@@ -128,10 +64,6 @@ function getConfig()
         {
             name:'Terrain',
             levels:[terrain]
-        },
-        {
-            name:'Roofs',
-            levels:[roofs, extruded] // <- LODs
         },
         {
             name:'Buildings',
@@ -142,7 +74,7 @@ function getConfig()
     // max depth of the quad tree
     // 2^maxLOD subdivisions
     // increase to have better quality when zooming in
-    var maxLOD = 2;
+    var maxLOD = 0;
 
     return {
         layers:layers,

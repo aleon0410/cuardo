@@ -67,7 +67,7 @@ function getConfig()
         terrain,
         {
             zOffsetPercent:2e-3,
-            zOffset:10,
+            zOffset:0.5,
             polygon:
             {
                 color: { expression: buildingClass.toString() },
@@ -82,7 +82,7 @@ function getConfig()
     // use the "hfacade" property as height to extrude polygons
     var symbologyExtruded = {
         zOffsetPercent:2e-3,
-        zOffset:10,
+        zOffset:0.5,
         polygon:
         {
             extrude: { property: "hfacade" },
@@ -96,7 +96,7 @@ function getConfig()
         terrain,
         {
             zOffsetPercent:2e-3,
-            zOffset:10,
+            zOffset:0.5,
             polygon:
             {
                 extrude: { property: "hfacade" },

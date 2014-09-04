@@ -47,7 +47,7 @@ function getConfig()
     // simple filling
     var symbology1 = {
         zOffsetPercent:2e-3, // Z fighting
-        zOffset:10,
+        zOffset:0.5,
         polygon:
         {
             color: 0x0000ff // <- blue
@@ -57,7 +57,7 @@ function getConfig()
     // simple filling with contours
     var symbology2 = {
         zOffsetPercent:2e-3, // Z fighting
-        zOffset:10,
+        zOffset:0.5,
         polygon:
         {
             color: 0x0000ff, // <- blue
@@ -83,7 +83,7 @@ function getConfig()
 
     var symbology3 = {
         zOffsetPercent:2e-3, // Z fighting
-        zOffset:10,
+        zOffset:0.5,
         polygon:
         {
             color: { expression: buildingClass.toString() },

@@ -62,7 +62,7 @@ function getConfig()
     // use the "hfacade" property as height to extrude polygons
     var symbology = {
         zOffsetPercent:2e-3, // Z fighting
-        zOffset:10,
+        zOffset:0.5,
         polygon:
         {
             extrude: { property: "hfacade" },
