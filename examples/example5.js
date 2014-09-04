@@ -71,7 +71,7 @@ function getConfig()
             polygon:
             {
                 color: { expression: buildingClass.toString() },
-                lineColor: 0x000001,
+                lineColor: 0x000000,
                 lineWidth: 3
             }
         },

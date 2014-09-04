@@ -560,7 +560,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     var paths = [];
     var contours = [];
     var additionalPoints = [];
-    var addContour = symbology.polygon.lineColor || symbology.polygon.lineWidth || symbology.polygon.extrude;
+    var addContour = (symbology.polygon.lineColor !== undefined) || (symbology.polygon.lineWidth !== undefined) || (symbology.polygon.extrude !== undefined);
     if (symbology.draping){
         T['clip'].start();
         var clipped = clip( clipperPath( poly, translation ), 
@@ -623,7 +623,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     }
 
     // add lines if needed
-    if ( symbology.polygon.lineColor || symbology.polygon.lineWidth ){
+    if ( (symbology.polygon.lineColor !== undefined) || (symbology.polygon.lineWidth !== undefined) ){
         T['lines'].start();
         res.lineGeometry = lines(contours);
         T['lines'].stop();
@@ -631,10 +631,10 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
 
     // extrude walls if needed
     var extrudedHeight;
-    if ( symbology.polygon.extrude ){ 
+    if ( symbology.polygon.extrude !== undefined ){ 
         extrudedHeight = +evalExpression( symbology.polygon.extrude, properties );
     }
-    if ( symbology.polygon.extrude ){ 
+    if ( symbology.polygon.extrude !== undefined ){ 
         T['extrusion'].start();
         res.wallGeometry = trianglesFromExtrusion(contours, extrudedHeight);
         T['extrusion'].stop();

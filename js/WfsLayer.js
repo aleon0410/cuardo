@@ -183,7 +183,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
     //}
 
 
-    if ( this.symbology.polygon.lineColor && this.symbology.polygon.lineWidth){
+    if ( (this.symbology.polygon.lineColor !== undefined) && (this.symbology.polygon.lineWidth !== undefined) ){
         group.add(new THREE.Line( lineGeom, 
                                   new THREE.LineBasicMaterial({ 
                                       color:this.symbology.polygon.lineColor, 
@@ -198,7 +198,7 @@ WfsLayer.prototype.onVectorProcessed = function( o ) {
                               new THREE.LineBasicMaterial(
                                   { color:0xff0000, linewidth: 3 }) , 
                               THREE.LinePieces ));
-    if (this.symbology.polygon.extrude){
+    if (this.symbology.polygon.extrude !== undefined){
         var wallMesh = new THREE.Mesh( wallGeom,  material );
         wallMesh.userData = {name:'mesh', url:this.url, vertexGidMap:r.gidMapWall};
         group.add( wallMesh );
