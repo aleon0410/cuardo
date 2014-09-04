@@ -97,7 +97,7 @@ function getConfig()
         translation,
         nbDiv,
         terrain, // <- reference to the terrain layer (for elevation)
-        symbology
+        symbology1
     );
     
     //
