@@ -44,7 +44,9 @@ Contributors to this project are (in no specific order) :
 Licence
 -------
 
-See LICENCE file
+Copyright Oslandia 2014.
+
+This work is currently released as GPLv2, See LICENCE file.
 
 Remerciements
 -------------
