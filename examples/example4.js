@@ -43,7 +43,7 @@ function getConfig()
 
     // base url of the WFS server
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
-    var roofsUrl = baseUrl+"&typeName=tows:toitures";
+    var roofsUrl = baseUrl+"&typeName=tows:roofs";
 
     // filling color based on a function
     var buildingClass = function (prop) {

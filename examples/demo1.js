@@ -6,12 +6,12 @@ function getConfig()
 
     var nbDiv = 32;
     var domain = document.location.host;
-    var urlDem = "http://" + domain + "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
-    var urlTex = "http://" + domain + "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
-    var urlPlan = "http://" + domain + "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=plan&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
-    var urlImageBase = "http://" + domain + "/textures/LYON_3_Appearance/";
+    var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
+    var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
+    var urlPlan = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=plan&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
+    var urlImageBase = "/textures/";
 
-    var baseUrl = "http://" + domain + "/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
+    var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     var translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
     var terrain = new Terrain(urlDem, [{url:urlTex,name:'Ortho photo'}, {url:urlPlan,name:'Plan'} ], translation, nbDiv);
@@ -61,43 +61,8 @@ function getConfig()
         return 0x000000;
     }
 
-    var lod0_url = baseUrl+"&typeName=tows:toitures_lod0";
-    var lod0 = new WfsLayer(lod0_url, translation, nbDiv, terrain,
-                            { zOffsetPercent:2e-3,
-                              zOffset:10,
-                              polygon:{ color: 0x888888, opacity: 1.0 }
-                            }
-                            ,[MT<<5,MT<<6]
-                           );
 
-    var lod1_url = baseUrl+"&typeName=tows:toitures_lod1";
-    var lod1 = new WfsLayer(lod1_url, translation, nbDiv, terrain,
-                            { zOffsetPercent:2e-3,
-                              zOffset:10,
-                              polygon:{ color: 0x888888, opacity: 1.0 }
-                            }
-                            , [MT<<4,MT<<5]
-                           );
-
-    var lod2_url = baseUrl+"&typeName=tows:toitures_lod2";
-    var lod2 = new WfsLayer(lod2_url, translation, nbDiv, terrain,
-                            { zOffsetPercent:2e-3,
-                              zOffset:10,
-                              polygon:{ color: 0x888888, opacity: 1.0 }
-                            }
-                            , [MT<<3,MT<<4]
-                           );
-
-/*    var lod3_url = baseUrl+"&typeName=tows:toitures_lod3";
-    var lod3 = new WfsLayer(lod3_url, translation, nbDiv, terrain,
-                            { zOffsetPercent:2e-3,
-                              zOffset:10,
-                              polygon:{ color: 0xffffff }
-                            }
-                            , [MT<<3,MT<<4]
-                           );*/
-
-    var lod4_url = baseUrl+"&typeName=tows:toitures";
+    var lod4_url = baseUrl+"&typeName=tows:roofs";
     var lod4 = new WfsLayer(lod4_url, translation, nbDiv, terrain,
                             { zOffsetPercent:2e-3,
                               zOffset:10,
@@ -110,7 +75,7 @@ function getConfig()
                            );
 
 
-    var lod5_url = baseUrl+"&typeName=tows:toitures";
+    var lod5_url = baseUrl+"&typeName=tows:roofs";
     var lod5 = new WfsLayer(lod5_url, translation, nbDiv, terrain,
                             {polygon:{
                                 extrude: {property: 'hfacade'}, 
