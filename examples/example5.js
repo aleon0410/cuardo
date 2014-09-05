@@ -48,7 +48,7 @@ function getConfig()
     // textured TIN layer
     var urlTin = baseUrl+"&typeName=tows:textured_citygml";
     // base url where to find textures
-    var urlImageBase = "/w/textures/appearance/";
+    var urlImageBase = "/w/textures/";
     
     var tin = new WfsTinLayer(
         urlTin,
