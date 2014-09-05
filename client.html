@@ -113,6 +113,7 @@ img.btn_close {
 <script> 
 
 var container, stats;
+var displayStats = false;
 var camera, controls, scene, renderer;
 var depthMaterial, depthTarget;
 var quadtree;
@@ -534,11 +535,13 @@ function init() {
         container.style.left = '0px';
         container.style.zIndex = -1;
 
-        stats = new Stats();
-        stats.domElement.style.position = 'absolute';
-        stats.domElement.style.top = '300px';
-        stats.domElement.style.zIndex = 100;
-        container.appendChild( stats.domElement );
+        if ( displayStats ) {
+            stats = new Stats();
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.top = '300px';
+            stats.domElement.style.zIndex = 100;
+            container.appendChild( stats.domElement );
+        }
     }
 
     resetPosition = controls.getPosition();
@@ -567,7 +570,9 @@ function render(t) {
     renderer.render( scene, camera, depthTarget );
     scene.overrideMaterial = null;
     composer.render()
-    stats.update();
+    if ( displayStats ) {
+        stats.update();
+    }
 
     // load missing tiles
     TileLoader.instance().load( requestRender );
