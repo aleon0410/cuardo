@@ -56,11 +56,7 @@ Wait for this step to complete.
 
 Then copy the table to the final database
 
-  pg_dump lyon -t textured_citygml | psql lyon
-
-Now create the LOD0 data from toitures table, launching the following script :
-* lod0.sql
-
+  pg_dump citygml -t textured_citygml | psql lyon
 
 (optional) Textured geometry test
 ---------------------------------

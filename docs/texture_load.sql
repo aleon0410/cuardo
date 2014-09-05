@@ -40,7 +40,7 @@ create table textured_citygml (gid serial primary key, geom geometry('MULTIPOLYG
 insert into textured_citygml
 select root_id as gid,
   st_collect(g.geometry order by g.id) as geom,
-  ('http://localhost/textures/' || tex_image_uri, array_accum(tex2vector(texture_coordinates) order by g.id) )::texture as tex
+  ( tex_image_uri, array_accum(tex2vector(texture_coordinates) order by g.id) )::texture as tex
 from
    surface_geometry as g,
    surface_data as d,
