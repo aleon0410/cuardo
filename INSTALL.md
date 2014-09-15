@@ -62,7 +62,7 @@ Restart apache:
     sudo service apache2 restart
 
 Test tinyOWS (in a browser) :
-* http://localhost/cgi-bin/tinyows.fcgi?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetCapabilities
+* http://localhost/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetCapabilities
 
 Data simplification
 -------------------
