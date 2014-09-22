@@ -13,6 +13,15 @@ font-family: "Arial";
 z-index: 99999;
 }
 
+#container {
+position: absolute;
+top: 0px;
+left: 0px;
+width: 100%;
+height: 100%;
+z-index: -1;
+}
+
 .popin{
 	display: none;
 	background: #fff;
@@ -36,6 +45,7 @@ img.btn_close {
 	float: right;
 	margin: -42px -42px 0 0;
 }
+
 </style>
 
 </head> 
@@ -69,6 +79,7 @@ img.btn_close {
 </div>
 
 <div id="popin_window" class="popin"></div>
+
 <div id="container"></div>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js"></script> 
@@ -120,6 +131,7 @@ var displayStats = false;
 var camera, controls, scene, renderer;
 var depthMaterial, depthTarget;
 var quadtree;
+var mylayers = [];
 var restoreColors = [];
 
 var layerLodList = [];
@@ -131,6 +143,41 @@ var identifyActions = []
 var currentTool = -1;
 var resetPosition;
 
+function getHeightInPixels(){
+    var height = window.getComputedStyle(container).height;
+    if ( height && height.slice(-2) == "px" ){
+        height = +height.slice(0,-2);
+    }
+    else if  ( height && height.slice(-1) == "%" ){
+        height = window.innerHeight * (+height.slice(0,-1))
+    }
+    else if ( height ){
+        throw "unhandled unit for height: "+height;
+    }
+    else {
+        height = window.innerWidth * (+height.slice(0,-1))
+    }
+    console.log("height", height);
+    return height;
+}
+
+function getWidthInPixels(){
+    var width = window.getComputedStyle(container).width;
+    if ( width && width.slice(-2) == "px" ){
+        width = +width.slice(0,-2);
+    }
+    else if  ( width && width.slice(-1) == "%" ){
+        width = window.innerWidth * (+width.slice(0,-1))
+    }
+    else if ( width ){
+        throw "unhandled unit for width: "+width;
+    }
+    else {
+        width = window.innerWidth * (+width.slice(0,-1))
+    }
+    console.log("width", width);
+    return width;
+}
 function progressTileLoading( nLoaded, nTotal )
 {
     var img = document.getElementById('loadingImg');
@@ -280,6 +327,7 @@ function onerror()
     document.location='client.html?examples/example1';
 };
 
+
 var d = document.getElementById('configJS');
 var configSrc = location.search.substring(1) + '.js';
 d.onload = run;
@@ -299,7 +347,9 @@ function layerToggle(cb) {
         var lodList = layerLodList[i];
         if ( +cb.value === i ) {
             lodList.forEach(function(l){
-                quadtree.setLayerVisibility( l.toString(), cb.checked);
+                //quadtree.setLayerVisibility( l.toString(), cb.checked);
+                console.log("set visiblity for layer ", l, cb.checked);
+                mylayers[l].visible = cb.checked;
             });
         }
     }
@@ -320,7 +370,11 @@ function init() {
     window.addEventListener( 'resize', onWindowResize, false );
     window.addEventListener( 'keydown', onKeyDown, false );
 
-    document.getElementById('container').addEventListener( 'mousedown', onDocumentMouseDown, false );
+    container = document.getElementById( 'container' );
+    console.log('container', window.getComputedStyle(container).width);
+    console.log('uiMenu', document.getElementById( 'uiMenu' ));
+
+    container.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
     document.getElementById('checkAction').checked = false;
 
@@ -328,7 +382,7 @@ function init() {
     
     // camera
     {
-        camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1000000 );
+        camera = new THREE.PerspectiveCamera( 30, getWidthInPixels() / getHeightInPixels(), 1, 1000000 );
     }
 
     // scene
@@ -365,6 +419,7 @@ function init() {
             layers.forEach( function(l) {
                 var idxList = [];
                 l.levels.forEach( function(lod) {
+                    mylayers.push(lod);
                     tilers.push(lod);
                     idxList.push(idx);
                     idx++;
@@ -388,7 +443,7 @@ function init() {
                 layerLodList.push( idxList );
             });
 
-            var tiler = new cuardo.Tiler(tilers, config.translation, 1);
+            var tiler = new cuardo.Tiler(tilers, cuardo.translation, 1);
 
             quadtree = new cuardo.QuadTree( config.sceneSize, config.maxLOD, tiler );
             quadtree.maxCachedTiles = 256;
@@ -459,7 +514,7 @@ function init() {
 
     // trackball
     {
-        controls = new THREE.GISControls( camera, null, document.getElementById('container') );
+        controls = new THREE.GISControls( camera, null, container );
         controls.maxDistance = config.sceneSize * 10;
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
@@ -474,11 +529,13 @@ function init() {
     }
 
 
+
     // renderer
     {
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setClearColor( 0x222222, 1 );
-        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setSize( getWidthInPixels(),  getHeightInPixels() );
+        container.appendChild( renderer.domElement );
 
         //renderer.shadowMapEnabled = true;
         //renderer.shadowMapType = THREE.PCFSoftShadowMap;
@@ -531,12 +588,6 @@ function init() {
 
     // stats
     {
-        container = document.getElementById( 'container' );
-        container.appendChild( renderer.domElement );
-        container.style.position = 'absolute';
-        container.style.top = '0px';
-        container.style.left = '0px';
-        container.style.zIndex = -1;
 
         if ( displayStats ) {
             stats = new Stats();
@@ -551,9 +602,9 @@ function init() {
 }
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = getWidthInPixels() / getHeightInPixels();
     camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize( getWidthInPixels(), getHeightInPixels() );
     controls.handleResize();
     requestRender();
 }
@@ -656,8 +707,8 @@ function onDocumentMouseDown( event ) {
 
     // WATCHOUT! the position must be relative to the canvas
 
-    var vector = new THREE.Vector3( ( (event.clientX - container.offsetLeft) / window.innerWidth ) * 2 - 1, 
-                                  - ( (event.clientY - container.offsetTop) / window.innerHeight ) * 2 + 1, 0.5 );
+    var vector = new THREE.Vector3( ( (event.clientX - container.offsetLeft) / getWidthInPixels() ) * 2 - 1, 
+                                  - ( (event.clientY - container.offsetTop) / getHeightInPixels() ) * 2 + 1, 0.5 );
     var projector = new THREE.Projector();
     vector = projector.unprojectVector( vector, camera );
 

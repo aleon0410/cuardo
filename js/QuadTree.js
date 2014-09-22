@@ -52,6 +52,10 @@ cuardo.QuadTree.prototype.centerCoordinates = function( x, y, level )
 // update object visibility based on current camera
 cuardo.QuadTree.prototype.update = function( camera )
 {
+    for (var i=0; i<this.tiler.layers.length; i++ ){
+        this.setLayerVisibility(i, this.tiler.layers[i].visible );
+    }
+
     this.root.update( camera );
 }
 

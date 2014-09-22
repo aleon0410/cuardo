@@ -179,6 +179,7 @@ cuardo.Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
 
     this.geom = {};
     this.canvas = document.createElement( 'canvas' );
+    this.visible = true;
 }
 
 cuardo.Terrain.prototype.getImageData = function( image ) {

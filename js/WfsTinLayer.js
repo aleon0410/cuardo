@@ -36,6 +36,7 @@ cuardo.WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terr
 
     // map of texture url -> material for already loaded textures
     this.textures = {};
+    this.visible = true;
 };
 
 var EPSILON = 1e-6;

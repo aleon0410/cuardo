@@ -28,7 +28,7 @@ function getConfig()
 
     // global translation of the scene
     // -150 : average elevation
-    var translation = new THREE.Vector3(-center[0], -center[1], -150);
+    cuardo.translation = new THREE.Vector3(-center[0], -center[1], -150);
 
     // the terrain layer
     var terrain = new cuardo.Terrain(
@@ -36,7 +36,7 @@ function getConfig()
         [
             {url:urlTex, name:'Ortho photo'} // <- URL and name of the texture
         ],
-        translation,
+        cuardo.translation,
         nbDiv
     );
 
@@ -94,7 +94,7 @@ function getConfig()
 
     var roofs = new cuardo.WfsLayer(
         roofsUrl,
-        translation,
+        cuardo.translation,
         nbDiv,
         terrain, // <- reference to the terrain layer (for elevation)
         symbology1
@@ -120,7 +120,7 @@ function getConfig()
 
     return {
         layers:layers,
-        translation:translation,
+        translation:cuardo.translation,
         sceneSize:sceneSize,
         maxLOD:maxLOD
     };

@@ -43,6 +43,7 @@ cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, r
     }
 
     this.loaded = [];
+    this.visible = true;
 };
 
 cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
