@@ -1,4 +1,4 @@
-Tiler = function( layers, translation, nbIntervals) {
+cuardo.Tiler = function( layers, translation, nbIntervals) {
     this.translation = translation || new THREE.Vector3(0,0,0); // lyon epsg:3946 ~ [1849500, 5173000];
     this.size = 40000;
     this.nbIntervals = nbIntervals || 8;
@@ -21,7 +21,7 @@ Tiler = function( layers, translation, nbIntervals) {
     });
 };
 
-Tiler.prototype.tile = function( center, size, progressCallback, callback ) {
+cuardo.Tiler.prototype.tile = function( center, size, progressCallback, callback ) {
     var group = {};
     this.currentTileId++;
 
@@ -42,7 +42,7 @@ Tiler.prototype.tile = function( center, size, progressCallback, callback ) {
 
 
     var tileId = object.currentTileId;
-    if ( this.layers[0] instanceof Terrain ) {
+    if ( this.layers[0] instanceof cuardo.Terrain ) {
         this.layers[0].tile( center, size, tileId,
                              function( terrainmesh ){
                                  group[0] = terrainmesh;

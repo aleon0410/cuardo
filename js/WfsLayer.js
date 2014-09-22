@@ -1,4 +1,4 @@
-WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
+cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     this.url = url;
     this.translation = translation;
     this.extent = [];
@@ -38,14 +38,14 @@ WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
 
     // worker pool shared by all instances
     var nWorkers = localStorage.nWorkers || 8;
-    if ( WfsLayer.workerPool === undefined ) {
-        WfsLayer.workerPool = new WorkerPool( nWorkers, 'js/VectorProcessingWorker.js' );
+    if ( cuardo.WfsLayer.workerPool === undefined ) {
+        cuardo.WfsLayer.workerPool = new cuardo.WorkerPool( nWorkers, 'js/VectorProcessingWorker.js' );
     }
 
     this.loaded = [];
 };
 
-WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
+cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible
         callback();
@@ -93,7 +93,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         // call the worker to process these features
 
         //console.log('(Cache) GET time ' + (reqend-reqstart));
-        WfsLayer.workerPool.enqueueJob( {data: loadedData, ctxt:ctxt, tileId:tileId},
+        cuardo.WfsLayer.workerPool.enqueueJob( {data: loadedData, ctxt:ctxt, tileId:tileId},
                                         (function( obj ) {
                                             return function( o ) {
                                                 obj.onVectorProcessed( o );
@@ -113,7 +113,7 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
             // call the worker to process these features
 
             //console.log('GET time ' + (reqend-reqstart));
-            WfsLayer.workerPool.enqueueJob( {data:data, ctxt:ctxt, tileId:tileId}, 
+            cuardo.WfsLayer.workerPool.enqueueJob( {data:data, ctxt:ctxt, tileId:tileId}, 
                                             (function( obj ) {
                                                 return function( o ) {
                                                     obj.onVectorProcessed( o );
@@ -130,10 +130,10 @@ WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     });
 }
 
-WfsLayer.prototype.onVectorProcessed = function( o ) {
+cuardo.WfsLayer.prototype.onVectorProcessed = function( o ) {
     // function called after worker has been executed
     var r = o.data;
-    WfsLayer.workerPool.releaseWorker( r.workerId );
+    cuardo.WfsLayer.workerPool.releaseWorker( r.workerId );
 
     var group = new THREE.Object3D();
     if ( r.error !== undefined ) {

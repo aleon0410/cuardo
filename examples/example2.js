@@ -31,7 +31,7 @@ function getConfig()
     var translation = new THREE.Vector3(-center[0], -center[1], -150);
 
     // the terrain layer
-    var terrain = new Terrain(
+    var terrain = new cuardo.Terrain(
         urlDem,   // <- URL of the DEM
         [
             {url:urlTex, name:'Ortho photo'} // <- URL and name of the texture
@@ -92,7 +92,7 @@ function getConfig()
         }
     };
 
-    var roofs = new WfsLayer(
+    var roofs = new cuardo.WfsLayer(
         roofsUrl,
         translation,
         nbDiv,

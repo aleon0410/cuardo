@@ -1,10 +1,10 @@
-QuadNode = function( size, x, y, level, quadtree ) {
+cuardo.QuadNode = function( size, x, y, level, quadtree ) {
     THREE.Object3D.call( this );
 
     // sub tiles
     this.nodes = [ [undefined, undefined], [undefined, undefined] ];
     // instances of Tile or undefined
-    this.object = new Tile( {}, Tile.State.EMPTY );
+    this.object = new cuardo.Tile( {}, cuardo.Tile.State.EMPTY );
     // tile size FIXME useless ?
     this.size = size;
 
@@ -17,9 +17,9 @@ QuadNode = function( size, x, y, level, quadtree ) {
 }
 
 // inherits from Object3D
-QuadNode.prototype = Object.create( THREE.Object3D.prototype );
+cuardo.QuadNode.prototype = Object.create( THREE.Object3D.prototype );
 
-QuadNode.prototype.hasTile = function( x, y, level ) {
+cuardo.QuadNode.prototype.hasTile = function( x, y, level ) {
     if ( level == 0 ) {
         return this.object.isLoaded();
     }
@@ -36,7 +36,7 @@ QuadNode.prototype.hasTile = function( x, y, level ) {
 
 // assign an object to a leaf in the tree
 // object is a map of layerid -> Object3D (group)
-QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
+cuardo.QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level /* = 0 */ ) {
     if ( level === undefined ) level = 0;
     if ( level == 0 ) {
         if ( this.object.isLoaded() ) {
@@ -65,7 +65,7 @@ QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level
         var rx = x % nl;
         var ry = y % nl;
         if ( this.nodes[dx][dy] === undefined ) {
-            var t = new QuadNode( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1, this.quadtree );
+            var t = new cuardo.QuadNode( this.size / 2, this.x*2+dx, this.y*2+dy, this.level+1, this.quadtree );
             this.nodes[dx][dy] = t;
             this.add( t );
         }
@@ -73,7 +73,7 @@ QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */, level
     }
 }
 
-QuadNode.prototype.resetObject = function()
+cuardo.QuadNode.prototype.resetObject = function()
 {
     var object = this.object;
     for ( var lid in object.layers ) {
@@ -81,10 +81,10 @@ QuadNode.prototype.resetObject = function()
             this.remove( object.layers[lid] );
         }
     }
-    this.object = new Tile( {}, Tile.State.EMPTY );
+    this.object = new cuardo.Tile( {}, cuardo.Tile.State.EMPTY );
 }
 
-QuadNode.prototype.hideLayer = function( layer )
+cuardo.QuadNode.prototype.hideLayer = function( layer )
 {
     if (( this.object.isLoaded() ) && (this.object.layers[layer] !== undefined )) {
         this.remove( this.object.layers[layer] );
@@ -98,7 +98,7 @@ QuadNode.prototype.hideLayer = function( layer )
     }
 }
 
-QuadNode.prototype.showLayer = function( layer )
+cuardo.QuadNode.prototype.showLayer = function( layer )
 {
     if (( this.object.isLoaded() ) && (this.object.layers[layer] !== undefined )) {
         var o = this.object.layers[layer];
@@ -115,7 +115,7 @@ QuadNode.prototype.showLayer = function( layer )
     }
 }
 
-QuadNode.prototype.changeVisibility = function( vis )
+cuardo.QuadNode.prototype.changeVisibility = function( vis )
 {
     if ( ! this.object.isLoaded() ) {
         return;
@@ -124,7 +124,7 @@ QuadNode.prototype.changeVisibility = function( vis )
 }
 
 // set visible and all children invisible
-QuadNode.prototype.setVisible = function( visible ) {
+cuardo.QuadNode.prototype.setVisible = function( visible ) {
     if ( visible === undefined ) visible = true;
     this.changeVisibility( visible );
 
@@ -138,7 +138,7 @@ QuadNode.prototype.setVisible = function( visible ) {
 }
 
 // update visibility based on camera distance
-QuadNode.prototype.update = function( camera, lastLoaded ) {
+cuardo.QuadNode.prototype.update = function( camera, lastLoaded ) {
     var v1 = new THREE.Vector3();
     var v2 = new THREE.Vector3();
     v1.setFromMatrixPosition( camera.matrixWorld );
@@ -158,7 +158,7 @@ QuadNode.prototype.update = function( camera, lastLoaded ) {
     if ( lod > this.quadtree.maxLOD ) lod = this.quadtree.maxLOD;
 
     if ( (lod == this.level) && (this.object.isEmpty()) ) {
-        TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
+        cuardo.TileLoader.instance().enqueue( this.quadtree, this.x, this.y, this.level );
     }
 
     if ( this.level >= lod ) {
@@ -192,7 +192,7 @@ QuadNode.prototype.update = function( camera, lastLoaded ) {
         for ( var i = 0; i < 2; i++ ) {
             for ( var j = 0; j < 2; j++ ) {
                 if ( this.nodes[i][j] === undefined ) {
-                    TileLoader.instance().enqueue( this.quadtree, this.x*2+i, this.y*2+j, this.level+1 );
+                    cuardo.TileLoader.instance().enqueue( this.quadtree, this.x*2+i, this.y*2+j, this.level+1 );
                     if ( lastLoaded ) {
                         lastLoaded.changeVisibility( true );
                     }

@@ -1,4 +1,4 @@
-WorkerPool = function( nWorkers, workerFile )
+cuardo.WorkerPool = function( nWorkers, workerFile )
 {
     this.nWorkers = nWorkers;
     this.workers = [];
@@ -12,7 +12,7 @@ WorkerPool = function( nWorkers, workerFile )
     this.jobqueue = [];
 }
 
-WorkerPool.prototype.enqueueJob = function( msg, callback )
+cuardo.WorkerPool.prototype.enqueueJob = function( msg, callback )
 {
     if ( this.freeWorkers.length > 0 ) {
         var wi = this.freeWorkers.shift();
@@ -29,7 +29,7 @@ WorkerPool.prototype.enqueueJob = function( msg, callback )
     }
 }
 
-WorkerPool.prototype.releaseWorker = function( wi )
+cuardo.WorkerPool.prototype.releaseWorker = function( wi )
 {
     if ( this.jobqueue.length > 0 ) {
         var m = this.jobqueue.shift();

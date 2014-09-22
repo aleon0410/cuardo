@@ -8,6 +8,7 @@ importScripts('../thirdparty/clipper.js');
 importScripts('../thirdparty/poly2tri-1.3.5.min.js');
 importScripts('//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js');
 importScripts('//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js'); 
+importScripts('cuardo.js');
 importScripts('Symbology.js');
 
 var EPSILON = 1e-6;
@@ -632,7 +633,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     // extrude walls if needed
     var extrudedHeight;
     if ( symbology.polygon.extrude !== undefined ){ 
-        extrudedHeight = +evalExpression( symbology.polygon.extrude, properties );
+        extrudedHeight = +cuardo.evalExpression( symbology.polygon.extrude, properties );
     }
     if ( symbology.polygon.extrude !== undefined ){ 
         T['extrusion'].start();
@@ -682,7 +683,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
     // color feature
     var c = {r:1, g:1, b:1};
     if ( symbology.polygon.color ) {
-        c = toRGB(evalExpression( symbology.polygon.color, properties ));
+        c = cuardo.toRGB(cuardo.evalExpression( symbology.polygon.color, properties ));
     }
 
     res.geometry.color = [];
@@ -714,7 +715,7 @@ function processPolygon( poly, bbox, properties, tile, translation, symbology, T
 function processPoint( point, properties, tile, translation, symbology ) {
     var res = new PolygonGeometries();
     var ee = function(e) {
-        return evalExpression(e, properties);
+        return cuardo.evalExpression(e, properties);
     }
     var tx = translation.x;
     var ty = translation.y;
@@ -775,7 +776,7 @@ function processPoint( point, properties, tile, translation, symbology ) {
                            3, 6, 2, // bottom
                            3, 7, 6
                          ];
-    var c = toRGB(ee(symbology.polygon.color));
+    var c = cuardo.toRGB(ee(symbology.polygon.color));
 
     res.geometry.color = [];
     res.geometry.gidMap = [];
@@ -846,6 +847,7 @@ onmessage = function(o) {
     }
     catch (err)
     {
+        console.error('error', err)
         postMessage({error:err, workerId:workerId, tileId:tileId});
         return;
     }

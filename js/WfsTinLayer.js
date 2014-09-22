@@ -1,6 +1,6 @@
 // deals only with triagulated 3D surfaces
 //
-WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, range) {
+cuardo.WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, range) {
     this.url = url;
     this.urlImageBase = urlImageBase;
     this.translation = translation;
@@ -42,7 +42,7 @@ var EPSILON = 1e-6;
 
 
 
-WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
+cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible
         callback();

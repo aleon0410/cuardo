@@ -41,6 +41,8 @@ img.btn_close {
 </head> 
 <body> 
 
+<div id="map">
+
 <div id="uiMenu">
     <p>Layers</p>
     <div id="layerList">
@@ -94,6 +96,7 @@ img.btn_close {
 <!--script src="thirdparty/jquery-2.1.1.js"></script-->
 
 <script src="js/proj4-srs.js"></script>
+<script src="js/cuardo.js"></script>
 <script src="js/Terrain.js"></script>
 <script src="js/WfsLayer.js"></script>
 <script src="js/Tiler.js"></script>
@@ -248,8 +251,8 @@ function onKeyDown(e)
     }
 }
 
-TileLoader.instance().setProgressCallback( progressTileLoading );
-TileLoader.instance().setTilerProgressCallback( tilerProgress );
+cuardo.TileLoader.instance().setProgressCallback( progressTileLoading );
+cuardo.TileLoader.instance().setTilerProgressCallback( tilerProgress );
 
 function run()
 {
@@ -385,9 +388,9 @@ function init() {
                 layerLodList.push( idxList );
             });
 
-            var tiler = new Tiler(tilers, config.translation, 1);
+            var tiler = new cuardo.Tiler(tilers, config.translation, 1);
 
-            quadtree = new QuadTree( config.sceneSize, config.maxLOD, tiler );
+            quadtree = new cuardo.QuadTree( config.sceneSize, config.maxLOD, tiler );
             quadtree.maxCachedTiles = 256;
             quadtree.visibleLayers.push( 'debug' );
             scene.add( quadtree );
@@ -561,7 +564,7 @@ function render(t) {
     scene.updateMatrixWorld();
 
     scene.traverse( function ( object ) {
-        if ( object instanceof QuadTree ) {
+        if ( object instanceof cuardo.QuadTree ) {
             object.update( camera );
         }
     } );
@@ -575,7 +578,7 @@ function render(t) {
     }
 
     // load missing tiles
-    TileLoader.instance().load( requestRender );
+    cuardo.TileLoader.instance().load( requestRender );
 }
 
 function openPopIn( html, px, py )

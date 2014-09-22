@@ -1,16 +1,16 @@
 // convert an integer 0xrrggbb to {r:a, g:b, b:c} 
-function toRGB( c )
+cuardo.toRGB = function( c )
 {
     return { r:((c>>16)&0xff)/255.0, g:((c>>8)&0xff)/255.0, b:(c&0xff)/255.0 };
 }
 
-function rgbToInt( c )
+cuardo.rgbToInt = function( c )
 {
     return c.r << 16 | c.g << 8 | c.b;
 }
 
 // symbology expression evaluation
-function evalExpression( e, properties )
+cuardo.evalExpression = function( e, properties )
 {
     if ( e.property ) {
         // access to a property

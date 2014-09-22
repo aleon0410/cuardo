@@ -7,26 +7,26 @@ function getConfig()
     var nbDiv = 32;
     var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
-    var urlImageBase = "/textures/appearance";
+    var urlImageBase = "/w/textures/appearance";
 
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     var translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-    var terrain = new Terrain(urlDem, [urlTex], translation, nbDiv);
+    var terrain = new cuardo.Terrain(urlDem, [urlTex], translation, nbDiv);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
         switch( +properties.gid ){
-        case 1: return rgbToInt({r:.2, g:.9, b:1});
-        case 2: return rgbToInt({r:3, g:.2, b:.8});
-        case 3: return rgbToInt({r:0, g:.5, b:.8});
-        case 7: return rgbToInt({r:.2, g:.2, b:1});
-        case 9: return rgbToInt({r:1, g:.2, b:.2});
+        case 1: return cuardo.rgbToInt({r:.2, g:.9, b:1});
+        case 2: return cuardo.rgbToInt({r:3, g:.2, b:.8});
+        case 3: return cuardo.rgbToInt({r:0, g:.5, b:.8});
+        case 7: return cuardo.rgbToInt({r:.2, g:.2, b:1});
+        case 9: return cuardo.rgbToInt({r:1, g:.2, b:.2});
         }
         return 0xffffff;
     };
 
-    var arrond = new WfsLayer(urlArrond, translation, nbDiv, terrain,
+    var arrond = new cuardo.WfsLayer(urlArrond, translation, nbDiv, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
@@ -40,7 +40,7 @@ function getConfig()
                              );
 
     var velov_url = baseUrl+"&typeName=tows:velov_stations";
-    var velov = new WfsLayer(velov_url, translation, nbDiv, terrain,
+    var velov = new cuardo.WfsLayer(velov_url, translation, nbDiv, terrain,
                             {
                                 zOffsetPercent:1e-3,
                                 zOffset:3,
@@ -53,7 +53,7 @@ function getConfig()
                                     opacity: 0.5
                                 }
                             });
-    var velov2 = new WfsLayer(velov_url, translation, nbDiv, terrain,
+    var velov2 = new cuardo.WfsLayer(velov_url, translation, nbDiv, terrain,
                               {
                                   zOffsetPercent:1e-3,
                                   zOffset:{ expression: 'function(p){return p.available_ * 10.0 + 3;}' },

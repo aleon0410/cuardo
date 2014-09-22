@@ -1,5 +1,5 @@
 // quad of size x size, centered on x,y
-QuadTree = function( size, lod, tiler, maxCachedTiles ) {
+cuardo.QuadTree = function( size, lod, tiler, maxCachedTiles ) {
     THREE.Object3D.call( this );
 
     // max LOD
@@ -11,7 +11,7 @@ QuadTree = function( size, lod, tiler, maxCachedTiles ) {
     this.tiler = tiler;
 
     // the root tile
-    this.root = new QuadNode( size, 0, 0, 0, this );
+    this.root = new cuardo.QuadNode( size, 0, 0, 0, this );
     this.add( this.root );
 
     // list of loaded nodes
@@ -27,9 +27,9 @@ QuadTree = function( size, lod, tiler, maxCachedTiles ) {
 }
 
 // inherits from Object3D
-QuadTree.prototype = Object.create( THREE.Object3D.prototype );
+cuardo.QuadTree.prototype = Object.create( THREE.Object3D.prototype );
 
-QuadTree.prototype.setObject = function( object, level )
+cuardo.QuadTree.prototype.setObject = function( object, level )
 {
     var x = (object.position.x - this.position.x + this.size/2) / this.size;
     var y = (object.position.y - this.position.y + this.size/2) / this.size;
@@ -41,7 +41,7 @@ QuadTree.prototype.setObject = function( object, level )
 
 //
 // get center coordinates (in quadtree coordinates)
-QuadTree.prototype.centerCoordinates = function( x, y, level )
+cuardo.QuadTree.prototype.centerCoordinates = function( x, y, level )
 {
     var tileSize = this.size / Math.pow(2,level);
     var xc = (x+0.5) * tileSize - this.size / 2;
@@ -50,12 +50,12 @@ QuadTree.prototype.centerCoordinates = function( x, y, level )
 }
 
 // update object visibility based on current camera
-QuadTree.prototype.update = function( camera )
+cuardo.QuadTree.prototype.update = function( camera )
 {
     this.root.update( camera );
 }
 
-QuadTree.prototype.setLayerVisibility = function( layer, vis )
+cuardo.QuadTree.prototype.setLayerVisibility = function( layer, vis )
 {
     var idx = this.visibleLayers.indexOf(layer);
     if (vis) {
@@ -72,7 +72,7 @@ QuadTree.prototype.setLayerVisibility = function( layer, vis )
     }
 }
 
-QuadTree.prototype.setVisibleLayers = function( layers )
+cuardo.QuadTree.prototype.setVisibleLayers = function( layers )
 {
     var that = this;
     layers.forEach( function(l) {
@@ -91,7 +91,7 @@ QuadTree.prototype.setVisibleLayers = function( layers )
     this.visibleLayers = layers;
 }
 
-QuadTree.prototype.addToCache = function( node )
+cuardo.QuadTree.prototype.addToCache = function( node )
 {
     // delete old tiles
     //console.log('nb nodes ' + this.cache.length + ' max ' + this.maxCachedTiles);

@@ -158,7 +158,7 @@ var fragmentShader = [
 
 ].join("\n");
 
-Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
+cuardo.Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
     this.urlDem = urlDem;
 
     this.urlTex = urlTex ? (urlTex instanceof Array ? urlTex : [urlTex] ) : [];
@@ -181,7 +181,7 @@ Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
     this.canvas = document.createElement( 'canvas' );
 }
 
-Terrain.prototype.getImageData = function( image ) {
+cuardo.Terrain.prototype.getImageData = function( image ) {
 
     this.canvas.width = image.width;
     this.canvas.height = image.height;
@@ -206,7 +206,7 @@ function getPixel(imagedata, dx, dy) {
 }
 
 
-Terrain.prototype.tile = function( center, size, tileId, callback ) {
+cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
     var mesh;
     var remaining = 1 + this.urlTex.length;
     var textureDem;
@@ -216,7 +216,7 @@ Terrain.prototype.tile = function( center, size, tileId, callback ) {
         remaining--;
         if (!remaining){
             var imagedata = object.getImageData( textureDem.image );
-            var geom =  new PlaneGeometry(center, size, object.nbIntervals);
+            var geom =  new cuardo.PlaneGeometry(center, size, object.nbIntervals);
             var pos = geom.attributes.position.array;
             var uv = geom.attributes.uv.array;
             for (var i=0, end=geom.attributes.position.array.length/3; i<end; i++){

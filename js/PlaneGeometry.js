@@ -2,7 +2,7 @@
 //d---c
 //| \ |
 //a---b
-PlaneGeometry = function ( center, width, nbIntervals ) {
+cuardo.PlaneGeometry = function ( center, width, nbIntervals ) {
 
 	THREE.BufferGeometry.call( this );
 
@@ -53,5 +53,5 @@ PlaneGeometry = function ( center, width, nbIntervals ) {
 
 };
 
-PlaneGeometry.prototype = Object.create( THREE.BufferGeometry.prototype );
+cuardo.PlaneGeometry.prototype = Object.create( THREE.BufferGeometry.prototype );
 

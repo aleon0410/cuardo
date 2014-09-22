@@ -32,7 +32,7 @@ function getConfig()
     var translation = new THREE.Vector3(-center[0], -center[1], -150);
 
     // the terrain layer
-    var terrain = new Terrain(
+    var terrain = new cuardo.Terrain(
         urlDem,   // <- URL of the DEM
         [
             {url:urlTex, name:'Ortho photo'} // <- URL and name of the texture
@@ -50,7 +50,7 @@ function getConfig()
     // base url where to find textures
     var urlImageBase = "/w/textures/";
     
-    var tin = new WfsTinLayer(
+    var tin = new cuardo.WfsTinLayer(
         urlTin,
         urlImageBase,
         translation,
