@@ -46,6 +46,10 @@ cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, r
     this.visible = true;
 };
 
+cuardo.WfsLayer.prototype.setVisibility = function( vis ){
+    this.visible = vis;
+}
+
 cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible

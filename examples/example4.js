@@ -115,7 +115,7 @@ function getConfig()
         },
         {
             name:'Roofs',
-            levels:[roofs, extruded] // <- LODs
+            levels:[new cuardo.LayerSet([roofs, extruded])] // <- LODs
         }
     ];
 

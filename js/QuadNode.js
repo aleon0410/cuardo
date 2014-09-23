@@ -53,7 +53,7 @@ cuardo.QuadNode.prototype.setObject = function( object, x /* = 0 */, y /* = 0 */
 
         var that = this;
         for ( var lid in object.layers ) {
-            if ( this.quadtree.visibleLayers.indexOf(lid) !== -1 ) {
+            if ( this.quadtree.tiler.layers[lid].visible ) {
                 this.add( object.layers[lid] );
             }
         }
@@ -77,7 +77,7 @@ cuardo.QuadNode.prototype.resetObject = function()
 {
     var object = this.object;
     for ( var lid in object.layers ) {
-        if ( this.quadtree.visibleLayers.indexOf(lid) !== -1 ) {
+        if ( !this.quadtree.tiler.layers[lid].visible ) {
             this.remove( object.layers[lid] );
         }
     }

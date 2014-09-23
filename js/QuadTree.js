@@ -17,13 +17,6 @@ cuardo.QuadTree = function( size, lod, tiler, maxCachedTiles ) {
     // list of loaded nodes
     this.cache = []
     this.maxCachedTiles = maxCachedTiles || 32;
-
-    // visible layers
-    // all layers are visible at construction
-    this.visibleLayers = [];
-    for ( var lid = 0; lid < this.tiler.layers.length; lid++ ) {
-        this.visibleLayers.push(lid.toString());
-    }
 }
 
 // inherits from Object3D
@@ -53,46 +46,11 @@ cuardo.QuadTree.prototype.centerCoordinates = function( x, y, level )
 cuardo.QuadTree.prototype.update = function( camera )
 {
     for (var i=0; i<this.tiler.layers.length; i++ ){
-        this.setLayerVisibility(i, this.tiler.layers[i].visible );
+        if (this.tiler.layers[i].visible) this.root.showLayer( i );
+        else this.root.hideLayer(i);
     }
 
     this.root.update( camera );
-}
-
-cuardo.QuadTree.prototype.setLayerVisibility = function( layer, vis )
-{
-    var idx = this.visibleLayers.indexOf(layer);
-    if (vis) {
-        if ( idx === -1 ) {
-            this.visibleLayers.push(layer);
-            this.root.showLayer( layer );
-        }
-    }
-    else {
-        if ( idx !== -1 ) {
-            this.visibleLayers.splice(idx, 1);
-            this.root.hideLayer( layer );
-        }
-    }
-}
-
-cuardo.QuadTree.prototype.setVisibleLayers = function( layers )
-{
-    var that = this;
-    layers.forEach( function(l) {
-        if ( that.visibleLayers.indexOf(l) === -1 ) {
-            // new visible layer
-            that.root.showLayer(l);
-        }
-    });
-
-    this.visibleLayers.forEach(function(l) {
-        if ( layers.indexOf(l) === -1 ) {
-            // layer removed
-            that.root.hideLayer(l);
-        }
-    });
-    this.visibleLayers = layers;
 }
 
 cuardo.QuadTree.prototype.addToCache = function( node )

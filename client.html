@@ -110,6 +110,7 @@ img.btn_close {
 <script src="js/cuardo.js"></script>
 <script src="js/Terrain.js"></script>
 <script src="js/WfsLayer.js"></script>
+<script src="js/LayerSet.js"></script>
 <script src="js/Tiler.js"></script>
 <script src="js/TileLoader.js"></script>
 <script src="js/QuadNode.js"></script>
@@ -349,7 +350,7 @@ function layerToggle(cb) {
             lodList.forEach(function(l){
                 //quadtree.setLayerVisibility( l.toString(), cb.checked);
                 console.log("set visiblity for layer ", l, cb.checked);
-                mylayers[l].visible = cb.checked;
+                mylayers[l].setVisibility( cb.checked );
             });
         }
     }
@@ -447,9 +448,7 @@ function init() {
 
             quadtree = new cuardo.QuadTree( config.sceneSize, config.maxLOD, tiler );
             quadtree.maxCachedTiles = 256;
-            quadtree.visibleLayers.push( 'debug' );
             scene.add( quadtree );
-
         }
 
         // sky cube

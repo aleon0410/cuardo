@@ -41,6 +41,9 @@ cuardo.WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terr
 
 var EPSILON = 1e-6;
 
+cuardo.WfsTinLayer.prototype.setVisibility = function( vis ){
+    this.visible = vis;
+}
 
 
 cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {

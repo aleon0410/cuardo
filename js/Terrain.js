@@ -182,6 +182,10 @@ cuardo.Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
     this.visible = true;
 }
 
+cuardo.Terrain.prototype.setVisibility = function( vis ){
+    this.visible = vis;
+}
+
 cuardo.Terrain.prototype.getImageData = function( image ) {
 
     this.canvas.width = image.width;
