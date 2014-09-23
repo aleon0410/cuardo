@@ -1,8 +1,6 @@
 cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
     this.url = url;
     this.translation = translation;
-    this.extent = [];
-    this.srid = 0;
     this.terrain = terrain || null;
     //this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
     //this.symbology = {polygon:{extrude:'hfacade'}};
@@ -14,23 +12,6 @@ cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, r
     var baseUrl = split[0];
 
     this.range = range || [0,1000000];
-
-    jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
-        success: function(data, textStatus, jqXHR) {
-            $(data).find('FeatureType').each(function() { 
-                object.srid =$(this).find('DefaultSRS').text().replace(new RegExp('.*EPSG::'), '');
-                object.extent = proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:LowerCorner').text().split(' ')).concat(
-                       proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:UpperCorner').text().split(' ')));
-            });
-        },
-        async:   false,
-        dataType: 'xml',
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.warn(textStatus+' :'+errorThrown);
-            throw errorThrown;
-        },
-    });
-
 
     // map of tileId -> callbacks
     this.continuations = {};

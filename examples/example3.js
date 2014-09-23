@@ -33,12 +33,13 @@ function getConfig()
     // the terrain layer
     var terrain = new cuardo.Terrain(
         urlDem,   // <- URL of the DEM
-        [
-            {url:urlTex, name:'Ortho photo'} // <- URL and name of the texture
-        ],
         cuardo.translation,
         nbDiv
     );
+
+    // the othophoto tu put on top of the terrain
+    var ortho = new cuardo.RasterLayer(urlTex, terrain);
+
 
     // base url of the WFS server
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
@@ -84,6 +85,10 @@ function getConfig()
         {
             name:'Terrain',
             levels:[terrain]
+        },
+        {
+            name:'OrthoPhoto',
+            levels:[ortho]
         },
         {
             name:'Roofs',

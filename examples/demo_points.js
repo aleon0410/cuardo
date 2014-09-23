@@ -12,7 +12,7 @@ function getConfig()
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     cuardo.translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-    var terrain = new cuardo.Terrain(urlDem, [urlTex], cuardo.cuardo.translation, nbDiv);
+    var terrain = new cuardo.Terrain(urlDem, [urlTex], cuardo.translation, nbDiv);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
@@ -26,7 +26,7 @@ function getConfig()
         return 0xffffff;
     };
 
-    var arrond = new cuardo.WfsLayer(urlArrond, cuardo.cuardo.translation, nbDiv, terrain,
+    var arrond = new cuardo.WfsLayer(urlArrond, cuardo.translation, nbDiv, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
@@ -40,7 +40,7 @@ function getConfig()
                              );
 
     var velov_url = baseUrl+"&typeName=tows:velov_stations";
-    var velov = new cuardo.WfsLayer(velov_url, cuardo.cuardo.translation, nbDiv, terrain,
+    var velov = new cuardo.WfsLayer(velov_url, cuardo.translation, nbDiv, terrain,
                             {
                                 zOffsetPercent:1e-3,
                                 zOffset:3,
@@ -53,7 +53,7 @@ function getConfig()
                                     opacity: 0.5
                                 }
                             });
-    var velov2 = new cuardo.WfsLayer(velov_url, cuardo.cuardo.translation, nbDiv, terrain,
+    var velov2 = new cuardo.WfsLayer(velov_url, cuardo.translation, nbDiv, terrain,
                               {
                                   zOffsetPercent:1e-3,
                                   zOffset:{ expression: 'function(p){return p.available_ * 10.0 + 3;}' },

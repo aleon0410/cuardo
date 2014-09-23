@@ -5,31 +5,10 @@ cuardo.WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terr
     this.urlImageBase = urlImageBase;
     this.translation = translation;
     this.nbIntervals = nbIntervals || 8;
-    this.extent = [];
-    this.srid = 0;
     this.terrain = terrain || null;
 
     // size range for which this tile is visible
     this.range = range || [0,1000000];
-
-    // TODO select only the opropriate layer
-    var object = this;
-    var baseUrl = this.url.split('?')[0];
-    jQuery.ajax(baseUrl+'?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetCapabilities', {
-        success: function(data, textStatus, jqXHR) {
-            $(data).find('FeatureType').each(function() { 
-                object.srid =$(this).find('DefaultSRS').text().replace(new RegExp('.*EPSG::'), '');
-                object.extent = proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:LowerCorner').text().split(' ')).concat(
-                       proj4(proj4.defs("EPSG:"+object.srid), $(this).find('ows\\:UpperCorner').text().split(' ')));
-            });
-        },
-        async:   false,
-        dataType: 'xml',
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.warn(textStatus+' :'+errorThrown);
-            throw errorThrown;
-        }
-    });
 
     //this.symbology = {polygon:{extrude:'hfacade'}};
     this.symbology = {polygon:{color:0x00ff00, opacity:.3/*, lineColor:0xff0000, lineWidth:2*/}};

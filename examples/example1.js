@@ -31,23 +31,15 @@ function getConfig()
     cuardo.translation = new THREE.Vector3(-center[0], -center[1], -150);
 
     // the terrain layer
-    var terrain = new cuardo.Terrain(
-        urlDem,   // <- URL of the DEM
-        [
-            {url:urlTex, name:'Ortho photo'} // <- URL and name of the texture
-        ],
-        cuardo.translation,
-        nbDiv
-    );
+    var terrain = new cuardo.Terrain( urlDem, cuardo.translation, nbDiv);
+
+    // the othophoto tu put on top of the terrain
+    var ortho = new cuardo.RasterLayer(urlTex, terrain);
 
     //
     // List of layers for the UI
-    var layers = [
-        {
-            name:'Terrain',
-            levels:[terrain]
-        }
-    ];
+    var layers = [{name:'Terrain', levels:[terrain]},
+                  {name:'OrthoPhoto', levels:[ortho]}];
 
     // max depth of the quad tree
     // 2^maxLOD subdivisions

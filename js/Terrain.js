@@ -158,22 +158,15 @@ var fragmentShader = [
 
 ].join("\n");
 
-cuardo.Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
+cuardo.Terrain = function ( urlDem, translation, nbIntervals, zScale, symbology ) {
     this.urlDem = urlDem;
 
-    this.urlTex = urlTex ? (urlTex instanceof Array ? urlTex : [urlTex] ) : [];
+    this.symbology = symbology || {diffuse:0xffffff, ambient:0x555555, reflectivity:0};
+
+    this.urlTex = [];
     this.visibleTex = [];
-    for (var i=0; i< this.urlTex.length; i++) {
-        if (this.urlTex[i].url === undefined ) {
-            var url = this.urlTex[i];
-            this.urlTex[i] = {url:url, name:'Texture #' + i};
-        }
-        this.visibleTex.push(1);
-    }
 
     this.translation = translation;
-    this.srid = 3946;
-    this.extent = [1780810,5111630,1905820,5242220];
     this.nbIntervals = nbIntervals || 8;
     this.zScale = zScale || 255;
 
@@ -184,6 +177,17 @@ cuardo.Terrain = function ( urlDem, urlTex, translation, nbIntervals, zScale ) {
 
 cuardo.Terrain.prototype.setVisibility = function( vis ){
     this.visible = vis;
+}
+
+cuardo.Terrain.prototype.setTexVisibility = function( idx, vis ){
+    this.visibleTex[idx] = vis ? 1 : 0;
+}
+
+
+cuardo.Terrain.prototype.addRaster = function( url ){
+    this.urlTex.push( url );
+    this.visibleTex.push(1);
+    return this.visibleTex.length - 1;
 }
 
 cuardo.Terrain.prototype.getImageData = function( image ) {
@@ -210,7 +214,6 @@ function getPixel(imagedata, dx, dy) {
              a: imagedata.data[ position + 3 ] * OVER_255};
 }
 
-
 cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
     var mesh;
     var remaining = 1 + this.urlTex.length;
@@ -230,18 +233,16 @@ cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
             geom.computeVertexNormals();
             //geom.computeTangents();
             var material = new THREE.MeshLambertMaterial( 
-                    { color: 0xfffffff,
-                      map : textureTex[0] || null,
-                      reflectivity: 0,
+                    { map : textureTex[0] || null,
                     } );
             var lambertShader = THREE.ShaderLib['lambert'];
             var uniforms = THREE.UniformsUtils.clone(lambertShader.uniforms);
             uniforms['visibleMaps'] = { type: "iv1", value: object.visibleTex };
             uniforms['maps'] = { type: "tv", value: textureTex };
             //uniforms['map'].value = textureTex[0];
-            uniforms['diffuse'].value.setHex(0xffffff);
-            uniforms['ambient'].value.setHex(0x555555);
-            uniforms['reflectivity'].value = 0;
+            uniforms['diffuse'].value.setHex(object.symbology.diffuse || 0xffffff);
+            uniforms['ambient'].value.setHex(object.symbology.ambient || 0x555555);
+            uniforms['reflectivity'].value = object.symbology.reflectivity || 0;
             var newmaterial = new THREE.ShaderMaterial(
                     {
                         uniforms: uniforms,
@@ -266,7 +267,7 @@ cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
 
     if (this.urlTex.length ) {
         for (var i=0; i<this.urlTex.length; i++){
-            textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i].url + '&BBOX='+ext.join(','), 
+            textureTex[i] = THREE.ImageUtils.loadTexture(this.urlTex[i] + '&BBOX='+ext.join(','), 
                     null, 
                     function(){
                         loaded();
