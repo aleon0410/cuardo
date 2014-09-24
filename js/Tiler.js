@@ -1,5 +1,4 @@
-cuardo.Tiler = function( layers, translation) {
-    this.translation = translation; 
+cuardo.Tiler = function(layers) {
     this.layers = layers || [];
     this.tileIds = {};
     this.currentTileId = -1;

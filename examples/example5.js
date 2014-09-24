@@ -53,8 +53,6 @@ function getConfig()
     var tin = new cuardo.WfsTinLayer(
         urlTin,
         urlImageBase,
-        cuardo.translation,
-        nbDiv,
         terrain
     );
     

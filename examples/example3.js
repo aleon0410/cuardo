@@ -73,8 +73,6 @@ function getConfig()
 
     var roofs = new cuardo.WfsLayer(
         roofsUrl,
-        cuardo.translation,
-        nbDiv,
         terrain, // <- reference to the terrain layer (for elevation)
         symbology
     );

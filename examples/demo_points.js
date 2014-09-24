@@ -4,7 +4,6 @@ function getConfig()
     // Tilers configurations
     //
 
-    var nbDiv = 32;
     var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlImageBase = "/w/textures/appearance";
@@ -12,7 +11,8 @@ function getConfig()
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
     // Lyon 3
     cuardo.translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-    var terrain = new cuardo.Terrain(urlDem, [urlTex], cuardo.translation, nbDiv);
+    var terrain = new cuardo.Terrain(urlDem, cuardo.translation, 32);
+    var ortho = new cuardo.RasterLayer(urlTex, terrain);
 
     var urlArrond = baseUrl+"&typeName=tows:arrondissements";
     var colFun = function(properties){
@@ -26,7 +26,7 @@ function getConfig()
         return 0xffffff;
     };
 
-    var arrond = new cuardo.WfsLayer(urlArrond, cuardo.translation, nbDiv, terrain,
+    var arrond = new cuardo.WfsLayer(urlArrond, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
@@ -40,7 +40,7 @@ function getConfig()
                              );
 
     var velov_url = baseUrl+"&typeName=tows:velov_stations";
-    var velov = new cuardo.WfsLayer(velov_url, cuardo.translation, nbDiv, terrain,
+    var velov1 = new cuardo.WfsLayer(velov_url, terrain,
                             {
                                 zOffsetPercent:1e-3,
                                 zOffset:3,
@@ -53,7 +53,7 @@ function getConfig()
                                     opacity: 0.5
                                 }
                             });
-    var velov2 = new cuardo.WfsLayer(velov_url, cuardo.translation, nbDiv, terrain,
+    var velov2 = new cuardo.WfsLayer(velov_url, terrain,
                               {
                                   zOffsetPercent:1e-3,
                                   zOffset:{ expression: 'function(p){return p.available_ * 10.0 + 3;}' },
@@ -67,26 +67,40 @@ function getConfig()
                                   }
                               });
 
-    //
+    var velov = new cuardo.LayerSet([velov1, velov2]);
     // List of layers with tilers
     var layers = [{name:'Terrain', levels:[terrain]},
+                  {name:'OrthoPhoto', levels:[ortho]},
                   {name:'Arrondissements', levels:[arrond]},
-                  {name:"Dispo Velo'V", levels:[velov, velov2]}
+                  {name:"Dispo Velo'V", levels:[velov]}
                  ];
 
     //
     // Actions on identify
     var actions = [
-        {url: urlArrond, name: "Infos arrondissement", action: function(props) {
-            var n = props.nomreduit.substring(5);
-            var art;
-            if (n == 1) {
-                art = '1er_arrondissement_de_Lyon';
+        {
+            name: "Identify", 
+            action: function(layer, gid, position) {
+                if (layer != velov1 && layer != velov2 && layer != arrond) return false;
+                var props = layer.getFeature(gid);
+                var html = '<table>';
+                for ( var k in props ) {
+                    html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
+                }
+                html += '</table>';
+                openPopIn( html, position ? position.x : undefined, position ? position.y : undefined );
+                return true;
             }
-            else {
-                art = n + 'e_arrondissement_de_Lyon';
-            }
-            window.open("http://fr.wikipedia.org/wiki/" + art);
+        },
+        {
+            name: "Infos arrondissement", 
+            action: function(layer, gid, position) {
+                if (layer != arrond) return false;
+               var props = layer.getFeature(gid);
+               var n = props.nomreduit.substring(5);
+               window.open("http://fr.wikipedia.org/wiki/" 
+                    +(n == 1 ? '1er' : n+'e')+'_arrondissement_de_Lyon');
+               return true;
             }
          }
         ];

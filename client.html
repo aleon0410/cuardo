@@ -1,79 +1,26 @@
 <html> 
 <head> 
 <title>Cardano</title>
-
-<style>
-#uiMenu {
-border-radius:5px;
-background-color:#cccccc;
-padding: 10px;
-position:absolute;
-left: 20px;
-font-family: "Arial";
-z-index: 99999;
-}
-
-#container {
-position: absolute;
-top: 0px;
-left: 0px;
-width: 100%;
-height: 100%;
-z-index: -1;
-}
-
-.popin{
-	display: none;
-	background: #fff;
-	padding: 20px;
-	border: 20px solid #ddd;
-	float: left;
-	font-size: 1.2em;
-	position: fixed;
-	top: 50%; left: 50%;
-	z-index: 99999;
-
-	-webkit-box-shadow: 0px 0px 20px #000;
-	-moz-box-shadow: 0px 0px 20px #000;
-	box-shadow: 0px 0px 20px #000;
-
-	-webkit-border-radius: 10px;
-	-moz-border-radius: 10px;
-	border-radius: 10px;
-}
-img.btn_close {
-	float: right;
-	margin: -42px -42px 0 0;
-}
-
-</style>
-
+<link rel="stylesheet" href="client.css" type="text/css">
 </head> 
 <body> 
 
 <div id="map">
 
 <div id="uiMenu">
-    <p>Layers</p>
-    <div id="layerList">
+    <div id="layerList">Layers</div>
+
+    <p/>
+
+    <div id="tools">
+        <select id="actionlist">
+            <option value="0" selected>no tool selected</option>
+        </select> 
     </div>
 
-    <p></p>
+    <p/>
 
-    <p>Tools</p>
-    <div id="userActions">
-    <input type="checkbox" id="checkAction" onclick='actionToggle(this);'></input>
-    <select id="actionlist">
-    <option value="0" selected>Identify</option>
-    </select> 
-    </div>
-
-    <p></p>
-    <div id="progressInfo">
-    <p>Tiles loaded: <span id="loadingProgressTxt"></span><img id="loadingImg" src="images/loading.gif" style="visibility:hidden"/></p>
-    </span><progress value="0" max="0" id="loadingProgressElt" style="display:inline-block;height:8px;" ></progress><br/>
-    </span><progress value="0" max="0" id="tilerProgressElt" style="display:inline-block;height:8px;" ></progress>
-    </div>
+    <div id="progressInfo"></div>
 
     <div id="displayInfo"></div>
 </div>
@@ -86,45 +33,35 @@ img.btn_close {
 <script src="//cdnjs.cloudflare.com/ajax/libs/proj4js/2.2.2/proj4.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js"></script>
-<!--script src="thirdparty/three.js/build/three.js"></script--> 
-<!--script src="thirdparty/three.js/examples/js/controls/TrackballControls.js"></script-->
-<!--script src="thirdparty/three.js/examples/js/Detector.js"></script-->
-<!--script src="thirdparty/three.js/examples/js/libs/stats.min.js"></script-->
+<!--script src="build/cuardo.js"></script-->
+<script src="js/cuardo.js"></script>
+<script src="js/proj4-srs.js"></script>
+<script src="js/TileLoader.js"></script>
+<script src="js/PlaneGeometry.js"></script>
+<script src="js/shaders/FXAAShader.js"></script>
+<script src="js/shaders/BokehShader.js"></script>
 <script src="js/shaders/CopyShader.js"></script>
 <script src="js/shaders/SSAOShader.js"></script>
-<script src="js/shaders/BokehShader.js"></script>
-<script src="js/shaders/FXAAShader.js"></script>
+<script src="js/WorkerPool.js"></script>
+<script src="js/GISControls.js"></script>
+<script src="js/postprocessing/BokehPass.js"></script>
 <script src="js/postprocessing/EffectComposer.js"></script>
+<script src="js/postprocessing/ShaderPass.js"></script>
 <script src="js/postprocessing/MaskPass.js"></script>
 <script src="js/postprocessing/RenderPass.js"></script>
-<script src="js/postprocessing/ShaderPass.js"></script>
-<script src="js/postprocessing/BokehPass.js"></script>
-<!--script src="thirdparty/three.js/examples/fonts/helvetiker_regular.typeface.js"></script-->
-<!--script src="thirdparty/three.js/src/extras/GeometryUtils.js"></script-->
-<!--script src="thirdparty/three.js/examples/js/ShaderTerrain.js"></script-->
-
-<!--script src="thirdparty/proj4-src.js"></script-->
-<!--script src="thirdparty/jquery-2.1.1.js"></script-->
-
-<script src="js/proj4-srs.js"></script>
-<script src="js/cuardo.js"></script>
-<script src="js/Terrain.js"></script>
-<script src="js/RasterLayer.js"></script>
-<script src="js/WfsLayer.js"></script>
-<script src="js/LayerSet.js"></script>
-<script src="js/Tiler.js"></script>
-<script src="js/TileLoader.js"></script>
-<script src="js/QuadNode.js"></script>
-<script src="js/QuadTree.js"></script>
-<script src="js/Terrain.js"></script>
-<script src="js/WfsLayer.js"></script>
 <script src="js/WfsTinLayer.js"></script>
-<script src="js/Tiler.js"></script>
-<script src="js/Tile.js"></script>
-<script src="js/PlaneGeometry.js"></script>
-<script src="js/GISControls.js"></script>
+<script src="js/Terrain.js"></script>
+<script src="js/QuadTree.js"></script>
+<script src="js/LayerSet.js"></script>
+<script src="js/RasterLayer.js"></script>
 <script src="js/Symbology.js"></script>
-<script src="js/WorkerPool.js"></script>
+<script src="js/Tiler.js"></script>
+<script src="js/QuadNode.js"></script>
+<script src="js/WfsLayer.js"></script>
+<script src="js/Tile.js"></script>
+<script src="js/RecordReplayControl.js"></script>
+<script src="js/ProgressBarControl.js"></script>
+
 <script id="configJS"></script>
 <script> 
 
@@ -135,51 +72,16 @@ var depthMaterial, depthTarget;
 var quadtree;
 var mylayers = [];
 var restoreColors = [];
+var recordAndReplay;
+var progress;
 
-var layerLodList = [];
 
 var renderAsked = true;
 
 // identify actions
 var identifyActions = []
-var currentTool = -1;
 var resetPosition;
 
-function getHeightInPixels(){
-    var height = window.getComputedStyle(container).height;
-    if ( height && height.slice(-2) == "px" ){
-        height = +height.slice(0,-2);
-    }
-    else if  ( height && height.slice(-1) == "%" ){
-        height = window.innerHeight * (+height.slice(0,-1))
-    }
-    else if ( height ){
-        throw "unhandled unit for height: "+height;
-    }
-    else {
-        height = window.innerWidth * (+height.slice(0,-1))
-    }
-    console.log("height", height);
-    return height;
-}
-
-function getWidthInPixels(){
-    var width = window.getComputedStyle(container).width;
-    if ( width && width.slice(-2) == "px" ){
-        width = +width.slice(0,-2);
-    }
-    else if  ( width && width.slice(-1) == "%" ){
-        width = window.innerWidth * (+width.slice(0,-1))
-    }
-    else if ( width ){
-        throw "unhandled unit for width: "+width;
-    }
-    else {
-        width = window.innerWidth * (+width.slice(0,-1))
-    }
-    console.log("width", width);
-    return width;
-}
 function progressTileLoading( nLoaded, nTotal )
 {
     var img = document.getElementById('loadingImg');
@@ -205,100 +107,6 @@ function notification( text )
     setTimeout(function(){ d.innerHTML = ''; }, 1000);
 }
 
-var keyframes = [];
-function onRecord()
-{
-    var p = controls.getPosition();
-    var last = 0;
-    if ( keyframes.length ) {
-        last = keyframes[keyframes.length-1].dt;
-    }
-    var dt = prompt("Date (in seconds):", last.toString());
-    dt = +(dt);
-    keyframes.push( {dt:dt, p:p.p, cam:p.cam} );
-    notification('Record added (total:' + keyframes.length + ')');
-}
-
-function onReplay()
-{
-    var fps = 10.0;
-    var time_per_frame = 1/fps;
-
-    var positions = [];
-    if ( keyframes.length == 0 ) {
-        return;
-    }
-    if ( keyframes.length == 1 ) {
-        var p = [keyframes[0]];
-        positions.push( {dt:0, p:keyframes[0].p} );
-    }
-    else {
-        for (var i = 1; i < keyframes.length; i++ ) {
-            var ki = keyframes[i-1];
-            var kj = keyframes[i];
-            var n = (kj.dt - ki.dt) / time_per_frame;
-            for (var j = 0; j <= n; j++ ) {
-                // cosine interpolation
-                var alpha = (1-Math.cos(j/n*Math.PI))/2.0;
-                var p = [];
-                for ( var k = 0; k < ki.p.length; k++ ) {
-                    p.push( kj.p[k] * alpha + ki.p[k] * (1-alpha) );
-                }
-                positions.push( {p:p, dt:time_per_frame} );
-            }
-        }
-    }
-
-    renderAsked = false;
-    controls.animate( positions );
-    renderAsked = true;
-}
-
-function onSaveAs()
-{
-    urlContent = "data:application/octet-stream," + encodeURIComponent(JSON.stringify(keyframes));
-    window.open(urlContent, 'Records');
-}
-
-function onLoad()
-{
-    var file = document.getElementById('inputFile').files[0];
-    if ( file ) {
-        console.log(file);
-    }
-    var f = new FileReader();
-    f.onload = function(e) {
-        keyframes = JSON.parse( e.target.result );
-        notification('Loaded ' + keyframes.length + ' records');
-    };
-    f.readAsText(file);
-}
-
-function onKeyDown(e)
-{
-    switch ( e.keyCode ) {
-        case 82: // R
-        this.onRecord();
-        break;
-        case 80: // P
-        this.onReplay();
-        break;
-        case 83: // S
-        this.onSaveAs();
-        break;
-        case 76: // L
-        {
-            var html = '<input type="file" id="inputFile"></input><br/><input type="button" value="Load" onClick="onLoad();closePopIn();"/>';
-            openPopIn( html );
-            break;
-        }
-        case 96: // 0
-        controls.setPosition(resetPosition);
-        break;
-        default:
-        break;
-    }
-}
 
 cuardo.TileLoader.instance().setProgressCallback( progressTileLoading );
 cuardo.TileLoader.instance().setTilerProgressCallback( tilerProgress );
@@ -337,40 +145,19 @@ d.onerror = onerror;
 d.src = configSrc;
 
 function layerToggle(cb) {
-    for ( var i = 0; i < layerLodList.length; i++ ) {
-        var lodList = layerLodList[i];
-        if ( +cb.value === i ) {
-            lodList.forEach(function(l){
-                //quadtree.setLayerVisibility( l.toString(), cb.checked);
-                console.log("set visiblity for layer ", l, cb.checked);
-                mylayers[l].setVisibility( cb.checked );
-            });
-        }
-    }
+    mylayers[cb.value].setVisibility( cb.checked );
     requestRender();
-}
-
-function actionToggle(cb) {
-    if (cb.checked){
-        currentTool = document.getElementById('actionlist').selectedIndex;
-    }
-    else {
-        currentTool = -1;
-    }
 }
 
 function init() {
 
     window.addEventListener( 'resize', onWindowResize, false );
-    window.addEventListener( 'keydown', onKeyDown, false );
 
     container = document.getElementById( 'container' );
     console.log('container', window.getComputedStyle(container).width);
     console.log('uiMenu', document.getElementById( 'uiMenu' ));
 
-    container.addEventListener( 'mousedown', onDocumentMouseDown, false );
-
-    document.getElementById('checkAction').checked = false;
+    container.addEventListener( 'click', onDocumentMouseDown, false );
 
     var config = getConfig();
     
@@ -403,26 +190,20 @@ function init() {
         {
             var layers = config.layers;
 
-
             //
             // Add HTML visibility controls for each layer
             var tilers = [];
-            var idx = 0;
             var d = document.getElementById('layerList');
             var lid = 0;
             layers.forEach( function(l) {
-                var idxList = [];
                 l.levels.forEach( function(lod) {
                     mylayers.push(lod);
                     tilers.push(lod);
-                    idxList.push(idx);
-                    idx++;
                 });
                 d.innerHTML += '<div><input type="checkbox" id="checkbox' + lid + '" name="layer" value="' + lid
                 + '" onclick="layerToggle(this);" checked="true">' + l.name + '</input></div>';
 
                 lid++;
-                layerLodList.push( idxList );
             });
 
             var tiler = new cuardo.Tiler(tilers, cuardo.translation, 1);
@@ -494,7 +275,7 @@ function init() {
 
     // trackball
     {
-        controls = new THREE.GISControls( camera, null, container );
+        controls = new cuardo.GISControls( camera, null, container );
         controls.maxDistance = config.sceneSize * 10;
         controls.rotateSpeed = 2.0;
         controls.zoomSpeed = 1.5;
@@ -507,6 +288,10 @@ function init() {
         camera.position.z = controls.distance;
         camera.lookAt( new THREE.Vector3(0, 0, 0) );
     }
+
+    recordAndReplay = new cuardo.RecordReplayControl( controls, notification );
+    progress = new cuardo.ProgressBarControl( document.getElementById('progressInfo'), notification);
+
 
 
 
@@ -535,8 +320,8 @@ function init() {
             var effect = new THREE.ShaderPass( THREE.SSAOShader );
             effect.uniforms[ 'tDepth' ].value = depthTarget;
             effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
-            effect.uniforms[ 'cameraNear' ].value = camera.near;
-            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'cameraNear' ].value = 1;//camera.near;
+            effect.uniforms[ 'cameraFar' ].value = 5000;//camera.far;
             effect.uniforms[ 'lumInfluence' ].value = .01;
             effect.uniforms[ 'aoClamp' ].value = .8;
             composer.addPass( effect );
@@ -585,7 +370,6 @@ function onWindowResize() {
     camera.aspect = getWidthInPixels() / getHeightInPixels();
     camera.updateProjectionMatrix();
     renderer.setSize( getWidthInPixels(), getHeightInPixels() );
-    controls.handleResize();
     requestRender();
 }
 
@@ -630,10 +414,10 @@ function closePopIn()
     elt.style.display = 'none';
 }
 
-function onAction( layerUrl, gid, actionIdx, position ) {
-    var layerName = /typeName=([^&]+)/.exec(layerUrl);
+function onAction( layer, gid, actionIdx, position ) {
+    var layerName = /typeName=([^&]+)/.exec(layer.url);
 
-    var q = layerUrl+'&featureId='+layerName[1]+'.'+gid;
+    var q = layer.url+'&featureId='+layerName[1]+'.'+gid;
     jQuery.ajax(q, {
         success: function(data, textStatus, jqXHR) {
             var props = data.features[0].properties;
@@ -648,7 +432,7 @@ function onAction( layerUrl, gid, actionIdx, position ) {
             }
             else {
                 var action = identifyActions[actionIdx-1];
-                if ( action.url === layerUrl ) {
+                if ( action.layers.url != -1 ) {
                     action.action(props);
                 }
             }
@@ -663,10 +447,6 @@ function onAction( layerUrl, gid, actionIdx, position ) {
 
 function onDocumentMouseDown( event ) {
     event.preventDefault();
-    if ( currentTool == -1 ) {
-        return;
-    }
-    currentTool = document.getElementById('actionlist').selectedIndex;
 
     // highlight
     restoreColors.forEach(function(r){
@@ -676,6 +456,12 @@ function onDocumentMouseDown( event ) {
             r.obj.geometry.attributes.color.needsUpdate = true;
         });
     restoreColors = [];
+    requestRender();
+
+    if ( !document.getElementById('actionlist').selectedIndex ) {
+        return;
+    }
+    currentTool = document.getElementById('actionlist').selectedIndex;
 
     var objects = [];
 
@@ -702,11 +488,12 @@ function onDocumentMouseDown( event ) {
         var map = object.userData.vertexGidMap;
         var gid = map[ intersects[ idx ].indices[0] ];
 
-        onAction( object.userData.url, gid, currentTool, {x:event.clientX, y:event.clientY} );
+        //onAction( object.userData.layer, gid, currentTool, {x:event.clientX, y:event.clientY} );
+        if (!identifyActions[currentTool-1].action(object.userData.layer, gid,  {x:event.clientX, y:event.clientY})) break;
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);
-            if ( obj.userData && obj.userData.vertexGidMap && obj.userData.url == object.userData.url) {
+            if ( obj.userData && obj.userData.vertexGidMap && obj.userData.layer.url == object.userData.layer.url) {
                 
                 for (var i=0, end = obj.geometry.attributes.position.array.length/3; i<end; i++){
                     if ( obj.userData.vertexGidMap[i] == gid ){
@@ -720,10 +507,6 @@ function onDocumentMouseDown( event ) {
                         obj.geometry.attributes.color.array[i*3] = c.r;
                         obj.geometry.attributes.color.array[i*3+1] = c.g;
                         obj.geometry.attributes.color.array[i*3+2] = c.b;
-                        //console.log('changed color of vtx', i )
-                           
-                           //{geom:obj.geometry, face:obj.geometry.faces[i], color:obj.geometry.faces[i].color});
-                       //obj.geometry.faces[i].color = c;
                     }
                 }
                 obj.geometry.attributes.color.needsUpdate = true;
@@ -733,6 +516,42 @@ function onDocumentMouseDown( event ) {
     }
 
     requestRender();
+}
+
+function getHeightInPixels(){
+    var height = window.getComputedStyle(container).height;
+    if ( height && height.slice(-2) == "px" ){
+        height = +height.slice(0,-2);
+    }
+    else if  ( height && height.slice(-1) == "%" ){
+        height = window.innerHeight * (+height.slice(0,-1))
+    }
+    else if ( height ){
+        throw "unhandled unit for height: "+height;
+    }
+    else {
+        height = window.innerWidth * (+height.slice(0,-1))
+    }
+    console.log("height", height);
+    return height;
+}
+
+function getWidthInPixels(){
+    var width = window.getComputedStyle(container).width;
+    if ( width && width.slice(-2) == "px" ){
+        width = +width.slice(0,-2);
+    }
+    else if  ( width && width.slice(-1) == "%" ){
+        width = window.innerWidth * (+width.slice(0,-1))
+    }
+    else if ( width ){
+        throw "unhandled unit for width: "+width;
+    }
+    else {
+        width = window.innerWidth * (+width.slice(0,-1))
+    }
+    console.log("width", width);
+    return width;
 }
 </script> 
 </body> 

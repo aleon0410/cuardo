@@ -9,6 +9,7 @@ function getConfig()
     var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlPlan = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=plan&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
+    var urlNO2 = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=no2&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlImageBase = "/w/textures/";
 
     var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
@@ -34,7 +35,7 @@ function getConfig()
     // tile size of the most detailed tile
     var MT = 700;
 
-    var arrond = new cuardo.WfsLayer(urlArrond, cuardo.translation, nbDiv, terrain,
+    var arrond = new cuardo.WfsLayer(urlArrond, terrain,
                               {zOffsetPercent:1e-3,
                                zOffset:3,
                                draping:true,
@@ -66,7 +67,7 @@ function getConfig()
 
 
     var lod4_url = baseUrl+"&typeName=tows:roofs";
-    var lod4 = new cuardo.WfsLayer(lod4_url, cuardo.translation, nbDiv, terrain,
+    var lod4 = new cuardo.WfsLayer(lod4_url, terrain,
                             { zOffsetPercent:2e-3,
                               zOffset:10,
                               polygon:
@@ -79,7 +80,7 @@ function getConfig()
 
 
     var lod5_url = baseUrl+"&typeName=tows:roofs";
-    var lod5 = new cuardo.WfsLayer(lod5_url, cuardo.translation, nbDiv, terrain,
+    var lod5 = new cuardo.WfsLayer(lod5_url, terrain,
                             {polygon:{
                                 extrude: {property: 'hfacade'}, 
                                 color: {expression: buildingClass.toString() }
@@ -89,7 +90,7 @@ function getConfig()
                            );
 
     var urlTin = baseUrl+"&typeName=tows:textured_citygml";
-    var tin = new cuardo.WfsTinLayer( urlTin, urlImageBase, cuardo.translation, 32, terrain, [0, MT<<1] );
+    var tin = new cuardo.WfsTinLayer( urlTin, urlImageBase, terrain, [0, MT<<1] );
 
     //
     // List of layers with tilers
@@ -97,7 +98,7 @@ function getConfig()
                   {name:'OrthoPhoto', levels:[ortho]},
                   {name:'NO2', levels:[no2]},
                   {name:'Arrondissements', levels:[arrond]},
-                  {name:'Bati', levels:[lod4,lod5, tin]}
+                  {name:'Bati', levels:[new cuardo.LayerSet([lod4,lod5, tin])]}
 ];
 
     // scene size 

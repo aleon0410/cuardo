@@ -1,6 +1,5 @@
-cuardo.WfsLayer = function (url, translation, nbIntervals, terrain, symbology, range) {
+cuardo.WfsLayer = function (url, terrain, symbology, range) {
     this.url = url;
-    this.translation = translation;
     this.terrain = terrain || null;
     //this.symbology = {polygon:{color:0x00ff00, extrude:'hfacade', lineColor:0xff0000, lineWidth:2, opacity:.3}};
     //this.symbology = {polygon:{extrude:'hfacade'}};
@@ -31,13 +30,32 @@ cuardo.WfsLayer.prototype.setVisibility = function( vis ){
     this.visible = vis;
 }
 
+cuardo.WfsLayer.prototype.getFeature = function( gid ) {
+    var props;
+    
+    var layerName = /typeName=([^&]+)/.exec(this.url);
+
+    var q = this.url+'&featureId='+layerName[1]+'.'+gid;
+    jQuery.ajax(q, {
+        success: function(data, textStatus, jqXHR) {
+            props = data.features[0].properties;
+        },
+        async: false,
+        dataType: 'json',
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.warn(jqXHR + textStatus+' :'+errorThrown);
+        }
+    });
+    return props;
+}
+
 cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
         // return null if not visible
         callback();
         return;
     }
-    var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
+    var extentCenter = new THREE.Vector3().subVectors(center, cuardo.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
                extentCenter.x + size*.5,
@@ -49,7 +67,7 @@ cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     var reqstart = new Date().getTime();
 
     var ctxt = {
-        translation: this.translation,
+        translation: cuardo.translation,
         symbology: object.symbology,
         is3d: is3d,
         center: center,
@@ -153,7 +171,7 @@ cuardo.WfsLayer.prototype.onVectorProcessed = function( o ) {
               blending: THREE.NormalBlending } );
 
     var mesh = new THREE.Mesh( geom, material );
-    mesh.userData = {name:'mesh', url:this.url, vertexGidMap:r.gidMap};
+    mesh.userData = {name:'mesh', layer:this, vertexGidMap:r.gidMap};
     group.add(mesh);
 
 

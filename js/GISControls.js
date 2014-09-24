@@ -1,7 +1,7 @@
 //
 // Simple control where the camera is placed on a dome around a center of interest
 
-THREE.GISControls = function ( object, scene, domElement) {
+cuardo.GISControls = function ( object, scene, domElement) {
 
     this.object = object;
     this.domElement = ( domElement !== undefined ) ? domElement : document;
@@ -42,7 +42,7 @@ THREE.GISControls = function ( object, scene, domElement) {
     this.noKeys = false;
 
     // The four arrow keys
-    this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+    this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40, NUM_0:96 };
 
     ////////////
     // internals
@@ -225,13 +225,11 @@ THREE.GISControls = function ( object, scene, domElement) {
             if ( pos.length ) {
                 var p = pos.shift();
                 that.setPosition( p );
+                that.dispatchEvent( changeEvent );
                 setTimeout( function(){foo(pos);}, p.dt );
             }
         }
         foo( positions.slice(0) );
-    };
-
-    this.handleResize = function () {
     };
 
     this.reset = function () {
@@ -418,6 +416,9 @@ THREE.GISControls = function ( object, scene, domElement) {
 	    scope.update();
 	    break;
 
+	case scope.keys.NUM_0:
+	    scope.reset();
+	    break;
 	}
 
     }
@@ -440,4 +441,4 @@ THREE.GISControls = function ( object, scene, domElement) {
 
 };
 
-THREE.GISControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+cuardo.GISControls.prototype = Object.create( THREE.EventDispatcher.prototype );

@@ -1,10 +1,8 @@
 // deals only with triagulated 3D surfaces
 //
-cuardo.WfsTinLayer = function (url, urlImageBase, translation, nbIntervals, terrain, range) {
+cuardo.WfsTinLayer = function (url, urlImageBase, terrain, range) {
     this.url = url;
     this.urlImageBase = urlImageBase;
-    this.translation = translation;
-    this.nbIntervals = nbIntervals || 8;
     this.terrain = terrain || null;
 
     // size range for which this tile is visible
@@ -24,6 +22,24 @@ cuardo.WfsTinLayer.prototype.setVisibility = function( vis ){
     this.visible = vis;
 }
 
+cuardo.WfsTinLayer.prototype.getFeature = function( gid ) {
+    var props;
+    
+    var layerName = /typeName=([^&]+)/.exec(this.url);
+
+    var q = layer.url+'&featureId='+layerName[1]+'.'+gid;
+    jQuery.ajax(q, {
+        success: function(data, textStatus, jqXHR) {
+            props = data.features[0].properties;
+        },
+        async: false,
+        dataType: 'json',
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.warn(jqXHR + textStatus+' :'+errorThrown);
+        }
+    });
+    return props;
+}
 
 cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
     if ( (size < this.range[0]) || (size >= this.range[1]) ) {
@@ -31,7 +47,7 @@ cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
         callback();
         return;
     }
-    var extentCenter = new THREE.Vector3().subVectors(center, this.translation );
+    var extentCenter = new THREE.Vector3().subVectors(center, cuardo.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
                extentCenter.x + size*.5,
@@ -58,16 +74,16 @@ cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                 var bboxCenter = feat.geometry.bbox.length == 4 ? 
                     {
                         x: ( (+feat.geometry.bbox[0]) 
-                             + (+feat.geometry.bbox[2]) )*.5 + object.translation.x,
+                             + (+feat.geometry.bbox[2]) )*.5 + cuardo.translation.x,
                         y: ( (+feat.geometry.bbox[1]) 
-                                + (+feat.geometry.bbox[3]) )*.5 +object.translation.y 
+                                + (+feat.geometry.bbox[3]) )*.5 +cuardo.translation.y 
                     }
                     :
                     {
                         x: ( (+feat.geometry.bbox[0]) 
-                             + (+feat.geometry.bbox[3]) )*.5 + object.translation.x,
+                             + (+feat.geometry.bbox[3]) )*.5 + cuardo.translation.x,
                         y: ( (+feat.geometry.bbox[1]) 
-                                + (+feat.geometry.bbox[4]) )*.5 +object.translation.y 
+                                + (+feat.geometry.bbox[4]) )*.5 +cuardo.translation.y 
                     };
                 if ( bboxCenter.x <= bboxTile[0]
                   || bboxCenter.y <= bboxTile[1]
@@ -125,8 +141,8 @@ cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                 feat.geometry.coordinates.forEach( function(tri) {
                     var uv = [];
                     for (var t=0; t<3; t++) {
-                        geom.vertices.push( new THREE.Vector3(tri[0][t][0]+object.translation.x, 
-                                                              tri[0][t][1]+object.translation.y,
+                        geom.vertices.push( new THREE.Vector3(tri[0][t][0]+cuardo.translation.x, 
+                                                              tri[0][t][1]+cuardo.translation.y,
                                                               tri[0][t][2]) );
                         if (tex) uv.push( new THREE.Vector2(tex.uv[j+t][0], tex.uv[j+t][1]) );
                         else uv.push( new THREE.Vector2(0, 0) );
@@ -136,7 +152,6 @@ cuardo.WfsTinLayer.prototype.tile = function( center, size, tileId, callback ) {
                     i+=3;
                     j+=4; // postgis triangles have 4 vertices :)
                 });
-
 
                 geom.computeBoundingBox();
                 geom.computeFaceNormals();

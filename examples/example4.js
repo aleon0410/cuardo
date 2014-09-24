@@ -22,7 +22,6 @@ function getConfig()
 
     // number of terrain subdivisions, per terrain tile
     // i.e. number of sampling points for the DEM
-    var nbDiv = 32;
 
     var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
     var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE"
@@ -35,7 +34,7 @@ function getConfig()
     var terrain = new cuardo.Terrain(
         urlDem,   // <- URL of the DEM
         cuardo.translation,
-        nbDiv
+        32
     );
 
     // the othophoto tu put on top of the terrain
@@ -63,8 +62,6 @@ function getConfig()
 
     var roofs = new cuardo.WfsLayer(
         roofsUrl,
-        cuardo.translation,
-        nbDiv,
         terrain,
         {
             zOffsetPercent:2e-3,
@@ -92,8 +89,6 @@ function getConfig()
     };
     var extruded = new cuardo.WfsLayer(
         roofsUrl,
-        cuardo.translation,
-        nbDiv,
         terrain,
         {
             zOffsetPercent:2e-3,
