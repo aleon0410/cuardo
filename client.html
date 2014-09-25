@@ -56,6 +56,8 @@
 <script src="js/ProgressBarControl.js"></script>
 <script src="js/FeatureActionControl.js"></script>
 <script src="js/LayerVisibilityControl.js"></script>
+<script src="js/HighlightControl.js"></script>
+<script src="js/FeatureSelectionControl.js"></script>
 <script src="js/Popin.js"></script>
 <script src="js/Map.js"></script>
 
@@ -108,9 +110,6 @@ function init() {
     mymap = new cuardo.Map('container', layers, config.sceneSize, config.maxLOD, config.maxCachedTiles);
     console.log("map", mymap);
 
-    mymap.target.addEventListener( 'click', onDocumentMouseDown, false );
-
-
     // trackball
     {
         controls = new cuardo.GISControls( mymap.camera, null, mymap.target );
@@ -132,7 +131,7 @@ function init() {
 
     // add controls for each action
     if (config.actions) {
-        featureActionControls = new cuardo.FeatureActionControl('tools');
+        featureActionControls = new cuardo.FeatureActionControl('tools', mymap);
         for ( var i = 0; i < config.actions.length; i++ ) {
             var action = config.actions[i];
             featureActionControls.add( action.name, action.action );
@@ -145,78 +144,9 @@ function init() {
         layers.push(l.layer);
         layerVisibilityControls.add( l.name, l.layer );
     });
+
 }
 
-
-function onDocumentMouseDown( event ) {
-    event.preventDefault();
-
-    // highlight
-    restoreColors.forEach(function(r){
-            r.obj.geometry.attributes.color.array[r.idx] = r.color.r;
-            r.obj.geometry.attributes.color.array[r.idx+1] = r.color.g;
-            r.obj.geometry.attributes.color.array[r.idx+2] = r.color.b;
-            r.obj.geometry.attributes.color.needsUpdate = true;
-        });
-    restoreColors = [];
-    mymap.requestRender();
-
-    if (!featureActionControls || !featureActionControls.isActive()) return;
-
-    var objects = [];
-
-    mymap.scene.traverse( function(obj) {
-        if ( obj.userData && obj.userData.vertexGidMap ) {
-            objects.push( obj );
-        }
-    });
-
-    // WATCHOUT! the position must be relative to the canvas
-
-    var vector = new THREE.Vector3( ( (event.clientX - mymap.target.offsetLeft) / mymap.width() ) * 2 - 1, 
-                                  - ( (event.clientY - mymap.target.offsetTop) / mymap.height() ) * 2 + 1, 0.5 );
-    var projector = new THREE.Projector();
-    vector = projector.unprojectVector( vector, mymap.camera );
-
-    var raycaster = new THREE.Raycaster( mymap.camera.position, vector.sub( mymap.camera.position ).normalize() );
-
-    var intersects = raycaster.intersectObjects( objects );
-
-    for (var idx = 0; idx < intersects.length; idx++ ) {
-        var object = intersects[ idx ].object;
-        if ( !object.visible ) continue;
-        var map = object.userData.vertexGidMap;
-        var gid = map[ intersects[ idx ].indices[0] ];
-
-        //onAction( object.userData.layer, gid, currentTool, {x:event.clientX, y:event.clientY} );
-        if (!featureActionControls.exec(object.userData.layer, gid,  {x:event.clientX, y:event.clientY}) ) break;
-
-        mymap.scene.traverse( function(obj) {
-            var c = new THREE.Color(0xffff00);
-            if ( obj.userData && obj.userData.vertexGidMap && obj.userData.layer.url == object.userData.layer.url) {
-                
-                for (var i=0, end = obj.geometry.attributes.position.array.length/3; i<end; i++){
-                    if ( obj.userData.vertexGidMap[i] == gid ){
-                        restoreColors.push({
-                            obj: obj,
-                            idx: i*3, 
-                            color: { 
-                                r:obj.geometry.attributes.color.array[i*3], 
-                                g:obj.geometry.attributes.color.array[i*3+1], 
-                                b:obj.geometry.attributes.color.array[i*3+2]}});
-                        obj.geometry.attributes.color.array[i*3] = c.r;
-                        obj.geometry.attributes.color.array[i*3+1] = c.g;
-                        obj.geometry.attributes.color.array[i*3+2] = c.b;
-                    }
-                }
-                obj.geometry.attributes.color.needsUpdate = true;
-            }
-        });
-        break;
-    }
-
-    mymap.requestRender();
-}
 
 </script> 
 </body> 

@@ -1,4 +1,5 @@
-cuardo.renderAsked = true;
+cuardo.renderAsked = true; // try to transform this into member variable at your own risk
+
 cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
 
     this.target = document.getElementById(target);
@@ -176,6 +177,15 @@ cuardo.Map.prototype.width = function (){
         width = window.innerWidth * (+width.slice(0,-1))
     }
     return width;
+}
+
+cuardo.Map.prototype.mouseRay = function(position){
+    var vector = new THREE.Vector3( ( (position.x - mymap.target.offsetLeft) / mymap.width() ) * 2 - 1, 
+                                  - ( (position.y - mymap.target.offsetTop) / mymap.height() ) * 2 + 1, 0.5 );
+    var projector = new THREE.Projector();
+    vector = projector.unprojectVector( vector, mymap.camera );
+
+    return {position: mymap.camera.position, direction: vector.sub( mymap.camera.position ).normalize() };
 }
 
 cuardo.Map.prototype.requestRender = function ()
