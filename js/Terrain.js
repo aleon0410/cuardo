@@ -167,7 +167,7 @@ cuardo.Terrain = function ( urlDem, translation, nbIntervals, zScale, symbology 
     this.visibleTex = [];
 
     this.translation = translation;
-    this.nbIntervals = nbIntervals || 8;
+    this.nbIntervals = nbIntervals || 32;
     this.zScale = zScale || 255;
 
     this.geom = {};

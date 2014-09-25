@@ -8,7 +8,6 @@
 <div id="map">
 
 <div id="uiMenu">
-    <div id="stats"></div>
     <div id="layerList">Layers</div>
     <p/>
     <div id="progressInfo"></div>
@@ -64,28 +63,12 @@
 <script id="configJS"></script>
 <script> 
 
-var mymap;
-var recordAndReplay;
-var controls;
-var progress;
-var featureActionControls;
-var layerVisibilityControls;
-
-var restoreColors = [];
-
 function notification( text )
 {
     var d = document.getElementById('displayInfo');
     d.innerHTML = '<b>' + text + '</b>';
     setTimeout(function(){ d.innerHTML = ''; }, 1000);
 }
-
-function run()
-{
-    init();
-    mymap.animate();
-};
-
 
 function onerror()
 {
@@ -95,58 +78,8 @@ function onerror()
 
 var d = document.getElementById('configJS');
 var configSrc = location.search.substring(1) + '.js';
-d.onload = run;
 d.onerror = onerror;
 d.src = configSrc;
-
-function init() {
-
-    var config = getConfig();
-    var layers = [];
-    config.layers.forEach( function(l) {
-        layers.push(l.layer);
-    });
-
-    mymap = new cuardo.Map('container', layers, config.sceneSize, config.maxLOD, config.maxCachedTiles);
-    console.log("map", mymap);
-
-    // trackball
-    {
-        controls = new cuardo.GISControls( mymap.camera, null, mymap.target );
-        controls.maxDistance = config.sceneSize * 10;
-        controls.rotateSpeed = 2.0;
-        controls.zoomSpeed = 1.5;
-        controls.panSpeed = 1.8;
-        controls.keys = [ 65, 83, 68 ];
-        controls.addEventListener( 'change', mymap.requestRender );
-
-        var d = (config.sceneSize/2.0) / Math.tan(mymap.camera.fov/2.0*Math.PI/180.0);
-        controls.distance = d;
-        mymap.camera.position.z = controls.distance;
-        mymap.camera.lookAt( new THREE.Vector3(0, 0, 0) );
-    }
-
-    recordAndReplay = new cuardo.RecordReplayControl( controls, notification );
-    progress = new cuardo.ProgressBarControl( 'progressInfo', notification);
-
-    // add controls for each action
-    if (config.actions) {
-        featureActionControls = new cuardo.FeatureActionControl('tools', mymap);
-        for ( var i = 0; i < config.actions.length; i++ ) {
-            var action = config.actions[i];
-            featureActionControls.add( action.name, action.action );
-        }
-    }
-
-    layerVisibilityControls = new cuardo.LayerVisibilityControl('layerList', mymap.requestRender);
-    var layers = [];
-    config.layers.forEach( function(l) {
-        layers.push(l.layer);
-        layerVisibilityControls.add( l.name, l.layer );
-    });
-
-}
-
 
 </script> 
 </body> 
