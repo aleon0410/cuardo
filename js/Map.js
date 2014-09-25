@@ -1,45 +1,62 @@
-cuardo.Map = function(layers, target, sceneSize, maxLod, maxCachedTiles){
-    this.layers = parameters.layer;
-    //this.renderer = parameters.renderer;
+cuardo.renderAsked = true;
+cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
 
+    this.target = document.getElementById(target);
+    if (!this.target) throw 'cannot find element '+target;
 
-    window.addEventListener( 'resize', this.onWindowResize, false );
-    this.container = document.getElementById( this.target );
-    if (!this.container) throw "cannot find element "+ target;
+    this.camera; 
+    this.scene;
+    this.renderer;
+    this.depthMaterial;
+    this.depthTarget;
+    this.layers = layers
 
-    this.view.camera = new THREE.PerspectiveCamera( 30, this.width() / this.height(), 1, 1000000 );
+    var that = this;
+    window.addEventListener( 'resize', 
+            function () {
+                that.camera.aspect = that.width() / that.height();
+                that.camera.updateProjectionMatrix();
+                that.renderer.setSize( that.width(), that.width() );
+                that.requestRender();
+            }, 
+            false );
 
-    this.scene = new THREE.Scene();
+    target = document.getElementById( 'container' );
+    console.log('container', window.getComputedStyle(target).width);
+    console.log('uiMenu', document.getElementById( 'uiMenu' ));
+    
+    this.camera = new THREE.PerspectiveCamera( 30, this.width() / this.height(), 1, 1000000 );
+
+    // scene
     {
-        // layers
-        {
-            var tiler = new cuardo.Tiler(this.layers);
-            var quadtree = new cuardo.QuadTree( sceneSize, maxLOD, tiler, maxCachedTiles);
-            this.scene.add( quadtree );
-        }
+        this.scene = new THREE.Scene();
+
+        var tiler = new cuardo.Tiler(this.layers, cuardo.translation, 1);
+        var quadtree = new cuardo.QuadTree( sceneSize, maxLOD, tiler, maxCachedTiles || 256 );
+        this.scene.add( quadtree );
 
         // sky cube
         {
-	    var urls  = [ "images/s_3.png",
-                          "images/s_1.png",
-                          "images/s_4.png",
-                          "images/s_2.png",
-                          "images/s_posZ.png",
-                          "images/s_negZ.png"];
+            var urls  = [ "images/s_3.png",
+                              "images/s_1.png",
+                              "images/s_4.png",
+                              "images/s_2.png",
+                              "images/s_posZ.png",
+                              "images/s_negZ.png"];
 
-            var l = config.sceneSize * 10;
-	    var skyGeometry = new THREE.BoxGeometry( l, l, l );
-	
-	    var materialArray = [];
-            var stillToLoad = 6;
-	    for (var i = 0; i < 6; i++)
-		materialArray.push( new THREE.MeshBasicMaterial({
-		    map: THREE.ImageUtils.loadTexture( urls[i], null, function() {
-                        if (!--stillToLoad) { requestRender(); } }),
-		    side: THREE.BackSide
-		}));
-	    var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
-	    var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+                var l = sceneSize * 10;
+            var skyGeometry = new THREE.BoxGeometry( l, l, l );
+        
+            var materialArray = [];
+                var stillToLoad = 6;
+            for (var i = 0; i < 6; i++)
+            materialArray.push( new THREE.MeshBasicMaterial({
+                map: THREE.ImageUtils.loadTexture( urls[i], null, function() {
+                            if (!--stillToLoad) { that.requestRender(); } }),
+                side: THREE.BackSide
+            }));
+            var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+            var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
 
             // add it to the scene
             this.scene.add( skyBox );
@@ -49,43 +66,42 @@ cuardo.Map = function(layers, target, sceneSize, maxLod, maxCachedTiles){
         {
             light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
             light.position.set( 50000, 50000, 50000 );
+
             this.scene.add( light );
 
             alight = new THREE.AmbientLight( 0xeeeeee );
             this.scene.add( alight );
+
         }
     }
 
-    
-    if (!this.renderer){
+    // renderer
+    {
         this.renderer = new THREE.WebGLRenderer( { antialias: true } );
-        this.container.appendChild( renderer.domElement );
         this.renderer.setClearColor( 0x222222, 1 );
-        this.renderer.setSize( this.width(), this.height() );
-
-        //renderer.shadowMapEnabled = true;
-        //renderer.shadowMapType = THREE.PCFSoftShadowMap;
+        this.renderer.setSize( this.width(),  this.height() );
+        this.target.appendChild( this.renderer.domElement );
 
         // composer and effects
         {
-            composer = new THREE.EffectComposer( this.renderer );
-            composer.addPass( new THREE.RenderPass( this.scene, this.view.camera ) );
+            this.composer = new THREE.EffectComposer( this.renderer );
+            this.composer.addPass( new THREE.RenderPass( this.scene, this.camera ) );
             
             {
             // ssao
             var depthShader = THREE.ShaderLib[ "depthRGBA" ];
             var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
-            depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
-            depthMaterial.blending = THREE.NoBlending;
-            depthTarget = new THREE.WebGLRenderTarget( width(), height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+            this.depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+            this.depthMaterial.blending = THREE.NoBlending;
+            this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
             var effect = new THREE.ShaderPass( THREE.SSAOShader );
-            effect.uniforms[ 'tDepth' ].value = depthTarget;
+            effect.uniforms[ 'tDepth' ].value = this.depthTarget;
             effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
-            effect.uniforms[ 'cameraNear' ].value = camera.near;
-            effect.uniforms[ 'cameraFar' ].value = camera.far;
+            effect.uniforms[ 'cameraNear' ].value = 1;//camera.near;
+            effect.uniforms[ 'cameraFar' ].value = 2000;//camera.far;
             effect.uniforms[ 'lumInfluence' ].value = .01;
             effect.uniforms[ 'aoClamp' ].value = .8;
-            composer.addPass( effect );
+            this.composer.addPass( effect );
 
 
             var fxaa = new THREE.ShaderPass( THREE.FXAAShader );
@@ -93,44 +109,48 @@ cuardo.Map = function(layers, target, sceneSize, maxLod, maxCachedTiles){
             if (window.devicePixelRatio !== undefined) {
                 dpr = window.devicePixelRatio;
             }
-            fxaa.uniforms['resolution'].value.set(1 / (width() * dpr), 1 / (height() * dpr));
+            fxaa.uniforms['resolution'].value.set(1 / (window.innerWidth * dpr), 1 / (window.innerHeight * dpr));
             //fxaa.renderToScreen = true;
-            composer.addPass(fxaa);
+            this.composer.addPass(fxaa);
             
             // depth of field
-            var bokehPass = new THREE.BokehPass( scene, camera, {
+            var bokehPass = new THREE.BokehPass( this.scene, this.camera, {
                 focus: .9,
                 aperture:	0.005,
                 maxblur:	1,
-                width:  width(),
-                height: height()
+                width:  window.innerWidth,
+                height: window.innerHeight
             } );
             bokehPass.renderToScreen = true;
-            composer.addPass( bokehPass );
+            this.composer.addPass( bokehPass );
 
             }
         }
     }
+}
 
-    // stats
-    {
+cuardo.Map.prototype.render = function (t) {
+    console.log("render");
+    this.scene.updateMatrixWorld();
 
-        if ( displayStats ) {
-            stats = new Stats();
-            stats.domElement.style.position = 'absolute';
-            stats.domElement.style.top = '300px';
-            stats.domElement.style.zIndex = 100;
-            container.appendChild( stats.domElement );
+    var that = this;
+    this.scene.traverse( function ( object ) {
+        if ( object instanceof cuardo.QuadTree ) {
+            object.update( that.camera );
         }
-    }
+    } );
 
-    resetPosition = controls.getPosition();
+    this.scene.overrideMaterial = this.depthMaterial;
+    this.renderer.render( this.scene, this.camera, this.depthTarget );
+    this.scene.overrideMaterial = null;
+    this.composer.render();
 
-    this.animate();
+    // load missing tiles
+    cuardo.TileLoader.instance().load( this.requestRender );
 }
 
 cuardo.Map.prototype.height = function (){
-    var height = window.getComputedStyle(this.container).height;
+    var height = window.getComputedStyle(this.target).height;
     if ( height && height.slice(-2) == "px" ){
         height = +height.slice(0,-2);
     }
@@ -143,12 +163,11 @@ cuardo.Map.prototype.height = function (){
     else {
         height = window.innerWidth * (+height.slice(0,-1))
     }
-    console.log("height", height);
     return height;
 }
 
-cuardo.Map.prototype.width = function(){
-    var width = window.getComputedStyle(this.container).width;
+cuardo.Map.prototype.width = function (){
+    var width = window.getComputedStyle(this.target).width;
     if ( width && width.slice(-2) == "px" ){
         width = +width.slice(0,-2);
     }
@@ -161,49 +180,22 @@ cuardo.Map.prototype.width = function(){
     else {
         width = window.innerWidth * (+width.slice(0,-1))
     }
-    console.log("width", width);
     return width;
 }
 
-function render(t) {
-    this.scene.updateMatrixWorld();
-
-    this.scene.traverse( function ( object ) {
-        if ( object instanceof cuardo.QuadTree ) {
-            object.update( camera );
-        }
-    } );
-
-    this.scene.overrideMaterial = depthMaterial;
-    this.renderer.render( scene, camera, depthTarget );
-    this.scene.overrideMaterial = null;
-    this.composer.render()
-    if ( displayStats ) {
-        this.stats.update();
-    }
-
-    // load missing tiles
-    cuardo.TileLoader.instance().load( this.requestRender );
+cuardo.Map.prototype.requestRender = function ()
+{
+    cuardo.renderAsked = true;
 }
 
-function animate()
+cuardo.Map.prototype.animate = function ()
 {
-    if ( this.renderAsked ) {
+    if ( cuardo.renderAsked ) {
         this.render();
-        this.renderAsked = false;
+        cuardo.renderAsked = false;
     }
     // call animate @ 60 fps
-    requestAnimationFrame(this.animate);
+    var that = this;
+    window.requestAnimationFrame( function(){that.animate();} );
 }
 
-function requestRender()
-{
-    this.renderAsked = true;
-}
-
-function onWindowResize() {
-    this.camera.aspect = this.width() / this.height();
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize( this.width(), this.height() );
-    this.requestRender();
-}
