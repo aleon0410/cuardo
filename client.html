@@ -174,7 +174,7 @@ function onDocumentMouseDown( event ) {
     // WATCHOUT! the position must be relative to the canvas
 
     var vector = new THREE.Vector3( ( (event.clientX - mymap.target.offsetLeft) / mymap.width() ) * 2 - 1, 
-                                  - ( (event.clientY - mymap.target.offsetTop) / mep.height() ) * 2 + 1, 0.5 );
+                                  - ( (event.clientY - mymap.target.offsetTop) / mymap.height() ) * 2 + 1, 0.5 );
     var projector = new THREE.Projector();
     vector = projector.unprojectVector( vector, mymap.camera );
 
@@ -215,7 +215,7 @@ function onDocumentMouseDown( event ) {
         break;
     }
 
-    mymmap.requestRender();
+    mymap.requestRender();
 }
 
 </script> 

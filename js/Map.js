@@ -21,10 +21,6 @@ cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
             }, 
             false );
 
-    target = document.getElementById( 'container' );
-    console.log('container', window.getComputedStyle(target).width);
-    console.log('uiMenu', document.getElementById( 'uiMenu' ));
-    
     this.camera = new THREE.PerspectiveCamera( 30, this.width() / this.height(), 1, 1000000 );
 
     // scene
@@ -130,7 +126,6 @@ cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
 }
 
 cuardo.Map.prototype.render = function (t) {
-    console.log("render");
     this.scene.updateMatrixWorld();
 
     var that = this;
