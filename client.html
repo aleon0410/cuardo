@@ -9,19 +9,11 @@
 
 <div id="uiMenu">
     <div id="layerList">Layers</div>
-
     <p/>
-
-    <div id="tools">
-        <select id="actionlist">
-            <option value="0" selected>no tool selected</option>
-        </select> 
-    </div>
-
-    <p/>
-
     <div id="progressInfo"></div>
-
+    <p/>
+    <div id="tools"></div>
+    <p/>
     <div id="displayInfo"></div>
 </div>
 
@@ -61,6 +53,9 @@
 <script src="js/Tile.js"></script>
 <script src="js/RecordReplayControl.js"></script>
 <script src="js/ProgressBarControl.js"></script>
+<script src="js/FeatureActionControl.js"></script>
+<script src="js/LayerVisibilityControl.js"></script>
+<script src="js/Popin.js"></script>
 
 <script id="configJS"></script>
 <script> 
@@ -74,31 +69,11 @@ var mylayers = [];
 var restoreColors = [];
 var recordAndReplay;
 var progress;
+var featureActionControls;
+var layerVisibilityControls;
 
 
 var renderAsked = true;
-
-// identify actions
-var identifyActions = []
-var resetPosition;
-
-function progressTileLoading( nLoaded, nTotal )
-{
-    var img = document.getElementById('loadingImg');
-    var d = document.getElementById('loadingProgressElt');
-    var t = document.getElementById('loadingProgressTxt');
-    img.style.visibility = (nLoaded != nTotal ) ? 'visible' : 'hidden';
-    d.value = nLoaded;
-    d.max = nTotal;
-    t.innerHTML = ' ' + nLoaded + '/' + nTotal;
-}
-
-function tilerProgress( nLoaded, nTotal )
-{
-    var d = document.getElementById('tilerProgressElt');
-    d.value = nLoaded;
-    d.max = nTotal;
-}
 
 function notification( text )
 {
@@ -106,10 +81,6 @@ function notification( text )
     d.innerHTML = '<b>' + text + '</b>';
     setTimeout(function(){ d.innerHTML = ''; }, 1000);
 }
-
-
-cuardo.TileLoader.instance().setProgressCallback( progressTileLoading );
-cuardo.TileLoader.instance().setTilerProgressCallback( tilerProgress );
 
 function run()
 {
@@ -144,11 +115,6 @@ d.onload = run;
 d.onerror = onerror;
 d.src = configSrc;
 
-function layerToggle(cb) {
-    mylayers[cb.value].setVisibility( cb.checked );
-    requestRender();
-}
-
 function init() {
 
     window.addEventListener( 'resize', onWindowResize, false );
@@ -174,39 +140,26 @@ function init() {
         //mesh.receiveShadow = true;
 
         // add controls for each action
-        identifyActions = config.actions;
-        if (identifyActions) {
+        if (config.actions) {
+            featureActionControls = new cuardo.FeatureActionControl('tools');
             for ( var i = 0; i < config.actions.length; i++ ) {
                 var action = config.actions[i];
-                var elt = document.getElementById('actionlist');
-                var n = document.createElement('option');
-                n.value = i+1;
-                n.text = action.name;
-                elt.add(n);
+                featureActionControls.add( action.name, action.action );
             }
         }
         
         // layers
         {
-            var layers = config.layers;
-
+            layerVisibilityControls = new cuardo.LayerVisibilityControl('layerList', requestRender);
             //
             // Add HTML visibility controls for each layer
-            var tilers = [];
-            var d = document.getElementById('layerList');
-            var lid = 0;
-            layers.forEach( function(l) {
-                l.levels.forEach( function(lod) {
-                    mylayers.push(lod);
-                    tilers.push(lod);
-                });
-                d.innerHTML += '<div><input type="checkbox" id="checkbox' + lid + '" name="layer" value="' + lid
-                + '" onclick="layerToggle(this);" checked="true">' + l.name + '</input></div>';
-
-                lid++;
+            var layers = [];
+            config.layers.forEach( function(l) {
+                layers.push(l.layer);
+                layerVisibilityControls.add( l.name, l.layer );
             });
 
-            var tiler = new cuardo.Tiler(tilers, cuardo.translation, 1);
+            var tiler = new cuardo.Tiler(layers, cuardo.translation, 1);
 
             quadtree = new cuardo.QuadTree( config.sceneSize, config.maxLOD, tiler );
             quadtree.maxCachedTiles = 256;
@@ -290,7 +243,7 @@ function init() {
     }
 
     recordAndReplay = new cuardo.RecordReplayControl( controls, notification );
-    progress = new cuardo.ProgressBarControl( document.getElementById('progressInfo'), notification);
+    progress = new cuardo.ProgressBarControl( 'progressInfo', notification);
 
 
 
@@ -321,7 +274,7 @@ function init() {
             effect.uniforms[ 'tDepth' ].value = depthTarget;
             effect.uniforms[ 'size' ].value.set( window.innerWidth, window.innerHeight );
             effect.uniforms[ 'cameraNear' ].value = 1;//camera.near;
-            effect.uniforms[ 'cameraFar' ].value = 5000;//camera.far;
+            effect.uniforms[ 'cameraFar' ].value = 2000;//camera.far;
             effect.uniforms[ 'lumInfluence' ].value = .01;
             effect.uniforms[ 'aoClamp' ].value = .8;
             composer.addPass( effect );
@@ -363,7 +316,6 @@ function init() {
         }
     }
 
-    resetPosition = controls.getPosition();
 }
 
 function onWindowResize() {
@@ -372,8 +324,6 @@ function onWindowResize() {
     renderer.setSize( getWidthInPixels(), getHeightInPixels() );
     requestRender();
 }
-
-var lastRender = null;
 
 function render(t) {
     scene.updateMatrixWorld();
@@ -396,55 +346,6 @@ function render(t) {
     cuardo.TileLoader.instance().load( requestRender );
 }
 
-function openPopIn( html, px, py )
-{
-    var popin = document.getElementById('popin_window');
-    var h = '<a href="javascript:closePopIn(this)"><img src="images/close.png" width="32" height="32" class="btn_close" onClick="closePopIn()"/></a>';
-    popin.innerHTML = h + html;
-    if ((px !== undefined) && (py !== undefined)) {
-        popin.style.top = py+'px';
-        popin.style.left = px+'px';
-    }
-    popin.style.display = 'block';
-}
-
-function closePopIn()
-{
-    var elt = document.getElementById('popin_window');
-    elt.style.display = 'none';
-}
-
-function onAction( layer, gid, actionIdx, position ) {
-    var layerName = /typeName=([^&]+)/.exec(layer.url);
-
-    var q = layer.url+'&featureId='+layerName[1]+'.'+gid;
-    jQuery.ajax(q, {
-        success: function(data, textStatus, jqXHR) {
-            var props = data.features[0].properties;
-
-            if (actionIdx === 0 ) {
-                var html = '<table>';
-                for ( var k in props ) {
-                    html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
-                }
-                html += '</table>';
-                openPopIn( html, position ? position.x : undefined, position ? position.y : undefined );
-            }
-            else {
-                var action = identifyActions[actionIdx-1];
-                if ( action.layers.url != -1 ) {
-                    action.action(props);
-                }
-            }
-        },
-        async:   true,
-        dataType: 'json',
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.warn(jqXHR + textStatus+' :'+errorThrown);
-        }
-    });
-}
-
 function onDocumentMouseDown( event ) {
     event.preventDefault();
 
@@ -458,10 +359,7 @@ function onDocumentMouseDown( event ) {
     restoreColors = [];
     requestRender();
 
-    if ( !document.getElementById('actionlist').selectedIndex ) {
-        return;
-    }
-    currentTool = document.getElementById('actionlist').selectedIndex;
+    if (!featureActionControls || !featureActionControls.isActive()) return;
 
     var objects = [];
 
@@ -489,7 +387,7 @@ function onDocumentMouseDown( event ) {
         var gid = map[ intersects[ idx ].indices[0] ];
 
         //onAction( object.userData.layer, gid, currentTool, {x:event.clientX, y:event.clientY} );
-        if (!identifyActions[currentTool-1].action(object.userData.layer, gid,  {x:event.clientX, y:event.clientY})) break;
+        if (!featureActionControls.exec(object.userData.layer, gid,  {x:event.clientX, y:event.clientY}) ) break;
 
         scene.traverse( function(obj) {
             var c = new THREE.Color(0xffff00);

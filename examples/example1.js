@@ -38,8 +38,8 @@ function getConfig()
 
     //
     // List of layers for the UI
-    var layers = [{name:'Terrain', levels:[terrain]},
-                  {name:'OrthoPhoto', levels:[ortho]}];
+    var layers = [{name:'Terrain', layer:terrain},
+                  {name:'OrthoPhoto', layer:ortho}];
 
     // max depth of the quad tree
     // 2^maxLOD subdivisions

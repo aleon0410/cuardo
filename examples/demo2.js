@@ -92,11 +92,11 @@ function getConfig()
 
     //
     // List of layers with tilers
-    var layers = [{name:'Terrain', levels:[terrain]},
-                  {name:'OrthoPhoto', levels:[ortho]},
-                  {name:'NO2', levels:[no2]},
-                  {name:'Arrondissements', levels:[arrond]},
-                  {name:'Bati', levels:[new cuardo.LayerSet([lod4,lod5, tin])]}
+    var layers = [{name:'Terrain', layer:terrain},
+                  {name:'OrthoPhoto', layer:ortho},
+                  {name:'NO2', layer:no2},
+                  {name:'Arrondissements', layer:arrond},
+                  {name:'Bati', layer:new cuardo.LayerSet([lod4,lod5, tin])}
 ];
 
     // scene size 

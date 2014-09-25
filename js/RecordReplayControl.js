@@ -77,19 +77,7 @@ cuardo.RecordReplayControl.prototype.load = function(){
 
     var object = this;
 
-    var elem = document.createElement('div');
-    document.body.appendChild(elem);
-    elem.className = 'popin';
-    elem.style.display = 'block';
-    var close = document.createElement('img');
-    elem.appendChild(close);
-    close.className = "btn_close";
-    close.onclick = function(obj){ 
-        document.body.removeChild(elem);
-    };
-    close.src = "images/close.png";
-    close.height = 32;
-    close.width = 32;
+    var elem = createPopin(); 
     var file = document.createElement('input');
     elem.appendChild(file);
     file.type = "file";

@@ -61,15 +61,15 @@ function getConfig()
     var layers = [
         {
             name:'Terrain',
-            levels:[terrain]
+            layer:terrain
         },
         {
             name:'OrthoPhoto',
-            levels:[ortho]
+            layer:ortho
         },
         {
             name:'Buildings',
-            levels:[tin]
+            layer:tin
         }
     ];
 

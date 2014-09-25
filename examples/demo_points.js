@@ -69,10 +69,10 @@ function getConfig()
 
     var velov = new cuardo.LayerSet([velov1, velov2]);
     // List of layers with tilers
-    var layers = [{name:'Terrain', levels:[terrain]},
-                  {name:'OrthoPhoto', levels:[ortho]},
-                  {name:'Arrondissements', levels:[arrond]},
-                  {name:"Dispo Velo'V", levels:[velov]}
+    var layers = [{name:'Terrain', layer:terrain},
+                  {name:'OrthoPhoto', layer:ortho},
+                  {name:'Arrondissements', layer:arrond},
+                  {name:"Dispo Velo'V", layer:velov}
                  ];
 
     //
@@ -88,7 +88,7 @@ function getConfig()
                     html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
                 }
                 html += '</table>';
-                openPopIn( html, position ? position.x : undefined, position ? position.y : undefined );
+                createPopin(html, position);
                 return true;
             }
         },

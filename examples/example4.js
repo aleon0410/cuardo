@@ -107,15 +107,15 @@ function getConfig()
     var layers = [
         {
             name:'Terrain',
-            levels:[terrain]
+            layer:terrain
         },
         {
             name:'OrthoPhoto',
-            levels:[ortho]
+            layer:ortho
         },
         {
             name:'Roofs',
-            levels:[new cuardo.LayerSet([roofs, extruded])] // <- LODs
+            layer:new cuardo.LayerSet([roofs, extruded]) // <- LODs
         }
     ];
 
