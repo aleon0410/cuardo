@@ -1,4 +1,4 @@
-cuardo.translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
+cuardo.translation = new THREE.Vector3(-1844157, -5175124, -150);
 // tile size of the most detailed tile
 // the sceneSize will be computed from this value
 var MT = 700;
@@ -11,7 +11,7 @@ var urlImageBase = "/w/textures/";
 var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
 
 // Lyon 3
-var terrain = new cuardo.Terrain(urlDem, cuardo.translation);
+var terrain = new cuardo.Terrain(urlDem);
 var ortho = new cuardo.RasterLayer(urlTex, terrain);
 var no2 = new cuardo.RasterLayer(urlNO2, terrain);
 
@@ -63,7 +63,7 @@ var lod4 = new cuardo.WfsLayer(lod4_url, terrain,
                               color: {expression: buildingClass.toString() }
                           }
                         }
-                        , [MT<<2,MT<<3]  // <- visibility range
+                        , [MT<<2,MT<<4]  // <- visibility range
                        );
 
 

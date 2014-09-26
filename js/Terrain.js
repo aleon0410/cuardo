@@ -158,7 +158,7 @@ var fragmentShader = [
 
 ].join("\n");
 
-cuardo.Terrain = function ( urlDem, translation, nbIntervals, zScale, symbology ) {
+cuardo.Terrain = function ( urlDem, nbIntervals, zScale, symbology ) {
     this.urlDem = urlDem;
 
     this.symbology = symbology || {diffuse:0xffffff, ambient:0x555555, reflectivity:0};
@@ -166,7 +166,6 @@ cuardo.Terrain = function ( urlDem, translation, nbIntervals, zScale, symbology 
     this.urlTex = [];
     this.visibleTex = [];
 
-    this.translation = translation;
     this.nbIntervals = nbIntervals || 32;
     this.zScale = zScale || 255;
 
@@ -258,7 +257,7 @@ cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
             callback(mesh);
         }
     };
-    var extendCenter = new THREE.Vector3().subVectors(center, this.translation );
+    var extendCenter = new THREE.Vector3().subVectors(center, cuardo.translation );
     var ext = [extendCenter.x - size*.5,
                extendCenter.y - size*.5,
                extendCenter.x + size*.5,

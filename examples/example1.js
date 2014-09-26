@@ -9,7 +9,7 @@ cuardo.translation = new THREE.Vector3(-1844157, -5175124, -150);
 var sceneSize = 1500;
 
 var urlDem = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=256&HEIGHT=256&LAYERS=mnt&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE";
-var terrain = new cuardo.Terrain(urlDem, cuardo.translation);
+var terrain = new cuardo.Terrain(urlDem);
 
 var urlTex = "/mapcache?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&WIDTH=1024&HEIGHT=1024&LAYERS=ortho&STYLES=&FORMAT=image/jpeg&SRS=EPSG:3946&TILED=true&TRANSPARENT=TRUE";
 var ortho = new cuardo.RasterLayer(urlTex, terrain);

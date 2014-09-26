@@ -11,7 +11,7 @@ var urlImageBase = "/w/textures/";
 var baseUrl = "/cgi-bin/tinyows?SERVICE=WFS&VERSION=1.0.0&REQUEST=GetFeature&outputFormat=JSON";
 // Lyon 3
 cuardo.translation = new THREE.Vector3(-1844098.1,-5174884.2, -150);
-var terrain = new cuardo.Terrain(urlDem, cuardo.translation);
+var terrain = new cuardo.Terrain(urlDem);
 
 var ortho = new cuardo.RasterLayer(urlTex, terrain);
 var plan = new cuardo.RasterLayer(urlPlan, terrain);

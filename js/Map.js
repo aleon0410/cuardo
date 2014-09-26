@@ -17,7 +17,7 @@ cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
             function () {
                 that.camera.aspect = that.width() / that.height();
                 that.camera.updateProjectionMatrix();
-                that.renderer.setSize( that.width(), that.width() );
+                that.renderer.setSize( that.width(), that.height() );
                 that.requestRender();
             }, 
             false );
@@ -180,12 +180,12 @@ cuardo.Map.prototype.width = function (){
 }
 
 cuardo.Map.prototype.mouseRay = function(position){
-    var vector = new THREE.Vector3( ( (position.x - mymap.target.offsetLeft) / mymap.width() ) * 2 - 1, 
-                                  - ( (position.y - mymap.target.offsetTop) / mymap.height() ) * 2 + 1, 0.5 );
+    var vector = new THREE.Vector3( ( (position.x - this.target.offsetLeft) / this.width() ) * 2 - 1, 
+                                  - ( (position.y - this.target.offsetTop) / this.height() ) * 2 + 1, 0.5 );
     var projector = new THREE.Projector();
-    vector = projector.unprojectVector( vector, mymap.camera );
+    vector = projector.unprojectVector( vector, this.camera );
 
-    return {position: mymap.camera.position, direction: vector.sub( mymap.camera.position ).normalize() };
+    return {position: this.camera.position, direction: vector.sub( this.camera.position ).normalize() };
 }
 
 cuardo.Map.prototype.requestRender = function ()
