@@ -89,7 +89,7 @@ controls.maxDistance = sceneSize * 10;
 controls.addEventListener('change', map.requestRender );
 
 // Actions on identify
-
+var popin;
 var actions = new cuardo.FeatureActionControl('tools', map);
 actions.add( "Identify",
    function(layer, gid, position) {
@@ -100,7 +100,11 @@ actions.add( "Identify",
             html += '<tr><td>' + k + '</td><td>' + props[k] + "</td></tr>\n";
         }
         html += '</table>';
-        createPopin(html, position);
+        try{
+            document.body.removeChild(popin);
+        }
+        catch (err) {}
+        popin = createPopin(html, position);
         return true;
     }
 );
