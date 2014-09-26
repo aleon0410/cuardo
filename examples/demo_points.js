@@ -79,6 +79,8 @@ var map = new cuardo.Map('container', [terrain, ortho, arrond, velov], sceneSize
 var layerVisibilityControls = new cuardo.LayerVisibilityControl('layerList', map.requestRender);
 layerVisibilityControls.add("Terrain", terrain);
 layerVisibilityControls.add("OrthoPhoto", ortho);
+layerVisibilityControls.add("Arrondissements", arrond);
+layerVisibilityControls.add("Satations Velov", velov);
 
 // add progress bar
 var progress = new cuardo.ProgressBarControl('progressInfo', notification);
