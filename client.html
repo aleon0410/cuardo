@@ -25,42 +25,9 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/proj4js/2.2.2/proj4.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js"></script>
-<!--script src="build/cuardo.js"></script-->
-<script src="js/cuardo.js"></script>
-<script src="js/proj4-srs.js"></script>
-<script src="js/TileLoader.js"></script>
-<script src="js/PlaneGeometry.js"></script>
-<script src="js/shaders/FXAAShader.js"></script>
-<script src="js/shaders/BokehShader.js"></script>
-<script src="js/shaders/CopyShader.js"></script>
-<script src="js/shaders/SSAOShader.js"></script>
-<script src="js/WorkerPool.js"></script>
-<script src="js/GISControls.js"></script>
-<script src="js/postprocessing/BokehPass.js"></script>
-<script src="js/postprocessing/EffectComposer.js"></script>
-<script src="js/postprocessing/ShaderPass.js"></script>
-<script src="js/postprocessing/MaskPass.js"></script>
-<script src="js/postprocessing/RenderPass.js"></script>
-<script src="js/WfsTinLayer.js"></script>
-<script src="js/Terrain.js"></script>
-<script src="js/QuadTree.js"></script>
-<script src="js/LayerSet.js"></script>
-<script src="js/RasterLayer.js"></script>
-<script src="js/Symbology.js"></script>
-<script src="js/Tiler.js"></script>
-<script src="js/QuadNode.js"></script>
-<script src="js/WfsLayer.js"></script>
-<script src="js/Tile.js"></script>
-<script src="js/RecordReplayControl.js"></script>
-<script src="js/ProgressBarControl.js"></script>
-<script src="js/FeatureActionControl.js"></script>
-<script src="js/LayerVisibilityControl.js"></script>
-<script src="js/HighlightControl.js"></script>
-<script src="js/FeatureSelectionControl.js"></script>
-<script src="js/Popin.js"></script>
-<script src="js/Map.js"></script>
-
+<script src="build/cuardo.js"></script>
 <script id="configJS"></script>
+
 <script> 
 
 function notification( text )
@@ -70,15 +37,9 @@ function notification( text )
     setTimeout(function(){ d.innerHTML = ''; }, 1000);
 }
 
-function onerror()
-{
-    document.location='client.html?examples/example1';
-};
-
-
 var d = document.getElementById('configJS');
 var configSrc = location.search.substring(1) + '.js';
-d.onerror = onerror;
+d.onerror = function(){document.location='client.html?examples/example1';};
 d.src = configSrc;
 
 </script> 
