@@ -31,7 +31,8 @@ js/LayerVisibilityControl.js\
 js/HighlightControl.js\
 js/FeatureSelectionControl.js\
 js/Popin.js\
-js/Map.js
+js/Map.js \
+js/WfsDataCache.js
 
 
 all:

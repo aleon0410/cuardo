@@ -1,8 +1,8 @@
 cuardo.RasterLayer = function( url, terrain )
 {
     this.texIdx = terrain.addRaster( url );
-    this.visible = true;
     this.terrain = terrain;
+    this.setVisibility( false );
 }
 
 

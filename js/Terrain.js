@@ -171,7 +171,7 @@ cuardo.Terrain = function ( urlDem, nbIntervals, zScale, symbology ) {
 
     this.geom = {};
     this.canvas = document.createElement( 'canvas' );
-    this.visible = true;
+    this.visible = false;
 }
 
 cuardo.Terrain.prototype.setVisibility = function( vis ){
@@ -253,7 +253,10 @@ cuardo.Terrain.prototype.tile = function( center, size, tileId, callback ) {
                     );
             mesh = new THREE.Mesh(geom, newmaterial);
             mesh.userData = {type:'terrain'};
+
+
             object.geom[tileId] = geom;
+            //callback(new THREE.WireframeHelper(mesh));
             callback(mesh);
         }
     };

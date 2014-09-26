@@ -28,6 +28,7 @@ cuardo.Map = function(target, layers, sceneSize, maxLOD, maxCachedTiles){
     {
         this.scene = new THREE.Scene();
 
+        this.layers.forEach( function(l){l.setVisibility(true);} );
         var tiler = new cuardo.Tiler(this.layers, cuardo.translation, 1);
         var quadtree = new cuardo.QuadTree( sceneSize, maxLOD, tiler, maxCachedTiles || 256 );
         this.scene.add( quadtree );

@@ -23,7 +23,7 @@ cuardo.WfsLayer = function (url, terrain, symbology, range) {
     }
 
     this.loaded = [];
-    this.visible = true;
+    this.visible = false;
 };
 
 cuardo.WfsLayer.prototype.setVisibility = function( vis ){
@@ -55,6 +55,7 @@ cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
         callback();
         return;
     }
+
     var extentCenter = new THREE.Vector3().subVectors(center, cuardo.translation );
     var ext = [extentCenter.x - size*.5,
                extentCenter.y - size*.5,
@@ -83,14 +84,7 @@ cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
 
     this.continuations[tileId] = callback;
 
-    var loadedData = null;
-    for (var i=0; i<this.loaded.length; i++){
-        if ( Math.abs(this.loaded[i].center.x - center.x) < this.loaded[i].size &&
-             Math.abs(this.loaded[i].center.y - center.y) < this.loaded[i].size ){
-                 loadedData = this.loaded[i].data;
-                 break;
-         }
-    }
+    var loadedData = cuardo.WfsDataCache.instance().get(this.url, center, size);
 
     if (loadedData){
         var reqend = new Date().getTime();
@@ -111,7 +105,7 @@ cuardo.WfsLayer.prototype.tile = function( center, size, tileId, callback ) {
     jQuery.ajax(this.url + '&BBOX='+ext.join(','), {
         success: function(data, textStatus, jqXHR) {
 
-            object.loaded.push({center:center, size:size, data:data, tileId:tileId });
+            cuardo.WfsDataCache.instance().add(object.url, center, size, data);
 
             var reqend = new Date().getTime();
             // call the worker to process these features

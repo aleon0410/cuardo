@@ -13,7 +13,7 @@ cuardo.WfsTinLayer = function (url, urlImageBase, terrain, range) {
 
     // map of texture url -> material for already loaded textures
     this.textures = {};
-    this.visible = true;
+    this.visible = false;
 };
 
 var EPSILON = 1e-6;

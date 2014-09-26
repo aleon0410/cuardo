@@ -6,8 +6,10 @@ function alert(msg)
 
 importScripts('../thirdparty/clipper.js');
 importScripts('../thirdparty/poly2tri-1.3.5.min.js');
-importScripts('//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js');
-importScripts('//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js'); 
+importScripts('../Stats.js');
+importScripts('../three.min.js'); 
+//importScripts('//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.js');
+//importScripts('//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js'); 
 importScripts('cuardo.js');
 importScripts('Symbology.js');
 
