@@ -10,7 +10,7 @@ var vertexShader= [
 
         "#endif",
 
-        "#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( MAX_MAPS )",
+        "#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || MAX_MAPS > 0",
 
         "	varying vec2 vUv;",
         "	uniform vec4 offsetRepeat;",
@@ -28,7 +28,7 @@ var vertexShader= [
 
         "void main() {",
 
-		"#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( MAX_MAPS )",
+		"#if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || MAX_MAPS > 0",
 
 		"	vUv = uv * offsetRepeat.zw + offsetRepeat.xy;",
 
@@ -84,7 +84,7 @@ var fragmentShader = [
 
         "#endif",
 
-        "#ifdef MAX_MAPS",
+        "#if MAX_MAPS > 0",
 
         "       uniform sampler2D maps[MAX_MAPS];",
         "       uniform int visibleMaps[MAX_MAPS];",
@@ -107,7 +107,7 @@ var fragmentShader = [
                 THREE.ShaderChunk[ "logdepthbuf_fragment" ],
                 THREE.ShaderChunk[ "map_fragment" ],
 
-                "#ifdef MAX_MAPS",
+                "#if MAX_MAPS > 0",
 
 
                 "        vec4 texelColor = vec4(1);",
