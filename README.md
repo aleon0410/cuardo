@@ -1,5 +1,5 @@
-Cardano
-=======
+Cuardo
+======
 
 Introduction
 ------------
@@ -17,11 +17,6 @@ Feel free to contact us for more information, training sessions or development o
 * Blog :  http://www.oslandia.com/articles.html
 * Mail :  infos+3d@oslandia.com
 * Twitter : @Oslandia_en and @Oslandia_fr (french)
-
-About Cardano
--------------
-
-Girolamo Cardano was an Italian mathematician and scientist of the Renaissance period. He was one of the first Europeans to study Matrix algebra, when in 1545 he published Ars Magna, bringing methods to Europe that involved array computations and determinants. And 3D computer science is full of matrices.
 
 Howto start
 -----------
