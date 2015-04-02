@@ -18,7 +18,7 @@ Point layer : Velo'v public bikes
 
 Run the following scripts in order, to download and then integrate most data into the database.
 * get_data.sh
-* setup_data.sh
+* integrate_data.sh
 
 3D data integration
 -------------------
