@@ -51,7 +51,7 @@ TinyOWS
 
 Compile and install tinyows :
 
-  git clone https://github.com/Oslandia/tinyows.git
+  git clone https://github.com/mapserver/tinyows.git &&
   cd tinyows && autoconf && ./configure 
   make && make install && cp tinyows /usr/lib/cgi-bin/tinyows
 
